@@ -1,0 +1,40 @@
+[
+  {
+    "id": "rivieres",
+    "label": "Rivers and canals",
+    "group": "Water",
+    "type": "line",
+    "paint": {
+      "property": "nature",
+      "scale": "categorical",
+      "stops": [
+        ["riviere", "#2563eb", "River or stream"],
+        ["canal", "#0f766e", "Canal"],
+        ["estuaire", "#0ea5e9", "Estuary or lagoon"],
+        ["plan_deau", "#7c3aed", "Through standing water"]
+      ],
+      "no_data_color": "#2563eb",
+      "width": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        4, ["match", ["get", "largeur"], "majeur", 0.9, "grand", 0.4, 0.2],
+        7, ["match", ["get", "largeur"], "majeur", 1.8, "grand", 1.0, 0.5],
+        10, ["match", ["get", "largeur"], "majeur", 4.0, "grand", 2.2, 1.1],
+        12, ["match", ["get", "largeur"], "majeur", 7.0, "grand", 4.0, 2.0]
+      ],
+      "legend_label": "Waterway"
+    },
+    "fields": [
+      { "name": "nom", "type": "categorical", "unit": "", "label": "Name" },
+      { "name": "nature", "type": "categorical", "unit": "", "label": "Type", "value_labels": { "riviere": "River or stream", "canal": "Canal", "estuaire": "Estuary or lagoon", "plan_deau": "Reservoir, lake or marsh the network runs through" } },
+      { "name": "largeur", "type": "ordinal", "unit": "", "label": "Width class", "value_labels": { "moyen": "5–15 m", "grand": "15–50 m", "majeur": "Over 50 m" } },
+      { "name": "persistance", "type": "ordinal", "unit": "", "label": "Flow", "value_labels": { "permanent": "Permanent", "intermittent": "Intermittent — dry part of the year" } },
+      { "name": "navigable", "type": "categorical", "unit": "", "label": "Navigable", "value_labels": { "true": "Yes", "false": "No" } },
+      { "name": "longueur_km", "type": "numeric", "unit": "km", "label": "Length of this segment" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.85,
+    "legend_note": "BD CARTO® V5, everything 5 m wide and over — 250,653 segments. Line weight is the width class, not a measurement: BD CARTO records width in four buckets. Blue is natural watercourse, teal is canal, violet marks where the network is traced through a reservoir, lake or marsh rather than flowing. Major rivers appear from zoom 4, 15–50 m from zoom 6, 5–15 m from zoom 8; navigable waterways one zoom earlier, because the Canal du Midi is narrow and matters anyway."
+  }
+]

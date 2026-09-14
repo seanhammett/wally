@@ -1,0 +1,45 @@
+[
+  {
+    "id": "plan",
+    "label": "IGN Plan",
+    "tiles": "https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/png&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",
+    "attribution": "© IGN — Géoplateforme",
+    "maxzoom": 19,
+    "default": true
+  },
+  {
+    "id": "gris",
+    "label": "Grayscale",
+    "tiles": "https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/png&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",
+    "attribution": "© IGN — Géoplateforme",
+    "maxzoom": 19,
+    "raster": {
+      "saturation": -1,
+      "contrast": -0.12,
+      "brightness-max": 0.96
+    },
+    "note": "IGN Plan with the colour taken out, so the only colour on the map is the data."
+  },
+  {
+    "id": "ortho",
+    "label": "IGN Satellite",
+    "tiles": "https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/jpeg&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",
+    "attribution": "© IGN — Géoplateforme (BD ORTHO)",
+    "maxzoom": 19
+  },
+  {
+    "id": "osm",
+    "label": "OpenStreetMap",
+    "tiles": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    "attribution": "© OpenStreetMap contributors",
+    "maxzoom": 19,
+    "note": "Fallback when the Géoplateforme is unavailable."
+  },
+  {
+    "id": "none",
+    "label": "No map",
+    "outline": "tiles/france_outline.geojson",
+    "attribution": "Outline from IGN ADMIN EXPRESS",
+    "note": "No background tiles: just the outline of metropolitan France, so the data is all there is to read."
+  }
+]

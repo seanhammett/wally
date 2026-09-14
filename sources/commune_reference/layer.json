@@ -1,0 +1,40 @@
+[
+  {
+    "id": "population",
+    "label": "Population",
+    "group": "Population & access",
+    "type": "choropleth",
+    "paint": {
+      "property": "population",
+      "scale": "numeric",
+      "breaks": [200, 500, 1000, 2000, 5000, 20000],
+      "colors": ["#f7fcf0", "#ccebc5", "#a8ddb5", "#7bccc4", "#43a2ca", "#0868ac", "#084081"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "population", "type": "numeric", "unit": "inhabitants", "label": "Population (INSEE legal population)" }
+    ],
+    "default_visible": true,
+    "default_opacity": 0.7,
+    "legend_note": "INSEE legal population, 2026 millésime. Classes are fixed, not quantiles, so the map is comparable between rebuilds."
+  },
+  {
+    "id": "density",
+    "label": "Population density",
+    "group": "Population & access",
+    "type": "choropleth",
+    "paint": {
+      "property": "densite_hab_km2",
+      "scale": "numeric",
+      "breaks": [10, 25, 50, 100, 400, 1500],
+      "colors": ["#fff7ec", "#fee8c8", "#fdd49e", "#fdbb84", "#fc8d59", "#e34a33", "#b30000"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "densite_hab_km2", "type": "numeric", "unit": "inhabitants/km²", "label": "Density" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.7,
+    "legend_note": "Population ÷ commune area. Below 30 hab/km² is the usual working definition of rural France."
+  }
+]

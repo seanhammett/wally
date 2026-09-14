@@ -1,0 +1,11 @@
+[
+  {
+    "id": "cadastre",
+    "label": "Cadastre",
+    "tiles": "https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=CADASTRALPARCELS.PARCELLAIRE_EXPRESS&STYLE=PCI vecteur&TILEMATRIXSET=PM&FORMAT=image/png&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",
+    "attribution": "© IGN / DGFiP — PCI Express",
+    "minzoom": 14,
+    "maxzoom": 19,
+    "note": "Cadastral parcels (PCI Express), from zoom 14."
+  }
+]

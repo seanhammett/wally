@@ -1,0 +1,102 @@
+[
+  {
+    "id": "drought_days",
+    "label": "Days under water restriction",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "jours_restriction",
+      "scale": "numeric",
+      "breaks": [
+        1,
+        15,
+        30,
+        60,
+        90,
+        120
+      ],
+      "colors": [
+        "#f0f9e8",
+        "#fee391",
+        "#fec44f",
+        "#fe9929",
+        "#ec7014",
+        "#cc4c02",
+        "#8c2d04"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "jours_restriction",
+        "type": "numeric",
+        "unit": "days",
+        "label": "Days at alerte renforcée or crise (2026)"
+      },
+      {
+        "name": "jours_vigilance",
+        "type": "numeric",
+        "unit": "days",
+        "label": "Days under any restriction level (2026)"
+      },
+      {
+        "name": "niveau_max_secheresse",
+        "type": "ordinal",
+        "unit": "",
+        "label": "Worst level reached (2026)",
+        "value_labels": {
+          "aucun": "None",
+          "vigilance": "Vigilance",
+          "alerte": "Alerte",
+          "alerte_renforcee": "Alerte renforcée",
+          "crise": "Crise"
+        }
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Days in 2026 at alerte renforcée or crise on drinking water, groundwater or surface water — whichever is worst. A real administrative constraint, not a model output."
+  },
+  {
+    "id": "drought_max_level",
+    "label": "Worst restriction level reached",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "niveau_max_secheresse",
+      "scale": "ordinal",
+      "stops": [
+        [
+          "aucun",
+          "#eef2f7",
+          "None"
+        ],
+        [
+          "vigilance",
+          "#ffe9b3",
+          "Vigilance"
+        ],
+        [
+          "alerte",
+          "#fdae61",
+          "Alerte"
+        ],
+        [
+          "alerte_renforcee",
+          "#e34a33",
+          "Alerte renforcée"
+        ],
+        [
+          "crise",
+          "#7f0000",
+          "Crise"
+        ]
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "The single worst level any usage type reached during 2026."
+  }
+]

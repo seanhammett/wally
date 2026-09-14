@@ -1,0 +1,32 @@
+[
+  {
+    "id": "gares_frequentation",
+    "label": "Stations, by annual passengers",
+    "group": "Transport",
+    "type": "point",
+    "paint": {
+      "property": "voyageurs",
+      "scale": "numeric",
+      "breaks": [20000, 100000, 500000, 2000000, 10000000],
+      "colors": ["#cbd5e1", "#7dd3fc", "#38bdf8", "#0284c7", "#1d4ed8", "#7c1d6f"],
+      "no_data_color": "#e5e7eb",
+      "radius": [
+        "interpolate", ["linear"], ["zoom"],
+        5, ["interpolate", ["linear"], ["coalesce", ["get", "voyageurs"], 0], 0, 1.2, 100000, 2.2, 2000000, 4.0, 30000000, 7.0],
+        9, ["interpolate", ["linear"], ["coalesce", ["get", "voyageurs"], 0], 0, 2.2, 100000, 4.0, 2000000, 7.5, 30000000, 14.0],
+        12, ["interpolate", ["linear"], ["coalesce", ["get", "voyageurs"], 0], 0, 3.5, 100000, 6.5, 2000000, 12.0, 30000000, 22.0]
+      ]
+    },
+    "fields": [
+      { "name": "nom", "type": "categorical", "unit": "", "label": "Station" },
+      { "name": "voyageurs", "type": "numeric", "unit": "passengers/yr", "label": "Passengers in 2024" },
+      { "name": "voyageurs_2019", "type": "numeric", "unit": "passengers/yr", "label": "Passengers in 2019 (pre-Covid)" },
+      { "name": "tendance_pct", "type": "numeric", "unit": "%", "label": "Change since 2019" },
+      { "name": "segment", "type": "ordinal", "unit": "", "label": "SNCF segment", "value_labels": { "A": "Hub — national or large regional station", "B": "Town station", "C": "Local station or halt" } },
+      { "name": "code_uic", "type": "categorical", "unit": "", "label": "UIC code" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.9,
+    "legend_note": "Circles are sized and coloured by annual passengers, because that is what separates a station you could commute from and a concrete platform served twice a day. The 50 busiest stations carry more passengers than the other 2,700 combined. Click one for its 2019 figure too: a station well below its pre-Covid count is a line losing its service. Grey means no footfall published for that station."
+  }
+]

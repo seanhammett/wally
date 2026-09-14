@@ -1,0 +1,68 @@
+[
+  {
+    "id": "air_grid_pm25",
+    "label": "PM2.5 per km² (zoom in)",
+    "group": "Air quality",
+    "type": "polygon",
+    "minzoom": 8,
+    "paint": {
+      "property": "grille_pm25",
+      "scale": "numeric",
+      "breaks": [5, 6, 7, 8, 9, 10],
+      "colors": ["#ffffcc", "#ffeda0", "#fed976", "#feb24c", "#fd8d3c", "#e31a1c", "#800026"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "grille_pm25", "type": "numeric", "unit": "µg/m³", "label": "PM2.5 annual mean in this km², 2021–2024" },
+      { "name": "grille_no2", "type": "numeric", "unit": "µg/m³", "label": "NO₂ annual mean in this km², 2021–2024" },
+      { "name": "grille_somo35", "type": "numeric", "unit": "µg/m³·days", "label": "Ozone SOMO35 in this km², 2021–2024" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.6,
+    "legend_note": "The same data as the commune layer before any averaging: one square per 1 km cell, drawn from zoom 8. Click a square for all three pollutants at that spot; zoom to 11 or closer first, since at lower zooms a click can catch the neighbouring square. Same colour scale as the commune layer, so the two can be swapped to see how much the commune average hides."
+  },
+  {
+    "id": "air_grid_no2",
+    "label": "NO₂ per km² (zoom in)",
+    "group": "Air quality",
+    "type": "polygon",
+    "minzoom": 8,
+    "paint": {
+      "property": "grille_no2",
+      "scale": "numeric",
+      "breaks": [3, 5, 7.5, 10, 15, 20],
+      "colors": ["#f1eef6", "#d4b9da", "#c994c7", "#df65b0", "#e7298a", "#ce1256", "#67001f"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "grille_pm25", "type": "numeric", "unit": "µg/m³", "label": "PM2.5 annual mean in this km², 2021–2024" },
+      { "name": "grille_no2", "type": "numeric", "unit": "µg/m³", "label": "NO₂ annual mean in this km², 2021–2024" },
+      { "name": "grille_somo35", "type": "numeric", "unit": "µg/m³·days", "label": "Ozone SOMO35 in this km², 2021–2024" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.6,
+    "legend_note": "NO₂ is the pollutant where the km² matters most: it falls off within a few hundred metres of a busy road, so the value can differ sharply between neighbouring squares and from the commune average. Even so, 1 km is coarser than the street, and a home on a main road sits above the value shown."
+  },
+  {
+    "id": "air_grid_somo35",
+    "label": "Ozone SOMO35 per km² (zoom in)",
+    "group": "Air quality",
+    "type": "polygon",
+    "minzoom": 8,
+    "paint": {
+      "property": "grille_somo35",
+      "scale": "numeric",
+      "breaks": [3000, 3500, 4000, 5000, 6000, 7000],
+      "colors": ["#f7fcf0", "#e0f3db", "#ccebc5", "#a8ddb5", "#7bccc4", "#43a2ca", "#0868ac"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "grille_pm25", "type": "numeric", "unit": "µg/m³", "label": "PM2.5 annual mean in this km², 2021–2024" },
+      { "name": "grille_no2", "type": "numeric", "unit": "µg/m³", "label": "NO₂ annual mean in this km², 2021–2024" },
+      { "name": "grille_somo35", "type": "numeric", "unit": "µg/m³·days", "label": "Ozone SOMO35 in this km², 2021–2024" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.6,
+    "legend_note": "Ozone per km², including the uninhabited high ground where it peaks. The commune layer counts only where people live, so a mountain commune's squares can run well above its commune value."
+  }
+]

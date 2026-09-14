@@ -1,0 +1,69 @@
+id: filosofi_revenus
+name: "Niveau de vie, inégalités et pauvreté par commune (FiLoSoFi 2021)"
+attribution: "INSEE — Dispositif Fichier Localisé Social et Fiscal (FiLoSoFi) 2021 — Licence Ouverte / Etalab 2.0"
+url: "https://www.insee.fr/fr/statistiques/7756855"
+fetched: 2026-09-11
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+order: 12
+millesime: 2021
+min_join_rate: 0.98
+
+resource:
+  # 17 MB zip, ~160 MB of CSV inside. Two members are used; the rest are the
+  # déclaré (pre-redistribution) equivalents and their metadata.
+  url: "https://www.insee.fr/fr/statistiques/fichier/7756855/indic-struct-distrib-revenu-2021-COMMUNES_csv.zip"
+  filename: "indic-struct-distrib-revenu-2021-COMMUNES_csv.zip"
+  members:
+    disp: "FILO2021_DISP_COM.csv"          # revenu disponible: 732 columns
+    pauvres: "FILO2021_DISP_PAUVRES_COM.csv"  # poverty indicators
+
+# The handful of columns worth mapping, out of 732. Everything here is on
+# *revenu disponible* — income after taxes and benefits, per consumption unit,
+# which is the measure that reflects what a household actually lives on.
+columns:
+  disp:
+    NBMEN21: menages_fiscaux
+    Q221: revenu_median          # médiane du niveau de vie, € per year
+    D121: revenu_d1              # 1st decile
+    D921: revenu_d9              # 9th decile
+    RD: revenu_interdecile       # D9/D1 — the headline inequality measure
+    GI21: revenu_gini            # Gini index
+  pauvres:
+    TP6021: taux_pauvrete        # % under 60% of national median
+
+# INSEE writes 's' (secret statistique) rather than leaving a blank when a
+# commune is too small to publish without identifying households. It is NOT a
+# zero and must never be read as one.
+suppressed_marker: "s"
+
+notes: |
+  Income and income inequality, from tax and benefit records rather than a survey.
+
+  **FiLoSoFi 2021 is the last edition that exists.** INSEE cancelled the 2022
+  vintage that should have appeared in early 2025, because the 2022 fiscal
+  sources were not of sufficient statistical quality. So this is not a stale
+  choice — there is nothing newer, and there will not be until the 2023 edition.
+
+  The coverage is the thing to understand before reading any of these layers.
+  INSEE suppresses figures it cannot publish without effectively identifying
+  individual households, and suppression bites much harder on the dispersion
+  measures than on the median:
+
+  | Indicator | Communes | Share of population |
+  |---|---|---|
+  | Median standard of living | 31,157 | 99.6% |
+  | Interdecile ratio and Gini | 5,253 | 76.8% |
+  | Poverty rate | 4,306 | 73.0% |
+
+  So the median income layer is effectively national, while the inequality and
+  poverty layers cover about one commune in seven — but those are the populated
+  ones, and they still hold three-quarters of the people. A blank on the
+  inequality map means "too small to publish", never "equal".
+
+  Note that this is where people *live*, not where they work, and it is measured
+  per consumption unit, so a commune of large families and one of single people
+  on identical salaries do not score the same. Read alongside population and
+  density: the richest commune medians are small, and small commune medians move
+  a long way on a handful of households.

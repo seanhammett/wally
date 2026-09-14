@@ -1,0 +1,34 @@
+[
+  {
+    "id": "rail_projets",
+    "label": "Rail under construction & proposed",
+    "group": "Transport",
+    "type": "line",
+    "paint": {
+      "property": "statut",
+      "scale": "categorical",
+      "stops": [
+        ["en_travaux", "#ea580c", "Under construction"],
+        ["projet", "#a855f7", "Proposed — not funded or committed"]
+      ],
+      "no_data_color": "#a855f7",
+      "width": [
+        "interpolate", ["linear"], ["zoom"],
+        5, ["case", ["get", "grande_vitesse"], 1.6, 0.8],
+        8, ["case", ["get", "grande_vitesse"], 3.0, 1.6],
+        11, ["case", ["get", "grande_vitesse"], 5.0, 2.8]
+      ]
+    },
+    "fields": [
+      { "name": "nom", "type": "categorical", "unit": "", "label": "Project" },
+      { "name": "statut", "type": "ordinal", "unit": "", "label": "Stage", "value_labels": { "en_travaux": "Under construction — physical work on the ground", "projet": "Proposed — a drawn plan, not a commitment" } },
+      { "name": "mode", "type": "categorical", "unit": "", "label": "Mode", "value_labels": { "train": "Heavy rail", "tram": "Tram", "tram_train": "Tram-train / light rail", "metro": "Metro", "funiculaire": "Funicular" } },
+      { "name": "grande_vitesse", "type": "categorical", "unit": "", "label": "High-speed", "value_labels": { "true": "Yes", "false": "No" } },
+      { "name": "operateur", "type": "categorical", "unit": "", "label": "Operator" },
+      { "name": "longueur_km", "type": "numeric", "unit": "km", "label": "Length of this segment" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.95,
+    "legend_note": "Rail that does not exist yet, kept separate from the operating network. Orange is under construction — there is physical work to survey. Violet is proposed: somebody's drawing of a published scheme, with no funding decision, no date and no guarantee the route survives enquiry. Read violet as 'a plan has been drawn through here', never as 'a railway is coming'. High-speed projects are drawn thicker. From OpenStreetMap — the only dataset that maps French rail projects as vector geometry, and the only unofficial source on this map."
+  }
+]

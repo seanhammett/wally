@@ -1,0 +1,82 @@
+id: bpe_services
+name: "Panier de services de la vie courante par commune (BPE 2025)"
+attribution: "INSEE — Base permanente des équipements 2025 — Licence Ouverte / Etalab 2.0"
+url: "https://www.insee.fr/fr/statistiques/8217527"
+fetched: 2026-09-11
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+order: 16
+millesime: 2025
+min_join_rate: 0.99
+
+resource:
+  # The same national BPE archive that bpe_alimentation reads. Each source owns
+  # its own copy under data/raw so that adapters stay independent and one can be
+  # rebuilt or deleted without touching the other; 14 MB is a cheap price for
+  # that. Delete either raw folder and only that source re-downloads.
+  url: "https://www.insee.fr/fr/statistiques/fichier/8217527/DS_BPE_CSV_FR.zip"
+  filename: "DS_BPE_CSV_FR.zip"
+  member: "DS_BPE_2025_data.csv"
+
+# A basket of 20 everyday services, grouped into five themes. Each slot is
+# present if the commune has at least one facility of ANY code in it — so "poste"
+# is satisfied by a full bureau de poste, a relais or an agence postale, which is
+# how rural postal provision actually works.
+#
+# This is a constructed basket, not INSEE's official "panier de la vie
+# courante". It is written out here so the choice is arguable rather than buried
+# in code: change the lists and the map changes with them.
+basket:
+  sante:
+    generaliste: ["D265"]        # médecin généraliste
+    pharmacie: ["D307"]
+    infirmier: ["D281"]
+    dentiste: ["D277"]
+    kine: ["D279"]               # masseur-kinésithérapeute
+  commerces:
+    alimentation: ["B104", "B105", "B201", "B202"]
+    boulangerie: ["B207"]
+    boucherie: ["B204"]
+    carburant: ["B316"]
+    restaurant: ["A504"]
+  ecole:
+    maternelle: ["C107"]
+    elementaire: ["C108", "C109"]
+    college: ["C201"]
+  public:
+    poste: ["A206", "A207", "A208"]
+    banque: ["A203"]
+    mairie: ["A129"]
+    france_services: ["A128"]
+  quotidien:
+    coiffure: ["A501"]
+    garde_enfants: ["D502", "D504", "D509"]
+    garage: ["A301"]
+
+# Thresholds on the 0–20 basket score, chosen from the actual distribution:
+# the median commune scores 4 and 17.8% score 0 or 1.
+classes:
+  desert: 1          # 0–1  of 20
+  tres_limite: 3     # 2–3
+  limite: 7          # 4–7
+  correct: 14        # 8–14
+  # everything above is "complet"
+
+notes: |
+  The same "absence is the finding" problem as bpe_alimentation: the BPE lists
+  facilities that exist, so a commune with nothing at all has no rows rather
+  than zeros. transform.py starts from the commune list and fills the gaps.
+
+  Only 25% of metropolitan communes have a GP at all, and the median commune
+  holds 4 of the 20 basket services. That is not 75% of France living in a
+  medical desert — it is what a country of 34,746 mostly tiny communes looks
+  like when you count inside administrative boundaries. Most people in a
+  zero-service commune drive ten minutes to a neighbouring one.
+
+  So read this as "what is in walking distance", never as "what is reachable".
+  A real accessibility measure needs drive-time isochrones against the BPE's
+  geocoded points, which is a different and much larger piece of work; the
+  honest version of that limit is stated in each layer's legend rather than
+  hidden. Read it alongside population, and alongside food access, which
+  applies the same method to food retail alone.

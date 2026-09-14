@@ -1,0 +1,61 @@
+id: gares
+name: "Gares de voyageurs et fréquentation annuelle"
+attribution: "SNCF Gares & Connexions — Open Data SNCF (gares de voyageurs, fréquentation en gares) — Licence Ouverte 2.0"
+url: "https://ressources.data.sncf.com/explore/dataset/frequentation-gares/"
+fetched: 2026-09-12
+source_crs: "EPSG:4326"
+kind: point
+fetch: auto
+order: 35
+
+api_base: "https://ressources.data.sncf.com/api/explore/v2.1/catalog/datasets"
+
+exports:
+  gares:
+    dataset: gares-de-voyageurs
+    format: json
+    filename: gares-de-voyageurs.json
+  frequentation:
+    dataset: frequentation-gares
+    format: json
+    filename: frequentation-gares.json
+
+# The year the map reports. Kept in metadata so next year's edition is a
+# one-line change rather than a hunt through the transform.
+annee: 2024
+annee_precedente: 2019      # pre-Covid baseline, for the trend column
+
+# SNCF's own station segmentation. A is the national and regional hubs, B the
+# substantial town stations, C everything else down to an unstaffed halt.
+segments:
+  A: "Hub — national or large regional station"
+  B: "Town station"
+  C: "Local station or halt"
+
+tiling:
+  tiles: never          # ~2,700 points; a plain GeoJSON beats a tileset
+
+notes: |
+  Every passenger station on the national network, with how many people actually
+  use it.
+
+  **Footfall is the honest measure of whether a station is a service.** France has
+  2,782 passenger stations and the distribution is brutally uneven: the top fifty
+  carry more passengers than the remaining two and a half thousand combined. A
+  commune "with a station" may have a concrete platform served twice a day. The
+  annual passenger count is what separates that from a station you could commute
+  from, and it is the reason this layer sizes its circles by footfall rather than
+  drawing every station the same.
+
+  **This is not a TGV map.** SNCF publishes no open per-station service list, so
+  nothing here says which stations a TGV calls at. Footfall is the available
+  proxy and a good one — the stations with TGV service are overwhelmingly the
+  large-footfall ones — but it is a proxy, and a busy Transilien station in the
+  Paris suburbs will outrank a TGV stop in the Massif Central.
+
+  The 2019 column is carried deliberately. Rail ridership collapsed in 2020 and
+  recovered unevenly, so a station's 2024 figure read against its 2019 figure
+  says whether the line is recovering, growing, or quietly being abandoned.
+
+  Stations are matched to communes by their UIC code's own `codeinsee` field
+  where present. Footfall is joined on the UIC code, which both files share.

@@ -1,0 +1,29 @@
+id: copernicus_dem
+name: "Modèle numérique d'élévation Copernicus GLO-90"
+attribution: "Copernicus DEM GLO-90 © DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under COPERNICUS by the European Union and ESA"
+url: "https://registry.opendata.aws/copernicus-dem/"
+fetched: 2026-09-13
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+# Fetch only. Nothing is mapped from this source: other transforms read it
+# through pipeline/elevation.py.
+no_output: true
+order: 6
+
+tile_url: "https://copernicus-dem-90m.s3.amazonaws.com/Copernicus_DSM_COG_30_{lat}_00_{lon}_00_DEM/Copernicus_DSM_COG_30_{lat}_00_{lon}_00_DEM.tif"
+# 1° tiles touching metropolitan France plus a 0.12° margin, so a climate grid
+# cell straddling the border still has terrain under all of it. Tiles that are
+# entirely sea do not exist in the bucket and are skipped.
+tiles: [N41E008, N41E009, N42W002, N42W001, N42E000, N42E001, N42E002, N42E003, N42E005, N42E006, N42E008, N42E009, N43W002, N43W001, N43E000, N43E001, N43E002, N43E003, N43E004, N43E005, N43E006, N43E007, N43E009, N44W002, N44W001, N44E000, N44E001, N44E002, N44E003, N44E004, N44E005, N44E006, N44E007, N45W002, N45W001, N45E000, N45E001, N45E002, N45E003, N45E004, N45E005, N45E006, N45E007, N46W003, N46W002, N46W001, N46E000, N46E001, N46E002, N46E003, N46E004, N46E005, N46E006, N46E007, N47W005, N47W004, N47W003, N47W002, N47W001, N47E000, N47E001, N47E002, N47E003, N47E004, N47E005, N47E006, N47E007, N48W006, N48W005, N48W004, N48W003, N48W002, N48W001, N48E000, N48E001, N48E002, N48E003, N48E004, N48E005, N48E006, N48E007, N48E008, N49W004, N49W003, N49W002, N49W001, N49E000, N49E001, N49E002, N49E003, N49E004, N49E005, N49E006, N49E007, N49E008, N50E000, N50E001, N50E002, N50E003, N50E004, N50E005, N51E001, N51E002]
+
+notes: |
+  Terrain height at 3 arc-seconds (~90 m), 1° tiles as cloud-optimised GeoTIFF.
+  It is a surface model, so forest canopy and buildings add a few metres to
+  a 90 m cell; for correcting temperature by altitude that is a few hundredths
+  of a degree and does not matter.
+
+  Used by `meteo_climat`. Météo-France's SAFRAN grid gives each 8 km cell the
+  climate of the cell's mean altitude, which in the Alps is far above the
+  valley towns where people live. Knowing both heights is what lets the
+  transform move the value down to the valley.

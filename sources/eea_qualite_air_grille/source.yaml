@@ -1,0 +1,32 @@
+id: eea_qualite_air_grille
+name: "Qualité de l'air au kilomètre carré, moyenne 2021–2024 (EEA, grille 1 km)"
+attribution: "European Environment Agency — interpolated air quality data, CC-BY 4.0"
+url: "https://www.eea.europa.eu/en/datahub/datahubitem-view/b51e1091-4459-4a1e-8dbc-dd7a30949b90"
+fetched: 2026-09-12
+source_crs: "EPSG:3035"
+kind: polygon
+# The rasters are the ones eea_qualite_air downloads; this source reads them from
+# that source's data/raw folder instead of fetching the same 900 MB twice.
+fetch: none
+raw_from: eea_qualite_air
+order: 48
+
+tiling:
+  tiles: always
+  # A 1 km cell is about one pixel at zoom 7. Below zoom 8 the grid is noise
+  # and the commune layers say the same thing more legibly, so it is not tiled
+  # there at all — see the layers' minzoom.
+  min_zoom: 8
+  max_zoom: 10
+  tippecanoe_args: ["--no-simplification-of-shared-nodes", "--detect-shared-borders"]
+
+notes: |
+  The same four years of EEA maps as `eea_qualite_air`, not aggregated: one
+  square per 1 km cell over land in metropolitan France, carrying the 2021–2024
+  mean of each pollutant. Click a square to read the value for that kilometre.
+
+  This is the finest resolution the data has. Clicking inside a square does not
+  get you anything finer than the square, and the value is a background
+  estimate — the EEA method interpolates station measurements with a transport
+  model and land-use covariates, so it does not see the kerbside of a particular
+  street. Living on a main road adds to NO2 on top of what is shown here.

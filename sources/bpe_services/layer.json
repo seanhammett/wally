@@ -1,0 +1,69 @@
+[
+  {
+    "id": "services_basket",
+    "label": "Everyday services present (0–20)",
+    "group": "Population & access",
+    "type": "choropleth",
+    "paint": {
+      "property": "serv_panier",
+      "scale": "numeric",
+      "breaks": [2, 4, 7, 12, 18],
+      "colors": ["#40004b", "#762a83", "#c2a5cf", "#d9f0d3", "#5aae61", "#00441b"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "serv_panier", "type": "numeric", "unit": "of 20", "label": "Everyday services present" },
+      { "name": "serv_sante", "type": "numeric", "unit": "of 5", "label": "Health services (GP, pharmacy, nurse, dentist, physio)" },
+      { "name": "serv_ecole", "type": "numeric", "unit": "of 3", "label": "Schools (nursery, primary, lower secondary)" },
+      { "name": "serv_public", "type": "numeric", "unit": "of 4", "label": "Public services (post, bank, town hall, France Services)" },
+      { "name": "serv_generalistes", "type": "numeric", "unit": "GPs", "label": "General practitioners" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "A basket of 20 everyday services — health, food, schools, public services, daily needs — counted inside the commune boundary. The median commune has 4. This is what is in walking distance, not what is reachable: most people in a low-scoring commune drive ten minutes to a neighbouring one."
+  },
+  {
+    "id": "services_desert",
+    "label": "Service provision class",
+    "group": "Population & access",
+    "type": "choropleth",
+    "paint": {
+      "property": "serv_desert",
+      "scale": "ordinal",
+      "stops": [
+        ["desert", "#67001f", "Nothing or almost nothing (0–1)"],
+        ["tres_limite", "#d6604d", "Very limited (2–3)"],
+        ["limite", "#f4a582", "Limited (4–7)"],
+        ["correct", "#92c5de", "Reasonable (8–14)"],
+        ["complet", "#2166ac", "Full range (15–20)"]
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "serv_desert", "type": "ordinal", "unit": "", "label": "Service provision", "value_labels": { "desert": "Nothing or almost nothing", "tres_limite": "Very limited", "limite": "Limited", "correct": "Reasonable", "complet": "Full range" } }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "The 0–20 basket score cut into five classes. 17.8% of communes score 0 or 1. Class boundaries come from the real distribution and are declared in source.yaml, not derived from any official definition of a service desert."
+  },
+  {
+    "id": "health_access",
+    "label": "Health services present (0–5)",
+    "group": "Population & access",
+    "type": "choropleth",
+    "paint": {
+      "property": "serv_sante",
+      "scale": "numeric",
+      "breaks": [1, 2, 3, 4, 5],
+      "colors": ["#8c510a", "#d8b365", "#f6e8c3", "#c7eae5", "#5ab4ac", "#01665e"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "serv_sante", "type": "numeric", "unit": "of 5", "label": "Health services present" },
+      { "name": "serv_generalistes", "type": "numeric", "unit": "GPs", "label": "General practitioners" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "GP, pharmacy, nurse, dentist and physiotherapist. Only about a quarter of metropolitan communes have a GP, and the darkest class is exactly zero of the five. Counting inside boundaries overstates isolation — but the pattern of where the zeros cluster is the point."
+  }
+]

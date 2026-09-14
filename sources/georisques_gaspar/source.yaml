@@ -1,0 +1,75 @@
+id: georisques_gaspar
+name: "Inondation et risques littoraux par commune (GASPAR, août 2026)"
+attribution: "Géorisques / BRGM — Ministère de la Transition écologique — Licence Ouverte 2.0"
+url: "https://www.data.gouv.fr/datasets/base-nationale-de-gestion-assistee-des-procedures-administratives-relatives-aux-risques-gaspar/"
+fetched: 2026-09-10
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+order: 30
+millesime: 2026
+min_join_rate: 0.97
+
+resource:
+  # One 8 MB zip holds the whole national database: risk registers, CATNAT
+  # declarations, PPR procedures and flood atlases, all keyed by INSEE code.
+  # files.georisques.fr is slow — budget ten minutes on a cold fetch — but this
+  # is one request against a stable path, not 34,746 calls to the per-commune API.
+  url: "https://files.georisques.fr/GASPAR/gaspar.zip"
+  filename: "gaspar.zip"
+
+# Members are datestamped, so transform.py matches on prefix rather than an
+# exact name that would break on the next republication.
+members:
+  catnat: "catnat_gaspar_"      # arrêtés de catastrophe naturelle, 1982 →
+  ddrm: "ddrm_risq_gaspar_"     # the préfecture risk register (DDRM), commune × risk
+  pprn: "pprn_gaspar_"          # PPR naturel procedures and their state
+  azi: "azi_gaspar_"            # atlas des zones inondables
+
+# CATNAT `lib_risque_jo` values that are a flood. "Inondations et/ou Coulées de
+# Boue" is by far the commonest arrêté in France; the others are rarer variants
+# of the same thing. Sécheresse and Mouvement de terrain are deliberately not
+# here — they belong to the drought and clay layers, not this one.
+catnat_flood:
+  - "Inondations et/ou Coulées de Boue"
+  - "Inondations Remontée Nappe"
+  - "Coulée de Boue"
+  - "Raz de Marée"
+
+# DDRM risk numbers. 117/126 are the two coastal hazards; 11 is flooding.
+risk_numbers:
+  inondation: "11"
+  submersion: "117"
+  recul_trait_cote: "126"
+
+# PPR risk labels. GASPAR nests risk over three levels: level 2 carries
+# "Inondation", level 3 the coastal specialisation.
+ppr_labels:
+  inondation: "Inondation"
+  littoral:
+    - "Par submersion marine"
+    - "Recul du trait de côte et de falaises"
+
+notes: |
+  Four datasets that all answer "what is this commune exposed to, and has the
+  state done anything about it", joined on the INSEE code.
+
+  The headline layer counts *arrêtés de catastrophe naturelle* for flooding since
+  1982. That is an administrative record of damage actually declared and
+  compensated, not a model of where water could go — which makes it the most
+  concrete flood indicator available nationally, and also its own bias: it
+  records where people and insured property already are. An empty floodplain
+  with nobody in it generates no arrêtés.
+
+  Almost every commune in France (34,455 of 34,746) has had at least one, so the
+  binary "has flooded" tells you nothing and the map uses the count instead.
+
+  PPR state is collapsed to the strongest procedure per commune per risk family:
+  approuvé (opposable, real planning constraint) beats prescrit (started, not yet
+  binding) beats caduque (lapsed or abrogated). A commune can hold several
+  procedures; only the strongest is shown.
+
+  Coastal exposure comes from the DDRM register rather than the PPR, because the
+  register covers 1,020 communes against the PPR's ~580 — the register is the
+  statement of exposure, the PPR only the subset where a plan exists. Both are
+  carried so the gap between them is visible.

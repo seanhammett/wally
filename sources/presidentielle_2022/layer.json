@@ -1,0 +1,161 @@
+[
+  {
+    "id": "pres22_t2",
+    "label": "Presidential 2022 — second round (Le Pen share)",
+    "group": "Elections",
+    "type": "choropleth",
+    "paint": {
+      "property": "pres22_lepen_t2_pct",
+      "scale": "numeric",
+      "breaks": [
+        35,
+        43,
+        50,
+        58,
+        65
+      ],
+      "colors": [
+        "#2166ac",
+        "#67a9cf",
+        "#d1e5f0",
+        "#fddbc7",
+        "#ef8a62",
+        "#b2182b"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "pres22_lepen_t2_pct",
+        "type": "numeric",
+        "unit": "% of votes cast",
+        "label": "Le Pen, second round"
+      },
+      {
+        "name": "pres22_macron_t2_pct",
+        "type": "numeric",
+        "unit": "% of votes cast",
+        "label": "Macron, second round"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Share of valid votes, 24 April 2022. The class edge at 50% is the one that matters: Le Pen carried 18,020 of the 34,820 metropolitan communes and still lost the election 41.5–58.5, because the communes she won are the small ones. Blanks and spoiled ballots are excluded, so the two shares sum to 100."
+  },
+  {
+    "id": "pres22_t1_lead",
+    "label": "Presidential 2022 — first-round leader",
+    "group": "Elections",
+    "type": "choropleth",
+    "paint": {
+      "property": "pres22_tete_t1",
+      "scale": "categorical",
+      "stops": [
+        [
+          "Le Pen",
+          "#22405e",
+          "Le Pen"
+        ],
+        [
+          "Macron",
+          "#e8a33d",
+          "Macron"
+        ],
+        [
+          "Mélenchon",
+          "#c9314a",
+          "Mélenchon"
+        ],
+        [
+          "Lassalle",
+          "#7b9e3f",
+          "Lassalle"
+        ],
+        [
+          "Zemmour",
+          "#5b3a8e",
+          "Zemmour"
+        ],
+        [
+          "Pécresse",
+          "#2f7fbf",
+          "Pécresse"
+        ],
+        [
+          "Roussel",
+          "#a11212",
+          "Roussel"
+        ],
+        [
+          "Jadot",
+          "#3faa5a",
+          "Jadot"
+        ],
+        [
+          "Arthaud",
+          "#d1495b",
+          "Arthaud"
+        ],
+        [
+          "Hidalgo",
+          "#e07ba0",
+          "Hidalgo"
+        ],
+        [
+          "Dupont-Aignan",
+          "#6b7a8f",
+          "Dupont-Aignan"
+        ]
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "pres22_tete_t1",
+        "type": "categorical",
+        "unit": "",
+        "label": "Led the first round"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Who topped the poll on 10 April 2022, by commune. Le Pen led in about 20,000 of the 34,800 metropolitan communes and Macron in about 11,800 — a count of communes, not of voters, so the small-commune bias is the whole point of reading it next to population."
+  },
+  {
+    "id": "pres22_turnout",
+    "label": "Presidential 2022 — turnout",
+    "group": "Elections",
+    "type": "choropleth",
+    "paint": {
+      "property": "pres22_participation_t2_pct",
+      "scale": "numeric",
+      "breaks": [
+        70,
+        75,
+        80,
+        84,
+        88
+      ],
+      "colors": [
+        "#f7fcf5",
+        "#e5f5e0",
+        "#c7e9c0",
+        "#a1d99b",
+        "#41ab5d",
+        "#006d2c"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "pres22_participation_t2_pct",
+        "type": "numeric",
+        "unit": "% of registered voters",
+        "label": "Turnout, second round"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Second-round turnout, median 79%. Compare with the municipal turnout layer: the same places vote very differently for a president and for a mayor."
+  }
+]

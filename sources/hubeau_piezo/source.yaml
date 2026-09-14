@@ -1,0 +1,28 @@
+id: hubeau_piezo
+name: "Stations piézométriques (nappes souterraines)"
+attribution: "Hub'Eau / BRGM — ADES — Licence Ouverte 2.0"
+url: "https://hubeau.eaufrance.fr/page/api-piezometrie"
+fetched: 2026-09-10
+source_crs: "EPSG:4326"
+kind: point
+fetch: auto
+order: 40
+
+api:
+  url: "https://hubeau.eaufrance.fr/api/v1/niveaux_nappes/stations"
+  page_size: 5000
+  srid: 4326
+
+# Only stations with a measurement since this date are kept: an abandoned 1971
+# borehole tells you nothing about the water table today.
+active_since: "2015-01-01"
+
+tiling:
+  tiles: auto
+  min_zoom: 4
+  max_zoom: 12
+
+notes: |
+  The worked Pattern C example, and the friendliest French source there is: a
+  genuine paginated REST API, no key, GeoJSON-shaped records with lon/lat already
+  in WGS84. Nothing here needs GDAL.

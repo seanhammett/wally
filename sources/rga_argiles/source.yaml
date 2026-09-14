@@ -1,0 +1,22 @@
+id: rga_argiles
+name: "Retrait-gonflement des argiles — exposition 2026"
+attribution: "BRGM / Géorisques — Licence Ouverte 2.0"
+url: "https://www.data.gouv.fr/datasets/carte-des-risques-retrait-gonflement-des-argiles-2026/"
+fetched: 2026-09-10
+source_crs: "EPSG:4326"
+kind: polygon
+fetch: none
+no_output: true
+order: 35
+
+notes: |
+  The fastest win in the catalogue: Géorisques already publishes this as a 122 MB
+  PMTiles archive on data.gouv.fr, served with CORS and HTTP range requests. There
+  is nothing to download, transform or tile — the layer points straight at it.
+
+  It is kept as its own layer rather than folded into a hazard score, because
+  clay shrink-swell is a foundation-engineering cost, not a habitability
+  constraint: it changes what a renovation costs, not whether a place is livable.
+
+  If the remote file ever disappears, the fallback is the department shapefiles on
+  Géorisques: fetch: manual, then a normal Pattern B transform.

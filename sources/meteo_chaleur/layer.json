@@ -1,0 +1,101 @@
+[
+  {
+    "id": "tropical_nights",
+    "label": "Tropical nights by 2041–2070",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "chaleur_nuits_trop",
+      "scale": "numeric",
+      "breaks": [
+        4,
+        8,
+        12,
+        18,
+        30
+      ],
+      "colors": [
+        "#ffffcc",
+        "#ffeda0",
+        "#feb24c",
+        "#fc4e2a",
+        "#bd0026",
+        "#67001f"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "chaleur_nuits_trop",
+        "type": "numeric",
+        "unit": "nights/year",
+        "label": "Tropical nights (min > 20 °C), 2041–2070, RCP8.5"
+      },
+      {
+        "name": "chaleur_nuits_trop_ref",
+        "type": "numeric",
+        "unit": "nights/year",
+        "label": "Tropical nights, 1976–2005 reference"
+      },
+      {
+        "name": "chaleur_nuits_trop_45",
+        "type": "numeric",
+        "unit": "nights/year",
+        "label": "Tropical nights, 2041–2070, RCP4.5"
+      },
+      {
+        "name": "chaleur_grille_km",
+        "type": "numeric",
+        "unit": "km",
+        "label": "Distance to the climate grid point",
+        "correlate": false
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Nights when the temperature never drops below 20 °C — the ones that make heat dangerous, because the body cannot recover. Mid-century under RCP8.5: median commune 11, Nice and Marseille around 70, the Alps zero. Click any commune to compare against 1976–2005 and against the moderate RCP4.5 scenario."
+  },
+  {
+    "id": "summer_days",
+    "label": "Summer days by 2041–2070",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "chaleur_jours_ete",
+      "scale": "numeric",
+      "breaks": [
+        40,
+        55,
+        66,
+        76,
+        90
+      ],
+      "colors": [
+        "#fff7ec",
+        "#fee8c8",
+        "#fdbb84",
+        "#fc8d59",
+        "#d7301f",
+        "#7f0000"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "chaleur_jours_ete",
+        "type": "numeric",
+        "unit": "days/year",
+        "label": "Summer days (max > 25 °C), 2041–2070, RCP8.5"
+      },
+      {
+        "name": "chaleur_tx_moyen",
+        "type": "numeric",
+        "unit": "°C",
+        "label": "Mean daily maximum, 2041–2070"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Days above 25 °C, mid-century under RCP8.5 — median commune 66, up to 135 on the Mediterranean. The 35 °C threshold is not in the openly published files; it needs a manual DRIAS-2020 order, which sources/drias_chaleur documents. These are the DRIAS-2014 runs, which under-project French summer warming against the newer set, so read them as the conservative end."
+  }
+]

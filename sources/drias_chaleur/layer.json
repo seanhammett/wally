@@ -1,0 +1,22 @@
+[
+  {
+    "id": "tropical_nights_2050",
+    "label": "Tropical nights per year, 2050",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "nuits_tropicales_2050",
+      "scale": "numeric",
+      "breaks": [5, 15, 30, 50, 75],
+      "colors": ["#ffffcc", "#ffeda0", "#feb24c", "#fc4e2a", "#bd0026", "#800026"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "nuits_tropicales_2050", "type": "numeric", "unit": "nights/yr", "label": "Nights above 20 °C (2050 horizon)" },
+      { "name": "jours_35c_2050", "type": "numeric", "unit": "days/yr", "label": "Days above 35 °C (2050 horizon)" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "DRIAS-2020 projection aggregated from an ~8 km grid, so commune values carry the grid's resolution error. Modelled, not observed."
+  }
+]

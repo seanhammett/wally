@@ -1,0 +1,79 @@
+id: eea_qualite_air
+name: "Qualité de l'air : PM2.5, NO2 et ozone, moyenne 2021–2024 (EEA, grille 1 km)"
+attribution: "European Environment Agency — interpolated air quality data, CC-BY 4.0 · population: INSEE, Filosofi 2019 données carroyées 200 m"
+url: "https://www.eea.europa.eu/en/datahub/datahubitem-view/b51e1091-4459-4a1e-8dbc-dd7a30949b90"
+fetched: 2026-09-12
+source_crs: "EPSG:3035"
+kind: commune_table
+fetch: auto
+order: 47
+min_join_rate: 0.99
+
+eea:
+  # Public share token for sdi.eea.europa.eu/datastore/public. Folder and file
+  # names are irregular across years — 2021 was published under a different
+  # naming scheme — so each is spelled out rather than templated.
+  share: "sptXqwkQr5g7Bp5"
+  pollutants:
+    pm25:
+      worst_cell: true
+      files:
+        2021: ["eea_r_3035_1_km_aq-interpolated-pm25_p_2021_v01_r00", "EEA_1kmgrid_2021_pm25_avg.tif"]
+        2022: ["eea_r_3035_1_km_aq-interpolated-pm25_p_2022_v01_r00", "pm25_avg_22.tif"]
+        2023: ["eea_r_3035_1_km_aq-interpolated-pm25_p_2023_v01_r00", "pm25_avg_23.tif"]
+        2024: ["eea_r_3035_1_km_aq-interpolated-pm25_p_2024_v01_r00", "pm25_avg_24.tif"]
+    no2:
+      worst_cell: true
+      files:
+        2021: ["eea_r_3035_1_km_aq-interpolated-no2_p_2021_v01_r00", "EEA_1kmgrid_2021_no2_avg.tif"]
+        2022: ["eea_r_3035_1_km_aq-interpolated-no2_p_2022_v01_r00", "no2_avg_22.tif"]
+        2023: ["eea_r_3035_1_km_aq-interpolated-no2_p_2023_v01_r00", "no2_avg_23.tif"]
+        2024: ["eea_r_3035_1_km_aq-interpolated-no2_p_2024_v01_r00", "no2_avg_24.tif"]
+    o3_somo35:
+      files:
+        2021: ["eea_r_3035_1_km_aq-interpolated-O3_p_2021_v01_r00", "o3_s35_21.tif"]
+        2022: ["eea_r_3035_1_km_aq-interpolated-O3_p_2022_v01_r00", "o3_s35_22.tif"]
+        2023: ["eea_r_3035_1_km_aq-interpolated-O3_p_2023_v01_r00", "o3_s35_23.tif"]
+        2024: ["eea_r_3035_1_km_aq-interpolated-O3_p_2024_v01_r00", "o3_s35_24.tif"]
+
+# Commune values are weighted by where residents live, using the INSEE 200 m
+# grid from source insee_carreaux_200m (read via pipeline/population.py).
+
+notes: |
+  What a resident of each commune breathes on average over a year: PM2.5 and
+  NO2 as annual mean concentrations, and ozone as SOMO35, the yearly sum of each
+  day's excess over 70 µg/m³ (daily maximum 8-hour mean). All three are totals
+  over the year rather than peaks, which is the right shape for chronic exposure.
+
+  **Why the EEA maps, not INERIS.** INERIS publishes a French reanalysis back
+  to 2000 at 2 km, including per-commune population-weighted values, but only
+  through an interactive Shiny app (ineris.shinyapps.io/CartesQualiteAir) with
+  no stable download, so it could only ever be a manual source. The EEA maps
+  are 1 km, CC-BY, validated through 2024, and downloadable from a stable
+  share. They use the same French monitoring stations, reported to the EEA,
+  combined with a transport model and land-use covariates. The
+  national daily ATMO index WFS on data.gouv only holds today and tomorrow, so
+  it cannot give a year.
+
+  **Why four years.** Year-to-year weather moves these numbers about as much as
+  moving across a region does. The national median SOMO35 rose by half between
+  2021 and 2022 on the hot summer alone, and PM2.5 fell a fifth between 2022
+  and 2024, partly a wet 2024 and partly real improvement. Averaging 2021–2024
+  takes the weather out. The window is kept short because PM2.5 and NO2 are
+  trending down, so a ten-year mean would overstate the present. 2020 is left
+  out because lockdown depressed NO2. The cleanest and dirtiest single year are
+  kept per commune so the spread stays visible. When the EEA publishes validated
+  2025 (an interim v00 exists), drop 2021 and add it.
+
+  **Precision.** The data is 1 km. The commune value weights each populated
+  200 m INSEE cell (Filosofi 2019) by its residents and gives it the 1 km value
+  it sits in, so large communes are not averaged over their empty land. The
+  weights are finer than the data; the air values stay 1 km. `_pire` is
+  the most exposed inhabited km² in the commune. The unaveraged grid is
+  published as `eea_qualite_air_grille` for reading a single spot.
+
+  **What this cannot see.** These are background concentrations. Kerbside NO2
+  on a busy street can be double the 1 km value, and a valley with wood
+  heating can sit above its cell in winter. Read NO2 in particular as a floor
+  for anyone living on a main road. The EEA also states that its maps are for
+  European-scale assessment, not for legal compliance.

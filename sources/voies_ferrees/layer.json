@@ -1,0 +1,60 @@
+[
+  {
+    "id": "rail_type",
+    "label": "Railway lines (LGV / conventional)",
+    "group": "Transport",
+    "type": "line",
+    "paint": {
+      "property": "type_ligne",
+      "scale": "categorical",
+      "stops": [
+        ["lgv", "#dc2626", "LGV — high-speed line"],
+        ["conventionnel", "#1f2937", "Conventional line"],
+        ["voie_etroite", "#b45309", "Narrow gauge"]
+      ],
+      "no_data_color": "#1f2937",
+      "width": [
+        "interpolate", ["linear"], ["zoom"],
+        4, ["match", ["get", "type_ligne"], "lgv", 1.2, 0.35],
+        7, ["match", ["get", "type_ligne"], "lgv", 2.2, 0.9],
+        10, ["match", ["get", "type_ligne"], "lgv", 4.0, 1.8],
+        12, ["match", ["get", "type_ligne"], "lgv", 6.0, 3.0]
+      ]
+    },
+    "fields": [
+      { "name": "type_ligne", "type": "categorical", "unit": "", "label": "Line type", "value_labels": { "lgv": "LGV — purpose-built high-speed", "conventionnel": "Conventional network", "voie_etroite": "Narrow gauge" } },
+      { "name": "v_max", "type": "numeric", "unit": "km/h", "label": "Fastest speed on this line" },
+      { "name": "code_ligne", "type": "categorical", "unit": "", "label": "SNCF line code" },
+      { "name": "exploitee", "type": "categorical", "unit": "", "label": "Still in service", "value_labels": { "true": "Yes", "false": "No — closed, lifted or reduced to sidings" } },
+      { "name": "longueur_km", "type": "numeric", "unit": "km", "label": "Length of this segment" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.9,
+    "legend_note": "SNCF Réseau's own classification. Red is LGV — purpose-built high-speed track, 146 of 2,166 segments. This is where the high-speed *track* is, not where the TGV *goes*: TGV services run off the LGV onto the conventional network to reach Brest, Nice and Hendaye. LGV draws from zoom 4, conventional from 6."
+  },
+  {
+    "id": "rail_speed",
+    "label": "Line speed",
+    "group": "Transport",
+    "type": "line",
+    "paint": {
+      "property": "v_max",
+      "scale": "numeric",
+      "breaks": [80, 100, 140, 160, 220],
+      "colors": ["#6b7280", "#a16207", "#ca8a04", "#0891b2", "#2563eb", "#dc2626"],
+      "no_data_color": "#d1d5db",
+      "width": [
+        "interpolate", ["linear"], ["zoom"],
+        4, 0.5, 7, 1.1, 10, 2.2, 12, 3.6
+      ]
+    },
+    "fields": [
+      { "name": "v_max", "type": "numeric", "unit": "km/h", "label": "Fastest speed on this line" },
+      { "name": "type_ligne", "type": "categorical", "unit": "", "label": "Line type", "value_labels": { "lgv": "LGV — purpose-built high-speed", "conventionnel": "Conventional network", "voie_etroite": "Narrow gauge" } },
+      { "name": "code_ligne", "type": "categorical", "unit": "", "label": "SNCF line code" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.9,
+    "legend_note": "The best guide to what a railway is actually for. Above 160 km/h is an intercity spine; 100–140 a regional line with a real service; under 100 usually a freight branch or a rural line running twice a day. Speed is the fastest recorded anywhere on that line code, so it describes the line, not the metre of track under you. Grey is no speed on record for 18% of lines — not a slow line."
+  }
+]

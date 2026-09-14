@@ -1,0 +1,70 @@
+id: voies_ferrees
+name: "Réseau ferré national — lignes, catégorie et vitesse"
+attribution: "SNCF Réseau — Open Data SNCF (lignes LGV et par écartement, vitesse maximale nominale, lignes par statut) — Licence Ouverte 2.0"
+url: "https://ressources.data.sncf.com/explore/dataset/lignes-lgv-et-par-ecartement/"
+fetched: 2026-09-12
+source_crs: "EPSG:4326"
+kind: line
+fetch: auto
+order: 34
+
+# Three exports of the same network, each already carrying its own geometry, so
+# there is no PK-range matching to do. Geometry and category come from the first;
+# the other two are joined on `code_ligne` to enrich it.
+exports:
+  base:
+    dataset: lignes-lgv-et-par-ecartement
+    format: geojson
+    filename: lignes-lgv-et-par-ecartement.geojson
+  vitesse:
+    dataset: vitesse-maximale-nominale-sur-ligne
+    format: json
+    filename: vitesse-maximale-nominale.json
+    select: "code_ligne,v_max"
+  statut:
+    dataset: lignes-par-statut
+    format: json
+    filename: lignes-par-statut.json
+    select: "code_ligne,statut"
+
+api_base: "https://ressources.data.sncf.com/api/explore/v2.1/catalog/datasets"
+
+categories:
+  "Ligne à grande vitesse": lgv
+  "Ligne du réseau conventionnel à écartement normal": conventionnel
+  "Ligne du réseau conventionnel à voie étroite": voie_etroite
+
+# Feature-level tippecanoe minzoom. The LGV network is the shape of the country
+# at a glance and earns zoom 4; the conventional network is legible from 6.
+zoom_tiers:
+  lgv: 4
+  conventionnel: 6
+  voie_etroite: 8
+
+tiling:
+  tiles: always
+  min_zoom: 4
+  max_zoom: 12
+
+notes: |
+  The national rail network, classified as SNCF Réseau classifies it.
+
+  **`catlig` is the TGV/classic split, and it is not the same as "a TGV runs
+  here".** A LGV is purpose-built high-speed infrastructure — 146 segments across
+  927 lines. But TGV services leave the LGV and run onto the conventional network
+  to reach Brest, Nice, Hendaye and most of the places a TGV actually terminates.
+  So the LGV layer shows where the high-speed *track* is, not where the
+  high-speed *service* goes. For the latter, look at which stations carry TGV
+  footfall, not at which lines are red.
+
+  **Speed is joined per line, not per segment.** The three source files cut the
+  network at different points — 2,166 geometry segments against 2,373 speed
+  segments — so `v_max` here is the fastest speed recorded anywhere on that
+  `code_ligne`, which is a property of the line rather than of the metre of track
+  under you. 82% of lines carry a speed; the rest are blank, not slow.
+
+  Line speed is the better guide to what the railway is *for*. Above 160 km/h is
+  an intercity spine; 100–140 is a regional line with a real service; below 100
+  is usually a freight branch or a rural line where the timetable is two trains a
+  day and a replacement bus. A commune "on the railway" at 60 km/h is not
+  connected in the way the phrase implies.

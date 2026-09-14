@@ -1,0 +1,70 @@
+id: rivieres
+name: "Rivières, fleuves et canaux (BD CARTO® V5)"
+attribution: "IGN — BD CARTO® V5, réseau hydrographique (Géoplateforme WFS) — Licence Ouverte 2.0"
+url: "https://geoservices.ign.fr/bdcarto"
+fetched: 2026-09-12
+source_crs: "EPSG:2154"      # requested from the WFS in Lambert-93, reprojected in transform.py
+kind: line
+fetch: auto
+order: 32
+
+wfs:
+  endpoint: "https://data.geopf.fr/wfs/ows"
+  typename: "BDCARTO_V5:troncon_hydrographique"
+  page_size: 5000
+  sort_by: "cleabs"          # paging without a stable sort silently duplicates and drops rows
+  # Only the six attributes that are actually rendered or shown on click. The
+  # full record is 20 fields and PROPERTYNAME halves both the download and the
+  # time it takes — 250k features is 130 MB rather than 270 MB.
+  properties:
+    - cleabs
+    - nature
+    - classe_de_largeur
+    - navigabilite
+    - persistance
+    - cpx_toponyme_de_cours_d_eau
+    - geometrie
+
+# BD CARTO holds 1,635,073 hydrographic segments. 1,222,391 of them are under
+# 5 m wide — ditches, headwater streams and drains that are invisible at any
+# zoom this map reaches and would dominate the tileset. Cutting at 5 m leaves
+# 250,653: every river and canal a person would name.
+width_classes:
+  - "Entre 5 et 15 m"
+  - "Entre 15 et 50 m"
+  - "Plus de 50 m"
+
+# Feature-level tippecanoe minzoom per width class, so what survives at low zoom
+# is chosen here rather than by --drop-densest-as-needed, which would thin the
+# Loire and a Breton stream with equal enthusiasm. Navigable waterways are
+# promoted one tier: the Canal du Midi is narrow and matters anyway.
+zoom_tiers:
+  "Plus de 50 m": 4
+  "Entre 15 et 50 m": 6
+  "Entre 5 et 15 m": 8
+navigable_tier: 5
+
+tiling:
+  tiles: always
+  min_zoom: 4
+  max_zoom: 12
+
+notes: |
+  The hydrographic network at BD CARTO's ~1:50,000 generalisation, which is the
+  right scale for a national overlay. BD TOPO is the same network at 1:5,000 and
+  is roughly ten times the volume for no visible gain above zoom 12.
+
+  **Width is a class, not a measurement.** BD CARTO records `classe_de_largeur`
+  as one of four buckets, so the rendered line weight is ordinal. A segment in
+  "Plus de 50 m" is not drawn wider than another in the same class because it is
+  wider — only because the class is.
+
+  Canals are kept as a separate colour rather than folded into rivers. In France
+  the distinction is the point: a canal is an engineered right of way with a
+  towpath and locks, and the navigable network — 13,019 segments — is what
+  determines whether a boat, a cycle route or a freight barge can pass.
+
+  `persistance` distinguishes permanent from intermittent flow. South of a line
+  roughly from Bordeaux to Lyon a meaningful share of the mapped network is
+  intermittent, and a map that draws those the same as the Rhône overstates how
+  much water the south actually has. They are drawn dashed.

@@ -1,0 +1,136 @@
+[
+  {
+    "id": "air_pm25",
+    "label": "Fine particles (PM2.5), 2021–2024",
+    "group": "Air quality",
+    "type": "choropleth",
+    "paint": {
+      "property": "air_pm25",
+      "scale": "numeric",
+      "breaks": [5, 6, 7, 8, 9, 10],
+      "colors": ["#ffffcc", "#ffeda0", "#fed976", "#feb24c", "#fd8d3c", "#e31a1c", "#800026"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "air_pm25",
+        "type": "numeric",
+        "unit": "µg/m³",
+        "label": "PM2.5 annual mean, 2021–2024, where people live"
+      },
+      {
+        "name": "air_pm25_an_min",
+        "type": "numeric",
+        "unit": "µg/m³",
+        "label": "PM2.5 in the cleanest of the four years",
+        "correlate": false
+      },
+      {
+        "name": "air_pm25_an_max",
+        "type": "numeric",
+        "unit": "µg/m³",
+        "label": "PM2.5 in the dirtiest of the four years",
+        "correlate": false
+      },
+      {
+        "name": "air_pm25_pire",
+        "type": "numeric",
+        "unit": "µg/m³",
+        "label": "PM2.5 in the commune's most exposed inhabited km²",
+        "correlate": false
+      },
+      {
+        "name": "air_ponderation",
+        "type": "categorical",
+        "unit": "",
+        "label": "Averaging (population = weighted by where residents live)"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "The pollutant that does the most health damage, averaged over four years and weighted by where each commune's residents live. The WHO guideline is 5 µg/m³ and the EU limit from 2030 is 10. Only about 4% of communes are under 5; the median is 7.3; Grenoble, the Lille conurbation and Paris sit at 11–12. Values fell about a fifth between 2022 and 2024, partly cleaner air and partly a wet 2024, so the four-year mean is a fair central estimate and the most recent years run lower."
+  },
+  {
+    "id": "air_no2",
+    "label": "Nitrogen dioxide (NO₂), 2021–2024",
+    "group": "Air quality",
+    "type": "choropleth",
+    "paint": {
+      "property": "air_no2",
+      "scale": "numeric",
+      "breaks": [3, 5, 7.5, 10, 15, 20],
+      "colors": ["#f1eef6", "#d4b9da", "#c994c7", "#df65b0", "#e7298a", "#ce1256", "#67001f"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "air_no2",
+        "type": "numeric",
+        "unit": "µg/m³",
+        "label": "NO₂ annual mean, 2021–2024, where people live"
+      },
+      {
+        "name": "air_no2_an_min",
+        "type": "numeric",
+        "unit": "µg/m³",
+        "label": "NO₂ in the cleanest of the four years",
+        "correlate": false
+      },
+      {
+        "name": "air_no2_an_max",
+        "type": "numeric",
+        "unit": "µg/m³",
+        "label": "NO₂ in the dirtiest of the four years",
+        "correlate": false
+      },
+      {
+        "name": "air_no2_pire",
+        "type": "numeric",
+        "unit": "µg/m³",
+        "label": "NO₂ in the commune's most exposed inhabited km²",
+        "correlate": false
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Mostly traffic exhaust. WHO guideline 10 µg/m³, EU limit from 2030 20. 92% of communes are under 10, but inner Paris averages 31 and Marseille, Lyon and Nice about 21. This is a 1 km background estimate: it cannot see the street, so anyone living on a main road breathes noticeably more than the value here. Treat it as the floor."
+  },
+  {
+    "id": "air_o3_somo35",
+    "label": "Ozone exposure (SOMO35), 2021–2024",
+    "group": "Air quality",
+    "type": "choropleth",
+    "paint": {
+      "property": "air_o3_somo35",
+      "scale": "numeric",
+      "breaks": [3000, 3500, 4000, 5000, 6000, 7000],
+      "colors": ["#f7fcf0", "#e0f3db", "#ccebc5", "#a8ddb5", "#7bccc4", "#43a2ca", "#0868ac"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "air_o3_somo35",
+        "type": "numeric",
+        "unit": "µg/m³·days",
+        "label": "SOMO35: yearly sum of daily ozone above 70 µg/m³, 2021–2024 mean"
+      },
+      {
+        "name": "air_o3_somo35_an_min",
+        "type": "numeric",
+        "unit": "µg/m³·days",
+        "label": "SOMO35 in the mildest of the four years",
+        "correlate": false
+      },
+      {
+        "name": "air_o3_somo35_an_max",
+        "type": "numeric",
+        "unit": "µg/m³·days",
+        "label": "SOMO35 in the worst of the four years",
+        "correlate": false
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Ozone is a summer, sunshine pollutant, and it runs opposite to the other two: highest in the hills and the south-east, lower in city centres, where traffic fumes break it down. SOMO35 adds up every day's excess over 70 µg/m³ (daily maximum 8-hour mean) across the year, so it measures total yearly exposure, not the worst day. It swings with the weather far more than PM2.5 or NO₂: a hot summer like 2022 raises it by half. That is why four years are averaged."
+  }
+]

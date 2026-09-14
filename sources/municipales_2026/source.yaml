@@ -1,0 +1,66 @@
+id: municipales_2026
+name: "Élections municipales 2026 — résultats par commune"
+attribution: "Ministère de l'Intérieur — Licence Ouverte / Etalab 2.0"
+url: "https://www.data.gouv.fr/datasets/elections-municipales-2026-resultats-du-premier-tour"
+fetched: 2026-09-10
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+order: 75
+millesime: 2026
+min_join_rate: 0.99
+
+resources:
+  - { url: "https://static.data.gouv.fr/resources/elections-municipales-2026-resultats-du-premier-tour/20260320-164339/municipales-2026-resultats-communes-2026-03-20.csv", filename: "t1-communes.csv", tour: 1 }
+  - { url: "https://static.data.gouv.fr/resources/elections-municipales-2026-resultats-du-scond-tour/20260323-180124/municipales-2026-resultats-communes-2026-03-23-16h14.csv", filename: "t2-communes.csv", tour: 2 }
+
+layout:
+  encoding: "utf-8"
+  delimiter: ";"
+  prefix_columns: 18        # through "% Nuls/Votants"
+  block_size: 13            # panneau, nom, prénom, sexe, nuance, libellés, voix, %, élu, sièges
+
+# Ministry of the Interior nuance codes, kept as published rather than collapsed
+# into a left/right axis that the source does not claim to support.
+nuances:
+  LDVD: "Divers droite"
+  LDVG: "Divers gauche"
+  LDVC: "Divers centre"
+  LDIV: "Divers"
+  LUG:  "Union de la gauche"
+  LLR:  "Les Républicains"
+  LRN:  "Rassemblement national"
+  LSOC: "Parti socialiste"
+  LUD:  "Union de la droite"
+  LUC:  "Union du centre"
+  LCOM: "Parti communiste"
+  LUXD: "Union de l'extrême droite"
+  LEXG: "Extrême gauche"
+  LEXD: "Extrême droite"
+  LFI:  "La France insoumise"
+  LECO: "Écologistes"
+  LVEC: "Les Écologistes — EELV"
+  LREG: "Régionaliste"
+  LREN: "Renaissance"
+  LMDM: "MoDem"
+  LHOR: "Horizons"
+  LUDI: "Union des démocrates et indépendants"
+  LUDR: "Union de la droite et du centre"
+  LREC: "Reconquête"
+  LDSV: "Divers souverainiste"
+
+notes: |
+  The most recent municipal elections: 15 and 22 March 2026.
+
+  Turnout is the only headline that exists everywhere. Political nuance is only
+  attributed to lists in communes above the population threshold — about 3,200 of
+  34,700 — so the nuance layer is deliberately shipped with most of the map blank
+  rather than with a guess filled in. That gap is the reason the layer carries the
+  count in its legend.
+
+  The far more universal political fact in this file is that 23,677 communes had
+  exactly one list on the ballot, which is why "lists standing" is a layer of its
+  own.
+
+  Round one covers every commune; round two only the 1,445 metropolitan communes that needed it. Turnout
+  is reported from round one so that every commune is measured on the same day.

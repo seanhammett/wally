@@ -1,0 +1,21 @@
+{
+  "id": "piezometers",
+  "label": "Groundwater monitoring stations",
+  "group": "Water",
+  "type": "point",
+  "paint": {
+    "property": "profondeur_m",
+    "scale": "numeric",
+    "breaks": [10, 30, 80, 200],
+    "colors": ["#c6dbef", "#6baed6", "#3182bd", "#08519c", "#08306b"],
+    "no_data_color": "#94a3b8",
+    "radius": 3.2
+  },
+  "fields": [
+    { "name": "profondeur_m", "type": "numeric", "unit": "m", "label": "Investigation depth" },
+    { "name": "nb_mesures", "type": "numeric", "unit": "readings", "label": "Measurements on record" }
+  ],
+  "default_visible": false,
+  "default_opacity": 0.9,
+  "legend_note": "Stations with at least one reading since 2015. Depth is the borehole's investigation depth, not the water table."
+}

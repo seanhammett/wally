@@ -1,0 +1,44 @@
+id: bdiff_incendies
+name: "Incendies de forêt 2016–2025 (BDIFF)"
+attribution: "BDIFF — Ministère de l'Agriculture et de la Souveraineté alimentaire — Licence Ouverte / Etalab 2.0"
+url: "https://bdiff.agriculture.gouv.fr/incendies"
+fetched: 2026-09-10
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+order: 60
+min_join_rate: 0.97
+
+years:
+  start: 2016
+  end: 2025
+
+bdiff:
+  # BDIFF has no bulk file and no API: /incendies/zip exports whatever criteria
+  # are held in the PHP session, so fetch.py runs the (GET) search form first and
+  # then asks for the zip on the same cookie. `if[submit]` is what actually
+  # commits the criteria — without it the form re-renders and the export silently
+  # falls back to the current calendar year.
+  search_url: "https://bdiff.agriculture.gouv.fr/incendies"
+  export_url: "https://bdiff.agriculture.gouv.fr/incendies/zip"
+  member: "Incendies.csv"
+
+# Departments where BDIFF records the fire count as unknown for part of the
+# window. They are reported as blank rather than zero, and are called out in the
+# legend instead of being quietly mapped as "no fires".
+incomplete_departments: ["75", "92", "93", "94"]
+
+notes: |
+  Pattern A over a ten-year window, fetched one year at a time so a single bad
+  year cannot lose the whole series and so past years stay cached.
+
+  The `periodeAnnees` criterion selects type-F fires — feux de forêt — which is
+  the series that exists consistently back to 2006. BDIFF's newer default export
+  covers all vegetation fires and only for recent years; mixing the two would
+  manufacture a step change in the middle of the window, so this source stays on
+  the forest-fire definition throughout.
+
+  Totals land where they should: 58,981 ha in 2022 (the Gironde summer), 2,733 ha
+  in 2024, 21,737 ha in 2025. A commune is listed against the fire's point of
+  origin, so one large fire crossing several communes is attributed to the one it
+  started in — commune totals are a location signal, not a burned-area census.

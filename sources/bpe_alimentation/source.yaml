@@ -1,0 +1,51 @@
+id: bpe_alimentation
+name: "Accès à l'alimentation — commerces alimentaires par commune (BPE 2025)"
+attribution: "INSEE — Base permanente des équipements 2025 — Licence Ouverte / Etalab 2.0"
+url: "https://www.insee.fr/fr/statistiques/8217527"
+fetched: 2026-09-10
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+order: 15
+millesime: 2025
+min_join_rate: 0.99
+
+resource:
+  # "Dénombrement des équipements 2025", commune level, France entière.
+  # 14 MB zipped, ~150 MB of CSV inside, so transform.py streams the member.
+  url: "https://www.insee.fr/fr/statistiques/fichier/8217527/DS_BPE_CSV_FR.zip"
+  filename: "DS_BPE_CSV_FR.zip"
+  member: "DS_BPE_2025_data.csv"
+
+# BPE third-level facility codes. The split matters: a commune with only a
+# bakery is not a commune where you can do a weekly shop, and flattening the
+# two into one "number of food shops" count hides exactly that difference.
+types:
+  general:                       # somewhere to buy a general basket of food
+    B104: "Hypermarché et grand magasin"
+    B105: "Supermarché et magasin multi-commerce"
+    B201: "Supérette"
+    B202: "Épicerie"
+  specialist:                    # one food category only
+    B204: "Boucherie charcuterie"
+    B205: "Produits surgelés"
+    B206: "Poissonnerie"
+    B207: "Boulangerie-pâtisserie"
+    B208: "Commerce spécialisé en fruits et légumes"
+    B210: "Autres commerces alimentaires"
+large:                           # subset of `general` that counts as a full weekly shop
+  - B104
+  - B105
+
+notes: |
+  Pattern A, and the one source here where the absence of a row is the finding.
+  BPE only publishes rows for facilities that exist, so a commune with no food
+  shop at all simply does not appear in the file. transform.py therefore starts
+  from the full commune list and fills zeros, which turns ~18,600 silent
+  absences into an explicit "aucun commerce alimentaire" class.
+
+  This is a count of shops, not a measure of access. It says nothing about
+  opening hours, prices, or how far the nearest shop is across a commune
+  boundary — a village 2 km from a supermarket in the next commune scores the
+  same "aucun" as one 30 km from anywhere. Read it as a proxy, and read it
+  alongside population: most zero-shop communes are very small.

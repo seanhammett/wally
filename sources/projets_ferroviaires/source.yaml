@@ -1,0 +1,55 @@
+id: projets_ferroviaires
+name: "Lignes ferroviaires en projet et en travaux (OpenStreetMap)"
+attribution: "© les contributeurs OpenStreetMap — ODbL 1.0 (via Overpass API)"
+url: "https://wiki.openstreetmap.org/wiki/Tag:railway%3Dconstruction"
+fetched: 2026-09-12
+source_crs: "EPSG:4326"
+kind: line
+fetch: auto
+order: 37
+
+overpass:
+  # Mirrors are tried in order. The main endpoint refuses often enough under load
+  # that a single-endpoint fetch is not reliable enough to build on.
+  endpoints:
+    - "https://overpass-api.de/api/interpreter"
+    - "https://overpass.private.coffee/api/interpreter"
+    - "https://overpass.kumi.systems/api/interpreter"
+  filename: "projets.json"
+  attempts: 6
+  # The bbox is metropolitan France, so the result also catches Spanish, German,
+  # Swiss and Italian lines near the border. They are clipped out in the
+  # transform against the actual commune geometry, not by bbox.
+  bbox: [41.2, -5.4, 51.2, 9.8]
+
+statuts:
+  construction: en_travaux
+  proposed: projet
+
+tiling:
+  tiles: never          # a few thousand short segments
+
+notes: |
+  Rail that does not exist yet — lines under construction and lines formally
+  proposed — kept deliberately separate from the operating network so the two can
+  never be read as the same thing.
+
+  **This is the one source here that is not official.** SNCF Réseau publishes no
+  open geodata for its project pipeline, and the ministry's project pages are
+  prose and PDF maps. OpenStreetMap is the only place the French rail projects
+  are mapped as vector geometry in one dataset, and it carries them well: GPSO
+  (Bordeaux–Toulouse and Bordeaux–Dax), Montpellier–Perpignan, the Lyon–Turin
+  base tunnel, the Lyon rail bypass, Grand Paris Express and a long tail of tram
+  extensions all appear.
+
+  What that costs is authority. A `proposed` line in OSM is somebody's reading of
+  a published scheme, drawn at a precision the scheme may not have, and it
+  carries no funding decision, no date and no guarantee the route survives
+  enquiry. **Treat `projet` as "someone has drawn a plan through here", never as
+  "a railway is coming".** Under-construction geometry is far more trustworthy —
+  there is physical work to survey — which is why the two are separate classes
+  and coloured differently rather than merged into one "future rail" layer.
+
+  Segments are clipped to France by intersecting them against the commune
+  geometry, because the query is a bounding box and the box contains a good deal
+  of Spain, Germany, Switzerland and Italy.

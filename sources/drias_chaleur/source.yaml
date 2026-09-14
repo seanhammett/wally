@@ -1,0 +1,45 @@
+id: drias_chaleur
+name: "Nuits tropicales et jours >35 °C à l'horizon 2050 (DRIAS)"
+attribution: "DRIAS / Météo-France — DRIAS-2020, TRACC"
+url: "https://drias-climat.fr/commande"
+fetched: null
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: manual
+optional: true          # the build succeeds without it and prints instructions instead
+order: 50
+min_join_rate: 0.90
+
+expected_files:
+  - "drias_communes_2050.csv"
+
+manual_instructions: |
+  DRIAS is behind an interactive order form, so this one cannot be automated and
+  should not be scraped. Order the indicators by hand:
+
+    1. drias-climat.fr → "Commander des données" → DRIAS-2020, horizon 2050 (TRACC).
+    2. Indicators: NORTXD (jours Tx > 35 °C) and TR (nuits tropicales, Tn > 20 °C).
+    3. Export as CSV.
+
+  What arrives is an ~8 km grid in NetCDF or gridded CSV, not commune-keyed, so it
+  needs a zonal-statistics step (rasterstats or exactextract) against the commune
+  polygons before it can join. Save the commune-aggregated result as the expected
+  filename with columns: code_insee, nuits_tropicales_2050, jours_35c_2050.
+
+  Validate the result against Climadiag Commune (climadiag-commune.meteofrance.com),
+  which publishes per-commune values as one PDF per commune. It is a spot-check
+  tool, not a data source — but if your computed tropical-nights figure for a
+  handful of communes does not match Climadiag's, your zonal stats are wrong.
+
+notes: |
+  By some distance the most work in the catalogue. Left disabled until everything
+  else runs, exactly as the plan advises — and kept in the tree as the worked
+  example of a `fetch: manual` source.
+
+  `sources/meteo_chaleur/` now covers the automatable part of this: the same two
+  families of indicator from the openly published Aladin-Climat files, joined to
+  communes by nearest grid point. It does not replace this source. What is still
+  only available through the order form below is the days-above-35 °C count, and
+  the DRIAS-2020/TRACC model generation, which projects more French summer
+  warming than the 2014 runs meteo_chaleur uses. Ordering this data upgrades
+  both; until then meteo_chaleur is the conservative stand-in.

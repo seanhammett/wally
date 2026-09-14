@@ -1,0 +1,17 @@
+# Raw downloads and intermediates are reproducible: fetch.py and transform.py
+# regenerate them. They are deliberately not in version control — data/raw for
+# the communes alone is ~260 MB.
+data/raw/
+data/processed/
+data/scratch/
+
+# Build output. site/tiles/ is what gets deployed; regenerate with
+# `python pipeline/build.py` rather than committing 50 MB of tiles.
+site/tiles/
+site/stats/
+site/layers.json
+
+.venv/
+__pycache__/
+*.pyc
+.DS_Store

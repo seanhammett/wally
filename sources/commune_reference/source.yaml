@@ -1,0 +1,16 @@
+id: commune_reference
+name: "Population légale et densité par commune"
+attribution: "INSEE (populations légales) via geo.api.gouv.fr — Licence Ouverte / Etalab 2.0"
+url: "https://geo.api.gouv.fr/decoupage-administratif/communes"
+fetched: 2026-09-10
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+order: 10
+millesime: 2026
+min_join_rate: 0.99
+notes: |
+  The worked Pattern A example: a table of numbers keyed on INSEE code, joined at
+  build time to the canonical commune geometry. geo.api.gouv.fr also carries the
+  old→new code mapping for merged communes, which is what you reach for when an
+  older table's join rate drops.

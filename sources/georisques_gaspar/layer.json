@@ -1,0 +1,178 @@
+[
+  {
+    "id": "flood_catnat",
+    "label": "Flood disaster declarations (1982–2025)",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "inond_catnat_nb",
+      "scale": "numeric",
+      "breaks": [
+        2,
+        3,
+        5,
+        8,
+        13
+      ],
+      "colors": [
+        "#f7fbff",
+        "#deebf7",
+        "#9ecae1",
+        "#4292c6",
+        "#2171b5",
+        "#08306b"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "inond_catnat_nb",
+        "type": "numeric",
+        "unit": "arrêtés",
+        "label": "Flood CATNAT declarations since 1982"
+      },
+      {
+        "name": "inond_catnat_annee",
+        "type": "numeric",
+        "unit": "",
+        "label": "Most recent flood declaration",
+        "correlate": false
+      },
+      {
+        "name": "inond_azi",
+        "type": "ordinal",
+        "unit": "",
+        "label": "Covered by a flood atlas (AZI)",
+        "value_labels": {
+          "oui": "Yes",
+          "non": "No"
+        }
+      },
+      {
+        "name": "inond_registre",
+        "type": "ordinal",
+        "unit": "",
+        "label": "Flooding in the préfecture risk register",
+        "value_labels": {
+          "oui": "Yes",
+          "non": "No"
+        }
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Times flooding has been declared a natural disaster and compensated. 34,455 of 34,746 communes have had at least one since 1982, so the count is the signal, not the presence. It records declared damage, which means it follows people and insured property — an empty floodplain generates no arrêtés."
+  },
+  {
+    "id": "flood_ppr",
+    "label": "Flood prevention plan (PPRI) status",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "inond_ppr",
+      "scale": "ordinal",
+      "stops": [
+        [
+          "aucun",
+          "#eef2f7",
+          "No flood PPR"
+        ],
+        [
+          "caduque",
+          "#fdd0a2",
+          "Lapsed or abrogated"
+        ],
+        [
+          "prescrit",
+          "#fd8d3c",
+          "Prescribed, not yet binding"
+        ],
+        [
+          "approuve",
+          "#a63603",
+          "Approved and binding"
+        ]
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "inond_ppr",
+        "type": "ordinal",
+        "unit": "",
+        "label": "Flood PPR status",
+        "value_labels": {
+          "aucun": "None",
+          "caduque": "Lapsed",
+          "prescrit": "Prescribed",
+          "approuve": "Approved"
+        }
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "An approved PPRI is a real constraint: it is annexed to the local plan and dictates what may be built and how. Around 11,200 communes have one. Absence means no plan, not absence of risk — compare with the declarations layer, where nearly every commune scores."
+  },
+  {
+    "id": "coastal_risk",
+    "label": "Coastal hazard (submersion, retreating shoreline)",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "littoral_alea",
+      "scale": "ordinal",
+      "stops": [
+        [
+          "aucun",
+          "#eef2f7",
+          "Neither"
+        ],
+        [
+          "recul",
+          "#fed976",
+          "Retreating shoreline or cliffs"
+        ],
+        [
+          "submersion",
+          "#41b6c4",
+          "Marine submersion"
+        ],
+        [
+          "les_deux",
+          "#08519c",
+          "Both"
+        ]
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "littoral_alea",
+        "type": "ordinal",
+        "unit": "",
+        "label": "Coastal hazard listed by the préfecture",
+        "value_labels": {
+          "aucun": "Neither",
+          "recul": "Retreating shoreline",
+          "submersion": "Marine submersion",
+          "les_deux": "Both"
+        }
+      },
+      {
+        "name": "littoral_ppr",
+        "type": "ordinal",
+        "unit": "",
+        "label": "Coastal PPR status",
+        "value_labels": {
+          "aucun": "None",
+          "caduque": "Lapsed",
+          "prescrit": "Prescribed",
+          "approuve": "Approved"
+        }
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "1,020 communes carry a coastal hazard in the préfecture register: 955 marine submersion, 236 retreating shoreline, 171 both. Only about 580 have a coastal PPR — click a commune to see whether a plan actually exists where the hazard is listed."
+  }
+]

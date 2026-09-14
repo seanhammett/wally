@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>France data overlay</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231d4ed8'/%3E%3Cpath d='M9 7h14M9 16h14M9 25h14' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="lib/maplibre-gl.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="map"></div>
+
+  <aside id="panel">
+    <header>
+      <h1>France data overlay</h1>
+      <p class="sub">Public datasets on one map. Click anywhere to read every loaded value for that spot.</p>
+    </header>
+
+    <section class="block" id="base-block">
+      <div class="base-row">
+        <label for="basemap-select">Basemap</label>
+        <select id="basemap-select"></select>
+        <div id="overlays" class="chips"></div>
+      </div>
+    </section>
+
+    <section class="block" id="active-block">
+      <h2>Active layers <span id="active-count" class="count">0</span></h2>
+      <div id="active"></div>
+    </section>
+
+    <section class="block" id="corr-block">
+      <h2>
+        <button id="corr-toggle" class="block-toggle" type="button" aria-expanded="true" aria-controls="corr-body">
+          <span class="chev" aria-hidden="true"></span>Correlate two stats <span id="corr-badge" class="count" hidden></span>
+        </button>
+      </h2>
+      <div id="corr-body">
+        <div class="corr-picks">
+          <div class="corr-pick"><span class="corr-ab">A</span><select id="corr-x" aria-label="Statistic A"></select></div>
+          <button id="corr-swap" type="button" title="Swap A and B" aria-label="Swap the two statistics">⇅</button>
+          <div class="corr-pick"><span class="corr-ab">B</span><select id="corr-y" aria-label="Statistic B"></select></div>
+        </div>
+
+        <div id="corr-out" hidden>
+          <div id="corr-head"></div>
+          <svg id="corr-scatter" viewBox="0 0 300 182" role="img" aria-label="Scatter plot"></svg>
+          <div class="corr-row">
+            <span class="corr-lbl">Map</span>
+            <div class="chips" id="corr-mode"></div>
+          </div>
+          <div class="corr-row">
+            <span class="corr-lbl">Highlight</span>
+            <div class="chips" id="corr-side"></div>
+          </div>
+          <div class="corr-row" id="corr-radius-row">
+            <span class="corr-lbl">Radius</span>
+            <input id="corr-radius" type="range" min="10" max="80" step="5" value="25" aria-label="Neighbourhood radius in kilometres">
+            <span id="corr-radius-val" class="act-pct"></span>
+          </div>
+          <p class="corr-note" id="corr-note"></p>
+        </div>
+        <p class="muted" id="corr-hint">Pick two commune statistics. The map then shows where they move together and where they don&rsquo;t.</p>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>All layers</h2>
+      <div id="layers"></div>
+    </section>
+
+    <section class="block">
+      <h2>Legend</h2>
+      <div id="legend"><p class="muted">No layers visible.</p></div>
+    </section>
+
+    <footer>
+      <div id="attribution" class="muted"></div>
+      <p class="muted built">Built <span id="built"></span> · <a href="https://github.com/" id="repo">source &amp; pipeline</a></p>
+    </footer>
+  </aside>
+
+  <button id="panel-toggle" title="Show/hide the layer panel" aria-label="Toggle layer panel">☰</button>
+
+  <aside id="inspect" hidden>
+    <header>
+      <h2 id="inspect-title">Inspect</h2>
+      <button id="inspect-close" aria-label="Close">×</button>
+    </header>
+    <div id="inspect-body"></div>
+  </aside>
+
+  <div id="boot" class="boot">Loading…</div>
+
+  <script src="lib/maplibre-gl.js"></script>
+  <script src="lib/pmtiles.js"></script>
+  <script src="correlate.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

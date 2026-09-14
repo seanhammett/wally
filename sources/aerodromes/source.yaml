@@ -1,0 +1,68 @@
+id: aerodromes
+name: "Aérodromes, aéroports et héliports (BD TOPO® V3)"
+attribution: "IGN — BD TOPO® V3 (Géoplateforme WFS) · DGAC — plans d'exposition au bruit — Licence Ouverte 2.0"
+url: "https://geoservices.ign.fr/bdtopo"
+fetched: 2026-09-12
+source_crs: "EPSG:2154"
+kind: point
+fetch: auto
+order: 36
+
+wfs:
+  endpoint: "https://data.geopf.fr/wfs/ows"
+  # The aerodrome footprint, and the DGAC's index of airports that have a
+  # statutory noise-exposure plan. The second is joined onto the first by ICAO
+  # code — it is what lets the map say which airports impose legal noise zoning.
+  typenames:
+    - name: "BDTOPO_V3:aerodrome"
+      file: "aerodrome.geojson"
+      srs: "EPSG:2154"
+    - name: "dgac_peb_arrete_wfs:dgac_peb_arrete_wfs"
+      file: "peb_arrete.geojson"
+      srs: "EPSG:4326"
+  page_size: 5000
+
+# BD TOPO marks a record `fictif` when the polygon is a placeholder rather than a
+# surveyed footprint — half the file. Those are dropped: an airport the map draws
+# should be one someone flew out of.
+drop_fictif: true
+
+categories:
+  Internationale: international
+  Nationale: national
+  Autre: local
+
+natures:
+  Aérodrome: aerodrome
+  Héliport: heliport
+  Altiport: altiport
+  Hydrobase: hydrobase
+
+tiling:
+  tiles: never          # a few hundred points
+
+notes: |
+  Where the airports are, how big they are, and which of them carry a statutory
+  aircraft-noise plan.
+
+  **The noise flag is a pointer to a legal document, not a noise contour.** The
+  DGAC publishes a national index of the 224 aerodromes covered by a *plan
+  d'exposition au bruit* (PEB) — the decree that restricts what may be built
+  under the flight paths — with a link to each arrêté. The PEB's actual A/B/C/D
+  contour polygons are not published as a national layer: they are issued
+  per-department by each DDT, across 122 separate datasets in inconsistent
+  formats. So this map can tell you *that* an airport has legally-mapped noise
+  zones and hand you the decree; it cannot yet draw their shape. Treat a flagged
+  airport as "check the PEB before buying", which is the decision that matters.
+
+  **There is no open national dataset of flight paths.** Approach and departure
+  procedures are published by the SIA as PDF charts in the AIP, not as vector
+  geometry, and live ADS-B tracks are neither static nor open under a licence
+  this project can use. The PEB contour, where a department publishes it, *is*
+  effectively the mapped footprint of the flight paths — it is drawn from the
+  modelled noise of real approach and departure tracks — which is why it is the
+  right thing to chase rather than the tracks themselves.
+
+  Héliports are the majority of records (704 of 1,370) and most of them are
+  hospital helipads, not sources of sustained nuisance. They are kept as their
+  own class so they can be told apart from airfields at a glance.

@@ -1,0 +1,41 @@
+{
+  "id": "rga_argiles",
+  "label": "Clay shrink–swell exposure",
+  "group": "Hazards",
+  "type": "polygon",
+  "source_url_tiles": "https://static.data.gouv.fr/resources/carte-des-risques-retrait-gonflement-des-argiles-2026/20260401-081931/argile-2026.pmtiles",
+  "source_layer": "rga",
+  "format": "pmtiles",
+  "minzoom": 4,
+  "paint": {
+    "property": "ALEA",
+    "scale": "ordinal",
+    "stops": [
+      [
+        "Faible",
+        "#fde725"
+      ],
+      [
+        "Moyen",
+        "#fd8d3c"
+      ],
+      [
+        "Fort",
+        "#bd0026"
+      ]
+    ],
+    "outline_color": "none"
+  },
+  "fields": [
+    {
+      "name": "ALEA",
+      "type": "ordinal",
+      "unit": "",
+      "label": "Exposure class"
+    }
+  ],
+  "default_visible": false,
+  "default_opacity": 0.55,
+  "legend_note": "Arrêté of 9 January 2026. Moderate or high exposure covers about 55% of metropolitan territory and triggers mandatory soil studies on new builds.",
+  "z": 15
+}

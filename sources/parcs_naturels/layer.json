@@ -1,0 +1,43 @@
+{
+  "id": "parcs_naturels",
+  "label": "Regional & national parks",
+  "group": "Protected areas",
+  "type": "polygon",
+  "paint": {
+    "property": "type_parc",
+    "scale": "categorical",
+    "stops": [
+      [
+        "Parc naturel régional",
+        "#2e8b57"
+      ],
+      [
+        "Parc national — cœur",
+        "#00441b"
+      ],
+      [
+        "Parc national — aire d'adhésion",
+        "#74c476"
+      ]
+    ],
+    "outline_color": "#0b3d20"
+  },
+  "fields": [
+    {
+      "name": "type_parc",
+      "type": "categorical",
+      "unit": "",
+      "label": "Designation"
+    },
+    {
+      "name": "surface_km2",
+      "type": "numeric",
+      "unit": "km²",
+      "label": "Area"
+    }
+  ],
+  "default_visible": true,
+  "default_opacity": 0.45,
+  "legend_note": "A PNR is a cooperative charter, not a regulation; a parc national cœur carries binding rules. Different things, drawn differently.",
+  "z": 22
+}

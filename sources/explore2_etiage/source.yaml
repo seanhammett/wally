@@ -1,0 +1,55 @@
+id: explore2_etiage
+name: "Évolution du débit d'étiage estival à l'horizon TRACC (Explore2)"
+attribution: "Explore2 (INRAE / OiEau / Météo-France / BRGM), agrégation communale par le réseau RARE — Licence Ouverte 2.0"
+url: "https://www.data.gouv.fr/datasets/indicateurs-de-debits-futurs-explore2-tracc-agreges-par-territoire"
+fetched: 2026-09-11
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+order: 22
+min_join_rate: 0.98
+
+resource:
+  # 154 MB of long-format CSV: one row per commune × warming level × ensemble
+  # statistic. transform.py streams it and keeps the 2 warming levels it needs.
+  # data.gouv rotates the dated path on republication — if this 404s, look the
+  # resource up again on the dataset page above.
+  url: "https://static.data.gouv.fr/resources/indicateurs-de-debits-futurs-explore-2-tracc-agreges-par-territoire-attention-test/20260206-150804/statistiques-multimodeles-agregation-spatiale-oui-territoire-commune-debit-etiage-vcn10-ete-ref-1976-2005.csv"
+  filename: "explore2_commune_vcn10_ete.csv"
+
+# Warming levels in the file, as France-wide temperature rise above pre-industrial.
+# TRACC uses +2.7 °C as the planning trajectory for 2050 and +4 °C for 2100.
+warming:
+  reference: "+2.7°C France"
+  high: "+4°C France"
+
+# Ensemble statistics across the multi-model projections. q50 is the headline;
+# q05 and q95 carry the spread, which on this indicator is wide enough that
+# showing the median alone would be misleading.
+statistics:
+  median: "q50"
+  low: "q05"
+  high: "q95"
+
+notes: |
+  VCN10 estival: the lowest 10-day average daily flow of the summer, the standard
+  French low-water indicator. Values are percentage change against the 1976–2005
+  reference, so −20 means the summer low point runs a fifth weaker than it did.
+
+  94.7% of communes project a drier summer low flow at +2.7 °C, median −14%.
+  That near-unanimity is the finding: this is not a map of which places get
+  drier, it is a map of how much drier, and the few positive values are mostly
+  snowmelt-fed Alpine catchments where earlier melt raises the summer minimum.
+
+  The aggregation is RARE's, not mine. Explore2 simulates flow at gauged points
+  on the river network, not on communes, so RARE attached each commune to the
+  simulation points of its catchment. `etiage_origine` carries their quality
+  flag: 65% of communes get values from a simulation point in their own
+  catchment, 28% from a nearby one and 7% from a distant one. The last group is
+  a weak inference and the field is exposed so it can be seen rather than
+  assumed away.
+
+  This is a projection, and it pairs with vigieau_secheresse, which is the
+  opposite kind of evidence: restrictions actually imposed last year. Where a
+  commune is already under crisis restrictions *and* projects a sharp low-flow
+  decline, the two layers agree and that agreement means something.

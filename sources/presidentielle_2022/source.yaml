@@ -1,0 +1,34 @@
+id: presidentielle_2022
+name: "Élection présidentielle 2022 — résultats par commune"
+attribution: "Ministère de l'Intérieur — Licence Ouverte / Etalab 2.0"
+url: "https://www.data.gouv.fr/datasets/election-presidentielle-des-10-et-24-avril-2022-resultats-du-second-tour"
+fetched: 2026-09-10
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+order: 70
+millesime: 2022
+min_join_rate: 0.98
+
+resources:
+  - { url: "https://static.data.gouv.fr/resources/election-presidentielle-des-10-et-24-avril-2022-resultats-definitifs-du-1er-tour/20220414-152459/resultats-par-niveau-subcom-t1-france-entiere.txt", filename: "t1-communes.txt", tour: 1 }
+  - { url: "https://static.data.gouv.fr/resources/election-presidentielle-des-10-et-24-avril-2022-resultats-du-second-tour/20220425-100403/resultats-par-niveau-subcom-t2-france-entiere.txt", filename: "t2-communes.txt", tour: 2 }
+
+layout:
+  encoding: "latin-1"
+  delimiter: ";"
+  prefix_columns: 19        # fixed columns before the repeating candidate blocks
+  block_size: 7             # N°Panneau, Sexe, Nom, Prénom, Voix, % Voix/Ins, % Voix/Exp
+
+notes: |
+  The most recent presidential election; the next is due in 2027.
+
+  Two gotchas, both load-bearing. The file is latin-1, not UTF-8, and decimal
+  values use a comma. And "Code de la commune" is only the three-digit slice —
+  the INSEE code is the department code concatenated with it, which is why
+  Corsica works out as 2A004 and why reading the column on its own gives a key
+  that matches nothing.
+
+  The candidate columns repeat in blocks of seven to the end of the row, one
+  block per candidate, so a fixed column map does not survive the difference
+  between the twelve-candidate first round and the two-candidate second.

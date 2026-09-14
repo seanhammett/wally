@@ -1,0 +1,64 @@
+id: population_age
+name: "Structure par âge de la population (RP 2023)"
+attribution: "INSEE — Recensement de la population 2023, exploitation principale (POP1) — Licence Ouverte / Etalab 2.0"
+url: "https://www.insee.fr/fr/statistiques/9006414"
+fetched: 2026-09-12
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+order: 13
+millesime: 2023
+min_join_rate: 0.98
+
+resource:
+  # INSEE's Melodi API. 12.78 million observations: every commune, arrondissement,
+  # EPCI, bassin de vie, département and region, by sex and single year of age.
+  # Only the COM rows are used. `bytes` is the size the catalogue publishes and is
+  # checked after download — see fetch.py for why that matters here.
+  url: "https://api.insee.fr/melodi/file/DS_RP_TD_POPULATION_AGESEX_PRINC/DS_RP_TD_POPULATION_AGESEX_PRINC_2023_CSV_FR"
+  filename: "DS_RP_TD_POPULATION_AGESEX_PRINC_2023_CSV_FR.zip"
+  bytes: 73058169
+
+# Single years of age are grouped into the bands that get mapped. Boundaries are
+# the ones INSEE itself uses in its commune profiles, so the numbers here can be
+# checked against a published figure rather than only against themselves.
+bands:
+  pop_0_14:   [0, 14]
+  pop_15_29:  [15, 29]
+  pop_30_44:  [30, 44]
+  pop_45_59:  [45, 59]
+  pop_60_74:  [60, 74]
+  pop_75_plus: [75, 120]
+
+# The ageing ratio is 65+ per 100 under-20s. Below this many under-20s the
+# ratio swings wildly on single households and is published as blank rather
+# than as a number that looks precise and is not.
+min_under_20: 20
+
+notes: |
+  Who actually lives here, by age. The census counts the resident population on
+  1 January 2023, published June 2026.
+
+  **The headline layer is median age, not a share.** A share of over-65s answers
+  "are there many old people", which in a commune of 80 people is a sentence about
+  four households. The median splits the whole resident population in half and
+  moves for the same reason whether the cause is arriving retirees or departing
+  families — it is the one number that survives being computed on a small commune.
+
+  It is computed from single years of age by linear interpolation within the
+  containing year, not from bands, so it does not inherit a band's width as its
+  precision. INSEE publishes fractional weights — the census is a rolling survey
+  extrapolated to a population, so a commune's count for a given age is rarely a
+  whole number — and those are summed before the median is taken.
+
+  **The small-commune caveat applies to every layer here.** Under about 200
+  inhabitants the median age moves by a year or more on a handful of people, and
+  the ageing ratio becomes almost uninterpretable: a commune with 9 over-65s and
+  2 under-20s scores 450, and means nothing. The ratio layer is therefore drawn
+  only where the under-20 count supports it, and blank elsewhere — blank is
+  "too few people to say", never "no old people".
+
+  Read this against the population trend rather than on its own. A high median
+  age in a commune that is growing is a retirement destination; the same figure
+  where population is falling is a commune running out of working-age residents,
+  and the two need opposite things from a mayor.

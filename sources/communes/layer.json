@@ -1,0 +1,17 @@
+{
+  "id": "commune_boundaries",
+  "label": "Commune boundaries",
+  "group": "Reference",
+  "type": "line",
+  "paint": {
+    "scale": "none",
+    "color": "#4b5563",
+    "width": 0.6,
+    "legend_label": "Commune limit"
+  },
+  "minzoom": 8,
+  "default_visible": false,
+  "default_opacity": 0.7,
+  "fields": [],
+  "legend_note": "ADMIN EXPRESS millésime 2026. Drawn from zoom 8 up."
+}

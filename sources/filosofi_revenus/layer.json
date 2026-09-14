@@ -1,0 +1,137 @@
+[
+  {
+    "id": "income_median",
+    "label": "Median standard of living",
+    "group": "Income & property",
+    "type": "choropleth",
+    "paint": {
+      "property": "revenu_median",
+      "scale": "numeric",
+      "breaks": [
+        20500,
+        21800,
+        22800,
+        24000,
+        26000
+      ],
+      "colors": [
+        "#8c510a",
+        "#d8b365",
+        "#f6e8c3",
+        "#c7eae5",
+        "#5ab4ac",
+        "#01665e"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "revenu_median",
+        "type": "numeric",
+        "unit": "€/year",
+        "label": "Median standard of living (disposable income per consumption unit)"
+      },
+      {
+        "name": "revenu_d1",
+        "type": "numeric",
+        "unit": "€/year",
+        "label": "1st decile — the poorest tenth are below this"
+      },
+      {
+        "name": "revenu_d9",
+        "type": "numeric",
+        "unit": "€/year",
+        "label": "9th decile — the richest tenth are above this"
+      },
+      {
+        "name": "menages_fiscaux",
+        "type": "numeric",
+        "unit": "households",
+        "label": "Fiscal households"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Disposable income after taxes and benefits, per consumption unit, so household size is accounted for. The national median commune sits at €22,810 and the scale diverges around it: brown is below, teal above. Published for 31,157 communes covering 99.6% of the population. This is where people live, not where they work."
+  },
+  {
+    "id": "income_inequality",
+    "label": "Income inequality (D9/D1 ratio)",
+    "group": "Income & property",
+    "type": "choropleth",
+    "paint": {
+      "property": "revenu_interdecile",
+      "scale": "numeric",
+      "breaks": [
+        2.4,
+        2.7,
+        3.0,
+        3.4,
+        4.0
+      ],
+      "colors": [
+        "#f7f4f9",
+        "#e7e1ef",
+        "#d4b9da",
+        "#c994c7",
+        "#df65b0",
+        "#91003f"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "revenu_interdecile",
+        "type": "numeric",
+        "unit": "ratio",
+        "label": "Interdecile ratio D9/D1"
+      },
+      {
+        "name": "revenu_gini",
+        "type": "numeric",
+        "unit": "index",
+        "label": "Gini index (0 = equal, 1 = maximally unequal)"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "How many times richer the top tenth is than the bottom tenth. Median commune 2.8. Grey is not equality — it is INSEE statistical secrecy: the ratio is published for only 5,253 communes, because a small commune's deciles would identify households. Those communes still hold 76.8% of the population."
+  },
+  {
+    "id": "poverty_rate",
+    "label": "Poverty rate",
+    "group": "Income & property",
+    "type": "choropleth",
+    "paint": {
+      "property": "taux_pauvrete",
+      "scale": "numeric",
+      "breaks": [
+        8,
+        11,
+        14,
+        18,
+        24
+      ],
+      "colors": [
+        "#fff5f0",
+        "#fee0d2",
+        "#fcbba1",
+        "#fb6a4a",
+        "#de2d26",
+        "#a50f15"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "taux_pauvrete",
+        "type": "numeric",
+        "unit": "%",
+        "label": "Share living below 60% of the national median"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Share of people under 60% of the national median standard of living — the standard European poverty line. Median commune 12%. Published for 4,306 communes holding 73% of the population; everywhere else is withheld as too small, not poverty-free."
+  }
+]

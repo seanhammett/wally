@@ -1,0 +1,94 @@
+[
+  {
+    "id": "property_price_m2",
+    "label": "Property price per m²",
+    "group": "Income & property",
+    "type": "choropleth",
+    "paint": {
+      "property": "prix_m2",
+      "scale": "numeric",
+      "breaks": [
+        950,
+        1250,
+        1600,
+        2250,
+        3200
+      ],
+      "colors": [
+        "#f7fcf5",
+        "#d9f0d3",
+        "#a6dba0",
+        "#9970ab",
+        "#762a83",
+        "#40004b"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "prix_m2",
+        "type": "numeric",
+        "unit": "€/m²",
+        "label": "Median price per m² (houses and flats, 2023–2025)"
+      },
+      {
+        "name": "prix_m2_maison",
+        "type": "numeric",
+        "unit": "€/m²",
+        "label": "Median price per m² — houses"
+      },
+      {
+        "name": "prix_m2_appart",
+        "type": "numeric",
+        "unit": "€/m²",
+        "label": "Median price per m² — flats"
+      },
+      {
+        "name": "ventes_nb",
+        "type": "numeric",
+        "unit": "sales",
+        "label": "Usable sales in the three-year pool"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "What dwellings actually sold for, from the tax authority's transfer records. Median commune €1,426/m²; Paris €9,692, Lyon €4,800, Marseille €3,282. Three years pooled (2023–2025), because at one year the sample runs out across most of rural France — pooling lifts coverage from 47% of communes to 72%. Blank means fewer than five usable sales, or Moselle, Bas-Rhin and Haut-Rhin, which have no DVF at all: Alsace-Moselle keeps a livre foncier instead of the cadastre this is published from."
+  },
+  {
+    "id": "property_price_house",
+    "label": "Price of a house",
+    "group": "Income & property",
+    "type": "choropleth",
+    "paint": {
+      "property": "prix_maison_median",
+      "scale": "numeric",
+      "breaks": [
+        105000,
+        145000,
+        185000,
+        245000,
+        360000
+      ],
+      "colors": [
+        "#ffffe5",
+        "#f7fcb9",
+        "#addd8e",
+        "#41ab5d",
+        "#238443",
+        "#004529"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "prix_maison_median",
+        "type": "numeric",
+        "unit": "€",
+        "label": "Median price of a house sold, 2023–2025"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "The total price of a whole house rather than a rate per m² — the number that decides whether somewhere is affordable. Median commune €165,000. It moves with house size as much as with land value, so read it against the price-per-m² layer: a low total in an expensive per-m² commune means the houses there are small."
+  }
+]

@@ -1,0 +1,67 @@
+[
+  {
+    "id": "aerodromes",
+    "label": "Airports and airfields",
+    "group": "Transport",
+    "type": "point",
+    "paint": {
+      "property": "categorie",
+      "scale": "categorical",
+      "stops": [
+        ["international", "#b91c1c", "International"],
+        ["national", "#ea580c", "National"],
+        ["local", "#78716c", "Local airfield or helipad"]
+      ],
+      "no_data_color": "#78716c",
+      "radius": [
+        "interpolate", ["linear"], ["zoom"],
+        5, ["match", ["get", "categorie"], "international", 4.0, "national", 2.4, 1.2],
+        9, ["match", ["get", "categorie"], "international", 8.0, "national", 5.0, 2.6],
+        12, ["match", ["get", "categorie"], "international", 14.0, "national", 9.0, 4.5]
+      ]
+    },
+    "fields": [
+      { "name": "nom", "type": "categorical", "unit": "", "label": "Name" },
+      { "name": "categorie", "type": "ordinal", "unit": "", "label": "Category", "value_labels": { "international": "International", "national": "National", "local": "Local airfield or helipad" } },
+      { "name": "nature", "type": "categorical", "unit": "", "label": "Type", "value_labels": { "aerodrome": "Aerodrome", "heliport": "Heliport", "altiport": "Altiport (mountain)", "hydrobase": "Seaplane base" } },
+      { "name": "usage", "type": "categorical", "unit": "", "label": "Use" },
+      { "name": "code_icao", "type": "categorical", "unit": "", "label": "ICAO code" },
+      { "name": "code_iata", "type": "categorical", "unit": "", "label": "IATA code" },
+      { "name": "surface_ha", "type": "numeric", "unit": "ha", "label": "Ground area" },
+      { "name": "peb", "type": "categorical", "unit": "", "label": "Statutory noise plan (PEB)", "value_labels": { "true": "Yes — building is restricted under the flight paths", "false": "No PEB on record" } }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.9,
+    "legend_note": "645 aerodromes, sized and coloured by category. Placeholder records are excluded, so every point is a surveyed footprint. Heliports are 224 of these and most are hospital pads rather than a source of sustained noise — click a point to see which it is."
+  },
+  {
+    "id": "aerodromes_bruit",
+    "label": "Aircraft noise zoning (PEB)",
+    "group": "Transport",
+    "type": "point",
+    "paint": {
+      "property": "peb",
+      "scale": "categorical",
+      "stops": [
+        ["true", "#7c1d6f", "Has a PEB — building restricted"],
+        ["false", "#d6d3d1", "No PEB on record"]
+      ],
+      "no_data_color": "#d6d3d1",
+      "radius": [
+        "interpolate", ["linear"], ["zoom"],
+        5, ["case", ["get", "peb"], 4.5, 1.0],
+        9, ["case", ["get", "peb"], 9.0, 2.0],
+        12, ["case", ["get", "peb"], 15.0, 3.5]
+      ]
+    },
+    "fields": [
+      { "name": "nom", "type": "categorical", "unit": "", "label": "Name" },
+      { "name": "peb", "type": "categorical", "unit": "", "label": "Statutory noise plan (PEB)", "value_labels": { "true": "Yes — building is restricted under the flight paths", "false": "No PEB on record" } },
+      { "name": "peb_arrete", "type": "categorical", "unit": "", "label": "PEB decree (PDF)" },
+      { "name": "code_icao", "type": "categorical", "unit": "", "label": "ICAO code" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.9,
+    "legend_note": "The 198 airports whose aircraft noise is legally mapped by a plan d'exposition au bruit — the decree that restricts what may be built under the approach and departure paths. Click one for a link to the arrêté itself. This marks WHICH airports carry noise zoning, not the shape of the zones: the PEB's A/B/C/D contours are issued per-department by each DDT across 122 separate datasets and are not published as a national layer. Treat a purple dot as 'read the PEB before buying'."
+  }
+]

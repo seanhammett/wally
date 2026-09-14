@@ -1,0 +1,57 @@
+[
+  {
+    "id": "food_access",
+    "label": "Food access (nearest shop type)",
+    "group": "Population & access",
+    "type": "choropleth",
+    "paint": {
+      "property": "acces_alimentaire",
+      "scale": "ordinal",
+      "stops": [
+        ["aucun", "#b2182b", "No food shop"],
+        ["specialise", "#ef8a62", "Specialist only (bakery, butcher…)"],
+        ["proximite", "#a6d96a", "Grocery or minimarket"],
+        ["supermarche", "#1a7f37", "Supermarket or hypermarket"]
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "acces_alimentaire",
+        "type": "ordinal",
+        "unit": "",
+        "label": "Food retail available in the commune",
+        "value_labels": {
+          "aucun": "No food shop",
+          "specialise": "Specialist food shop only",
+          "proximite": "Grocery or minimarket",
+          "supermarche": "Supermarket or hypermarket"
+        }
+      },
+      { "name": "epiceries_supermarches", "type": "numeric", "unit": "shops", "label": "General food shops (hyper, super, minimarket, grocery)" },
+      { "name": "boulangeries", "type": "numeric", "unit": "shops", "label": "Bakeries" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "About 18,600 of 34,700 metropolitan communes have no food shop of any kind. This counts shops inside the commune only — it is not a distance to the nearest shop, and most zero-shop communes are very small."
+  },
+  {
+    "id": "food_shops",
+    "label": "Number of food shops",
+    "group": "Population & access",
+    "type": "choropleth",
+    "paint": {
+      "property": "commerces_alimentaires",
+      "scale": "numeric",
+      "breaks": [1, 2, 6, 15, 50],
+      "colors": ["#f7f4f9", "#e7e1ef", "#c994c7", "#df65b0", "#dd1c77", "#980043"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "commerces_alimentaires", "type": "numeric", "unit": "shops", "label": "Food shops (all types)" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Every food retail outlet in the BPE commerce domain: hypermarkets, supermarkets, minimarkets, grocers, bakeries, butchers, fishmongers, greengrocers, frozen food and other food shops. The lowest class is exactly zero."
+  }
+]

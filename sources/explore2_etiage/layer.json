@@ -1,0 +1,44 @@
+[
+  {
+    "id": "lowflow_2050",
+    "label": "Summer low flow at +2.7 °C (TRACC 2050)",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "etiage_27_pct",
+      "scale": "numeric",
+      "breaks": [-25, -20, -15, -10, -5, 0],
+      "colors": ["#67001f", "#b2182b", "#d6604d", "#f4a582", "#fddbc7", "#d1e5f0", "#4393c3"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "etiage_27_pct", "type": "numeric", "unit": "%", "label": "Change in summer low flow at +2.7 °C (model median)" },
+      { "name": "etiage_27_min", "type": "numeric", "unit": "%", "label": "Drier end of the model spread (q05)" },
+      { "name": "etiage_27_max", "type": "numeric", "unit": "%", "label": "Wetter end of the model spread (q95)" },
+      { "name": "etiage_4_pct", "type": "numeric", "unit": "%", "label": "Change at +4 °C (model median)" },
+      { "name": "etiage_origine", "type": "ordinal", "unit": "", "label": "Where the simulation points are", "value_labels": { "propre": "In the commune's own catchment", "proche": "Nearby catchment", "eloigne": "Distant catchment — weak inference" } }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Percentage change in VCN10 estival — the lowest 10-day average summer flow — against 1976–2005, at the +2.7 °C France trajectory TRACC uses for 2050. 94.7% of communes get drier; the median loses 14%. The blue class is the minority that gains, mostly Alpine catchments where earlier snowmelt lifts the summer minimum. Click a commune for the model spread and for how close the simulation points actually are."
+  },
+  {
+    "id": "lowflow_4c",
+    "label": "Summer low flow at +4 °C (TRACC 2100)",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "etiage_4_pct",
+      "scale": "numeric",
+      "breaks": [-25, -20, -15, -10, -5, 0],
+      "colors": ["#67001f", "#b2182b", "#d6604d", "#f4a582", "#fddbc7", "#d1e5f0", "#4393c3"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "etiage_4_pct", "type": "numeric", "unit": "%", "label": "Change in summer low flow at +4 °C (model median)" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "The same indicator on the same colour scale at +4 °C, TRACC's 2100 trajectory. Toggle it against the +2.7 °C layer to see how much of the change is already committed by 2050 and how much depends on what happens after."
+  }
+]

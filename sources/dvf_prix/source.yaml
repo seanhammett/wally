@@ -1,0 +1,67 @@
+id: dvf_prix
+name: "Prix de l'immobilier par commune, ventes 2023–2025 (DVF)"
+attribution: "DGFiP — Demandes de valeurs foncières géolocalisées, via files.data.gouv.fr — Licence Ouverte 2.0"
+url: "https://www.data.gouv.fr/datasets/demandes-de-valeurs-foncieres-geolocalisees/"
+fetched: 2026-09-11
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+order: 13
+min_join_rate: 0.98
+
+dvf:
+  # One gzipped CSV per department per year, 0.2–3 MB each. The national
+  # full.csv.gz for a single year is ~95 MB and the OVH backend behind
+  # files.data.gouv.fr times out on it often enough to be unusable; per
+  # department the same bytes arrive in resumable pieces and a partial failure
+  # costs one small retry. Same reasoning as hubeau_piezo.
+  base_url: "https://files.data.gouv.fr/geo-dvf/latest/csv"
+  years: [2023, 2024, 2025]
+
+# Moselle, Bas-Rhin and Haut-Rhin keep their land registry in the *livre
+# foncier* inherited from the 1871–1918 German administration, not in the
+# cadastre the DGFiP publishes DVF from. There is no DVF for them — not a gap in
+# this pipeline, a permanent gap in the source. Their communes stay blank rather
+# than being drawn as cheap.
+excluded_departments: ["57", "67", "68"]
+
+# DVF keys Paris, Lyon and Marseille by *arrondissement municipal*; ADMIN
+# EXPRESS keys them by the parent commune, and has no geometry for the
+# arrondissements. Without this rollup the three largest cities in France are
+# silently blank on the map. Ranges are inclusive.
+arrondissements:
+  "75056": [75101, 75120]    # Paris
+  "69123": [69381, 69389]    # Lyon
+  "13055": [13201, 13216]    # Marseille
+
+filters:
+  min_surface_m2: 9          # below this a "dwelling" is a cupboard or a data error
+  min_eur_m2: 200            # ruins, family transfers at nominal value
+  max_eur_m2: 20000          # Paris 8e tops out well below this; above is an error
+  min_sales: 5               # fewer than this and a commune median is noise
+  nature: "Vente"            # excludes exchanges, expropriations, auctions
+  types: ["Maison", "Appartement"]
+
+notes: |
+  What property actually sold for, from the tax authority's own transfer
+  records — not asking prices, not an index, not an estimate.
+
+  Three things about DVF's shape decide whether the numbers mean anything:
+
+  1. **One sale is many rows.** A mutation spans a row per parcel and per lot,
+     and `valeur_fonciere` repeats in full on each of them. Counting rows
+     inflates volumes several-fold and averaging them weights big multi-parcel
+     sales absurdly. The transform groups by `id_mutation` first and treats a
+     mutation as the unit throughout.
+  2. **A sale is only a price per m² if you know what was sold.** A mutation
+     that mixes a house, a barn and three fields has one value and no
+     interpretable surface. Only mutations resolving to a single dwelling type,
+     in a single commune, are kept — which is why about 70% of mutations are
+     discarded, most of them bare-land sales with no building at all.
+  3. **Thin markets.** A commune with two sales in three years has no median
+     worth drawing, so anything under five usable sales is left blank.
+
+  Prices are a three-year pool, not a 2025 snapshot: at one year the median is
+  publishable for only about a third of communes, and rural France is exactly
+  where the sample runs out first. Pooling trades currency for coverage, and the
+  legend says so rather than implying these are today's prices.

@@ -1,0 +1,26 @@
+id: insee_carreaux_200m
+name: "Population au carreau de 200 m (Filosofi 2019)"
+attribution: "INSEE — Filosofi 2019, données carroyées 200 m — Licence Ouverte / Etalab 2.0"
+url: "https://www.insee.fr/fr/statistiques/7655475"
+fetched: 2026-09-12
+source_crs: "EPSG:3035"
+kind: commune_table
+fetch: auto
+# Fetch only. Nothing is mapped from this source: other transforms read it
+# through pipeline/population.py to weight gridded data by where people live.
+no_output: true
+order: 5
+
+resource:
+  url: "https://www.insee.fr/fr/statistiques/fichier/7655475/Filosofi2019_carreaux_200m_csv.zip"
+  filename: "Filosofi2019_carreaux_200m_csv.zip"
+
+notes: |
+  2.3 million populated 200 m squares covering 63 million people, in LAEA
+  (EPSG:3035). Filosofi 2019 is the latest carroyé edition. It is used purely
+  as weights — "how many people live here" — so a few years' drift in where
+  people live moves the weights, not the data being weighted.
+
+  Used by `eea_qualite_air` and `meteo_climat`, so a commune's air quality and
+  climate describe where its residents are rather than the average over its
+  woods, fields and mountain tops.

@@ -1,0 +1,31 @@
+id: parcs_naturels
+name: "Parcs naturels régionaux et parcs nationaux"
+attribution: "INPN / MNHN — OFB, Fédération des PNR (Géoplateforme WFS) — Licence Ouverte 2.0"
+url: "https://inpn.mnhn.fr/programme/espaces-proteges"
+fetched: 2026-09-10
+source_crs: "EPSG:2154"      # requested from the WFS in Lambert-93, reprojected in transform.py
+kind: polygon
+fetch: auto
+order: 30
+
+wfs:
+  endpoint: "https://data.geopf.fr/wfs/ows"
+  typenames:
+    - { name: "patrinat_pnr:pnr", file: "pnr.geojson", kind: "Parc naturel régional" }
+    - { name: "patrinat_pn:parc_national", file: "parc_national.geojson", kind: "Parc national" }
+
+simplify: "5%"          # applied in transform.py; data/raw keeps the full-resolution original
+
+tiling:
+  tiles: never          # ~80 polygons; a plain GeoJSON is simpler and faster than a tileset
+
+notes: |
+  The worked Pattern B example: geometry that exists in its own right and is not
+  keyed to communes. Fetched in its native Lambert-93 and reprojected once with
+  GeoPandas — there is no tracing, georeferencing or alignment step anywhere in
+  this pipeline, because the vector source exists.
+
+  National park records come in two flavours: the cœur (id_local CT_*), where the
+  regulations bite, and the aire d'adhésion (AA_*), which is a cooperation
+  perimeter. They are kept as separate classes because conflating them
+  misrepresents what the designation means.

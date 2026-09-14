@@ -1,0 +1,29 @@
+id: vigieau_secheresse
+name: "Jours sous restriction d'eau (VigiEau, 2026)"
+attribution: "VigiEau / Propluvia — Ministère de la Transition écologique — Licence Ouverte 2.0"
+url: "https://www.data.gouv.fr/datasets/donnee-secheresse-vigieau/"
+fetched: 2026-09-10
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+order: 20
+millesime: 2026
+min_join_rate: 0.98
+
+resource:
+  # data.gouv rotates the dated path on each republication. If this 404s, look the
+  # resource up again on the dataset page above — the raw zip already downloaded
+  # stays valid regardless.
+  url: "https://static.data.gouv.fr/resources/donnee-secheresse-vigieau/20260909-040336/restrictions-communes-2026.zip"
+  filename: "restrictions-communes-2026.zip"
+  member: "restrictions_communes_2026.json"
+
+notes: |
+  Actual lived constraint rather than a model: one record per commune per day,
+  per usage type (AEP drinking water, SOU groundwater, SUP surface water), at one
+  of four levels — vigilance, alerte, alerte_renforcee, crise. The headline
+  indicator counts days at alerte renforcée or crise, which is where real
+  restrictions on households bite.
+
+  The zip is 7 MB but expands to ~540 MB of JSON, so transform.py streams it
+  rather than loading it. The raw zip is what stays in data/raw.

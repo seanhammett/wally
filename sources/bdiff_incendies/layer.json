@@ -1,0 +1,89 @@
+[
+  {
+    "id": "fire_area",
+    "label": "Forest area burned (2016–2025)",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "incendies_ha",
+      "scale": "numeric",
+      "breaks": [
+        1,
+        5,
+        25,
+        100,
+        500
+      ],
+      "colors": [
+        "#ffffcc",
+        "#ffeda0",
+        "#feb24c",
+        "#fd8d3c",
+        "#e31a1c",
+        "#800026"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "incendies_ha",
+        "type": "numeric",
+        "unit": "ha",
+        "label": "Total area burned (2016–2025)"
+      },
+      {
+        "name": "incendie_max_ha",
+        "type": "numeric",
+        "unit": "ha",
+        "label": "Largest single fire"
+      },
+      {
+        "name": "incendie_annee_recente",
+        "type": "numeric",
+        "unit": "",
+        "label": "Most recent recorded fire",
+        "correlate": false
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.75,
+    "legend_note": "Ten years of type-F forest fires. Grey means no recorded forest fire, except in Paris and the inner suburbs (75, 92, 93, 94) where BDIFF reports the count as unknown. A fire is attributed to the commune it started in, so a large fire crossing boundaries lands entirely on one commune."
+  },
+  {
+    "id": "fire_count",
+    "label": "Number of forest fires (2016–2025)",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "incendies_nb",
+      "scale": "numeric",
+      "breaks": [
+        2,
+        5,
+        10,
+        25,
+        75
+      ],
+      "colors": [
+        "#fff5eb",
+        "#fee6ce",
+        "#fdae6b",
+        "#f16913",
+        "#d94801",
+        "#7f2704"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "incendies_nb",
+        "type": "numeric",
+        "unit": "fires",
+        "label": "Forest fires recorded (2016–2025)"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.75,
+    "legend_note": "Ignition count rather than severity: the Mediterranean rim and the Landes dominate the burned-area map, but frequent small ignitions show up across the south-west and Brittany too."
+  }
+]

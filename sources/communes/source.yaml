@@ -1,0 +1,32 @@
+id: communes
+name: "Communes de France métropolitaine — contours"
+attribution: "IGN ADMIN EXPRESS via geo.api.gouv.fr — Licence Ouverte / Etalab 2.0"
+url: "https://geo.api.gouv.fr/decoupage-administratif/communes"
+fetched: 2026-09-10
+source_crs: "EPSG:4326"      # geo.api.gouv already serves WGS84; the underlying IGN data is Lambert-93
+kind: polygon
+fetch: auto
+order: 0
+role: commune_geometry
+
+# The millésime matters: communes merge and split every 1 January, so a table
+# published for an earlier year will lose rows against this geometry. Record it,
+# and check validate.py's join diagnostics whenever it changes.
+millesime: 2026
+
+# All commune choropleths are joined into this geometry and tiled once.
+tiling:
+  tiles: always
+  min_zoom: 4
+  max_zoom: 11
+  tippecanoe_args: ["--coalesce-densest-as-needed", "--detect-shared-borders"]
+
+notes: |
+  geo.api.gouv.fr serves a lightly simplified ADMIN EXPRESS contour (~6 MB for the
+  whole country) which is the right resolution for a national web map. If you need
+  survey-grade boundaries, download ADMIN EXPRESS COG from geoservices.ign.fr
+  instead and point transform.py at the shapefile — the rest of the pipeline is
+  unchanged.
+
+# mapshaper simplification applied in transform.py; data/raw keeps the full-resolution original
+simplify: "15%"

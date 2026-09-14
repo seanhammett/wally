@@ -1,0 +1,66 @@
+id: meteo_chaleur
+name: "Nuits tropicales et journées d'été à l'horizon 2041–2070 (Aladin-Climat)"
+attribution: "Météo-France / CNRM — modèle Aladin-Climat, DRIAS — Licence Ouverte"
+url: "https://www.data.gouv.fr/datasets/indices-annuels-de-temperature-et-nombre-de-jours-de-temperature-issus-du-modele-aladin-climat"
+fetched: 2026-09-11
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+order: 45
+min_join_rate: 0.99
+
+# Four small text files on the 8,602-point SAFRAN land grid: the 1976–2005
+# reference and three RCP scenarios, each with near (2021–2050), mid (2041–2070)
+# and far (2071–2100) horizons.
+resources:
+  reference:
+    url: "https://static.data.gouv.fr/resources/indices-annuels-de-temperature-et-nombre-de-jours-de-temperature-issus-du-modele-aladin-pour-la-periode-de-reference/20150930-200648/Tempe_REF_annuel.txt"
+    filename: "Tempe_REF_annuel.txt"
+    horizon: "REF"
+  rcp85:
+    url: "https://static.data.gouv.fr/resources/indices-annuels-de-temperature-et-nombre-de-jours-de-temperature-issus-du-modele-aladin-climat/20151029-180457/Tempe_RCP8.5_annuel.txt"
+    filename: "Tempe_RCP8.5_annuel.txt"
+    horizon: "H2"
+  rcp45:
+    url: "https://static.data.gouv.fr/resources/indices-annuels-de-temperature-et-nombre-de-jours-de-temperature-issus-du-modele-aladin-climat/20151029-180448/Tempe_RCP4.5_annuel.txt"
+    filename: "Tempe_RCP4.5_annuel.txt"
+    horizon: "H2"
+
+# Zero-based column positions in the ';'-separated body. Only absolute-threshold
+# indices are taken — see notes for why the relative ones are deliberately left.
+indices:
+  NORTR: 21        # nuits tropicales, Tn > 20 °C
+  NORSD: 20        # journées d'été, Tx > 25 °C
+  NORTXAV: 7       # température maximale journalière moyenne
+
+# Guard on the nearest-point assignment. The grid is ~8 km, so anything beyond
+# this means a commune is far from any land point and the value is a stretch.
+max_grid_distance_km: 40
+
+notes: |
+  The heat indicators DRIAS publishes openly, rather than the ones behind the
+  order form. `sources/drias_chaleur/` still documents that manual route and is
+  the upgrade path; this source is the part that can be automated today.
+
+  Two differences from what a DRIAS order would give you, both of which matter:
+
+  1. This is the DRIAS-2014 generation (Aladin-Climat, RCP scenarios), not
+     DRIAS-2020/TRACC. The 2014 runs are understood to under-project French
+     summer warming relative to the 2020 set, so read these as conservative.
+  2. The open files carry no "days above 35 °C" index. They have journées d'été
+     (Tx > 25 °C) and nuits tropicales (Tn > 20 °C), both absolute thresholds.
+     The 35 °C count is only in the DRIAS-2020 catalogue, so it stays on the
+     manual path.
+
+  The files also carry NORTXND (abnormally hot days) and NORTXHWD (heatwave
+  days), and both are deliberately excluded. They are defined against *local*
+  percentiles, so Briançon scores 39 heatwave days against Nice's 8 — true as
+  written, and actively misleading on a colour scale where the reader will take
+  darker to mean hotter. Only absolute thresholds are mapped here.
+
+  Values are assigned by nearest grid point to each commune's representative
+  point, computed in Lambert-93. With an 8 km grid and communes averaging
+  15 km², most communes contain no grid point at all, so nearest-point is the
+  honest method rather than a shortcut — but it means two adjacent small
+  communes often share a value, and the map should not be read at street scale.
+  `chaleur_grille_km` carries the distance so the stretch is visible.

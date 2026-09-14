@@ -1,0 +1,117 @@
+id: meteo_climat
+name: "Climat observé 2016–2025 : pluie, ensoleillement, température (Météo-France SAFRAN, grille 8 km)"
+attribution: "Météo-France — réanalyse SAFRAN (SIM2) et données climatologiques de base — Licence Ouverte / Etalab 2.0 · population: INSEE Filosofi 2019 · relief: Copernicus DEM GLO-90"
+url: "https://www.data.gouv.fr/datasets/donnees-changement-climatique-sim-quotidienne"
+fetched: 2026-09-13
+source_crs: "EPSG:27572"
+kind: commune_table
+fetch: auto
+order: 44
+min_join_rate: 0.99
+# The monthly climate table, one JSON per department, fetched when a commune's
+# table is opened: published to site/files/climate/.
+site_files: climate
+
+sim2:
+  # One gzipped CSV per year, ~137 MB each: every day × every one of the
+  # 8,602 SAFRAN grid points. Ten complete years.
+  url: "https://meteofrance.s3.sbg.io.cloud.ovh.net/data/REF_CC/SIM/QUOT_SIM2_{year}.csv.gz"
+  years: [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
+  # LAMBX / LAMBY are Lambert II étendu in hectometres, not metres.
+  coord_unit_m: 100
+
+# Commune values are weighted by where residents live, using the INSEE 200 m
+# grid from source insee_carreaux_200m (read via pipeline/population.py), and
+# corrected from each grid cell's mean altitude to the altitude of those homes
+# using terrain from source copernicus_dem (pipeline/elevation.py).
+
+stations:
+  # Monthly records of every Météo-France station, one file per department.
+  # They are not mapped: the transform fits the altitude correction on them and
+  # reports its error against them.
+  dataset: "donnees-climatologiques-de-base-mensuelles"
+  # A station enters the fit only with this many complete years in the window.
+  min_years: 7
+
+# The build fails if the cross-validated error at stations is worse than this.
+# Current values are well inside: see notes.
+max_cv_rmse:
+  temp_moy: 1.0
+  tx_ete: 1.3
+  tn_hiver: 1.5
+# The same for the climate table, in the worst of the twelve months. Current:
+# tx 0.70, tm 0.64, tn 1.01, tx_max 0.97 (mean maximum), tn_min 1.34 (mean
+# minimum) °C; hu 2.3 percentage points of relative humidity.
+max_cv_rmse_monthly:
+  tx: 1.0
+  tm: 0.9
+  tn: 1.3
+  tx_max: 1.3
+  tn_min: 1.7
+  hu: 3.0
+
+# A day counts as rainy at 1 mm, the Météo-France and WMO convention; below
+# that it is drizzle or dew that no one would call a wet day.
+rainy_day_mm: 1.0
+hot_day_c: 30.0
+# A snowy day in the climate table: at least this much precipitation on a day
+# whose low, corrected to residents' altitude, is at or below this. SAFRAN's
+# own snow/rain split happens at the cell's mean altitude, which in the
+# mountains counts ~70% more snowy days than valley stations observe; this rule
+# was the best of those tried against the ~170 stations that log snowfall
+# (whole-year error 3.4 days against 5.4 for SAFRAN's snowfall ≥ 1 mm).
+snow_day:
+  precip_mm: 1.0
+  low_c: 0.0
+
+notes: |
+  Ten years of observed weather, 2016–2025, per commune, at the altitude where
+  its residents live: how often it rains and how much, how much sun reaches the
+  ground, how hot summer afternoons get, how cold winter nights are.
+
+  **Why SAFRAN.** Météo-France opened its climate archive in 2024. Three things
+  in it could serve: station records (~1,500 temperature and ~1,900 rain
+  stations, but a village is usually nowhere near one), COMEPHORE radar
+  rainfall (1 km, hourly, but ~250 MB a month and rain only), and SAFRAN, the
+  national daily reanalysis on an 8 km grid covering every variable. SAFRAN is
+  what French climate services use for "what the weather was"; the stations are
+  used here to calibrate and check it.
+
+  **Why ten years.** Rainfall varies a lot year to year (the national median
+  was 681 mm in 2022 and 1,020 mm in 2024), so a short window describes the
+  weather of those years, not the place. The window is kept to the last decade
+  rather than a 30-year normal because France has warmed noticeably since the
+  1991–2020 normals were centred, and summer heat is exactly what a normal
+  would understate.
+
+  **What was measured against stations** (build log prints these each run;
+  temperature errors are cross-validated, so each station is scored by a fit
+  that did not see it):
+
+  | | Raw grid | As published |
+  |---|---|---|
+  | Annual mean temperature | 1.2 °C (3.1 in mountains) | 0.45 °C (0.7) |
+  | July–August daily high | 2.6 °C (5.6 in mountains) | 0.67 °C (1.0) |
+  | December–February nightly low | 1.1 °C | 0.8 °C |
+  | Days reaching 30 °C | ~13 days too few | median error 2 days |
+  | Frost days | — | median error 6 days, RMSE 12 |
+  | Annual rainfall | median absolute error 6% | not corrected |
+  | Solar energy | median absolute error 8% | not corrected |
+
+  "Mountains" means stations 300 m or more above or below their grid cell's
+  mean altitude. The raw summer-high error is also ~2 °C everywhere because
+  SAFRAN's daily maximum is the hottest *hourly* value, not the instantaneous
+  peak a thermometer records; the fitted intercept absorbs that.
+
+  **Known weak spots.** The Mediterranean shoreline: sea breezes keep the first
+  kilometre or two cooler than an 8 km cell reaching inland, so Nice shows 53
+  days at 30 °C against 16–20 at its stations. A distance-to-coast term was
+  tried in the calibration; it cut coastal hot-day error by only ~15% and was
+  left out. Frost pockets and cold valley floors are too local for this grid.
+  Rainfall is not altitude-corrected, so a sheltered valley town can get less
+  than its mountainous cell (Chamonix: 1,758 mm shown, ~1,260 at the station).
+
+  **Sunshine is solar energy, not hours.** Hours are measured at only ~190
+  stations. Estimating them from radiation was tested and missed by up to 500
+  hours at mountain stations, where terrain blocks the sun, so the map shows
+  the radiation itself.

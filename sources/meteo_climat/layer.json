@@ -1,0 +1,68 @@
+[
+  {
+    "id": "climate_rainy_days",
+    "label": "Rainy days per year, 2016–2025",
+    "group": "Climate (observed)",
+    "type": "choropleth",
+    "paint": {
+      "property": "climat_jours_pluie",
+      "scale": "numeric",
+      "breaks": [70, 90, 105, 115, 125, 140],
+      "colors": ["#fff7d6", "#e3eef3", "#c6dbef", "#9ecae1", "#6baed6", "#3182bd", "#08519c"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "climat_jours_pluie", "type": "numeric", "unit": "days/year", "label": "Days with at least 1 mm of rain or snow" },
+      { "name": "climat_pluie_mm", "type": "numeric", "unit": "mm/year", "label": "Annual rainfall (rain + snow)" },
+      { "name": "climat_pluie_sec_mm", "type": "numeric", "unit": "mm", "label": "Rainfall in the driest of the ten years", "correlate": false },
+      { "name": "climat_pluie_humide_mm", "type": "numeric", "unit": "mm", "label": "Rainfall in the wettest of the ten years", "correlate": false }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "How often it rains, which is not the same as how much. Marseille and Nice get 500–650 mm a year, close to Paris's 690, but on about 55 days against Paris's 108; Brest has 155. A day counts at 1 mm. Météo-France's SAFRAN reanalysis, weighted by where residents live and checked against ~1,900 rain gauges: the grid counts about 7% more rainy days than gauges do, so counts are scaled down to match, and annual totals are within 6% without correction. In the mountains the total follows the whole 8 km cell, so a sheltered valley town can get noticeably less than shown."
+  },
+  {
+    "id": "climate_sunshine",
+    "label": "Sunshine (solar energy), 2016–2025",
+    "group": "Climate (observed)",
+    "type": "choropleth",
+    "paint": {
+      "property": "climat_soleil_kwh",
+      "scale": "numeric",
+      "breaks": [1000, 1100, 1200, 1300, 1450, 1600],
+      "colors": ["#d9d9d9", "#f2eecb", "#fee391", "#fec44f", "#fe9929", "#ec7014", "#cc4c02"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "climat_soleil_kwh", "type": "numeric", "unit": "kWh/m²/year", "label": "Solar energy reaching the ground over a year" },
+      { "name": "climat_soleil_hiver_kwh", "type": "numeric", "unit": "kWh/m²", "label": "Solar energy November–February (the dark months)" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Total sunlight over the year, the physical quantity behind sunshine hours and what a solar panel runs on. Roughly: 1,050 is Paris or Rennes (about 1,800–1,900 hours of sun), 1,300 is Lyon or Toulouse, 1,600 is Marseille or Ajaccio (about 2,800–2,900 hours). The winter figure in the popup is the one to check for grey winters: Brittany and the north get less than half of Provence's November–February light. Within about 8% of the ~190 stations that measure it. It is not converted to hours, because that conversion misses by up to 500 hours in mountain valleys where the terrain blocks the sun."
+  },
+  {
+    "id": "climate_summer_highs",
+    "label": "Summer afternoon temperature, 2016–2025",
+    "group": "Climate (observed)",
+    "type": "choropleth",
+    "paint": {
+      "property": "climat_tx_ete",
+      "scale": "numeric",
+      "breaks": [24, 25.5, 27, 28.5, 30, 32],
+      "colors": ["#4575b4", "#91bfdb", "#e0f3f8", "#fee090", "#fc8d59", "#d73027", "#8b0000"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "climat_tx_ete", "type": "numeric", "unit": "°C", "label": "Average daily high in July and August" },
+      { "name": "climat_jours_30", "type": "numeric", "unit": "days/year", "label": "Days reaching 30 °C" },
+      { "name": "climat_temp_moy", "type": "numeric", "unit": "°C", "label": "Annual mean temperature" },
+      { "name": "climat_tn_hiver", "type": "numeric", "unit": "°C", "label": "Average nightly low in December–February" },
+      { "name": "climat_jours_gel", "type": "numeric", "unit": "days/year", "label": "Frost days (approximate: frost pockets are too local for this data)" },
+      { "name": "climat_altitude", "type": "numeric", "unit": "m", "label": "Altitude where residents live" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "What July and August afternoons have actually been like over the last ten years, at the altitude where each commune's residents live: Brest 23 °C, Paris 27, Lyon 30, Marseille 32. The popup adds days reaching 30 °C, winter nights and frost. The 8 km Météo-France grid is corrected to residents' altitude using ~1,500 weather stations: typical error 0.7 °C for summer highs (1.0 in the mountains), 2 days for days above 30 °C. Weakest right on the Mediterranean shore, where sea breezes cool the first kilometre or two: Nice shows about 53 hot days against 16–20 at its stations."
+  }
+]

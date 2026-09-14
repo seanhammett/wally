@@ -1,0 +1,204 @@
+[
+  {
+    "id": "muni26_turnout",
+    "label": "Municipal 2026 — turnout",
+    "group": "Elections",
+    "type": "choropleth",
+    "paint": {
+      "property": "muni26_participation_t1_pct",
+      "scale": "numeric",
+      "breaks": [
+        50,
+        58,
+        65,
+        72,
+        80
+      ],
+      "colors": [
+        "#f7f7f7",
+        "#d9d9d9",
+        "#bdbdbd",
+        "#969696",
+        "#525252",
+        "#252525"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "muni26_participation_t1_pct",
+        "type": "numeric",
+        "unit": "% of registered voters",
+        "label": "Turnout, first round (15 March 2026)"
+      },
+      {
+        "name": "muni26_second_tour",
+        "type": "categorical",
+        "unit": "",
+        "label": "Went to a second round",
+        "value_labels": {
+          "oui": "Yes, 22 March",
+          "non": "No, settled in round one"
+        }
+      },
+      {
+        "name": "muni26_liste_gagnante",
+        "type": "categorical",
+        "unit": "",
+        "label": "Winning list"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "First-round turnout, median 63%, measured on the same day everywhere. Small communes vote far more heavily than cities — the opposite of the pattern in the presidential layer."
+  },
+  {
+    "id": "muni26_competition",
+    "label": "Municipal 2026 — lists standing",
+    "group": "Elections",
+    "type": "choropleth",
+    "paint": {
+      "property": "muni26_nb_listes",
+      "scale": "numeric",
+      "breaks": [
+        2,
+        3,
+        5
+      ],
+      "colors": [
+        "#762a83",
+        "#c2a5cf",
+        "#a6dba0",
+        "#1b7837"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "muni26_nb_listes",
+        "type": "numeric",
+        "unit": "lists",
+        "label": "Lists on the first-round ballot"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "23,677 communes — just over two thirds — had exactly one list on the ballot, so the vote confirmed a slate rather than choosing between them. Only 334 communes had five or more. Every metropolitan commune had at least one list standing."
+  },
+  {
+    "id": "muni26_nuance",
+    "label": "Municipal 2026 — winning list (political nuance)",
+    "group": "Elections",
+    "type": "choropleth",
+    "paint": {
+      "property": "muni26_nuance_gagnante",
+      "scale": "categorical",
+      "stops": [
+        [
+          "Divers droite",
+          "#3c78b4"
+        ],
+        [
+          "Divers gauche",
+          "#e07b9a"
+        ],
+        [
+          "Divers",
+          "#9e9e9e"
+        ],
+        [
+          "Divers centre",
+          "#f4a63c"
+        ],
+        [
+          "Union de la gauche",
+          "#c9314a"
+        ],
+        [
+          "Les Républicains",
+          "#2a6099"
+        ],
+        [
+          "Rassemblement national",
+          "#22405e"
+        ],
+        [
+          "Parti socialiste",
+          "#e2536b"
+        ],
+        [
+          "Union de la droite",
+          "#1f4e79"
+        ],
+        [
+          "Union du centre",
+          "#d98a1f"
+        ],
+        [
+          "Parti communiste",
+          "#a11212"
+        ],
+        [
+          "Union de l'extrême droite",
+          "#14283b"
+        ],
+        [
+          "Union des démocrates et indépendants",
+          "#8ab4d8"
+        ],
+        [
+          "Régionaliste",
+          "#8e7cc3"
+        ],
+        [
+          "Écologistes",
+          "#3faa5a"
+        ],
+        [
+          "La France insoumise",
+          "#c0392b"
+        ],
+        [
+          "Extrême droite",
+          "#0d1a26"
+        ],
+        [
+          "Les Écologistes — EELV",
+          "#2e8b57"
+        ],
+        [
+          "Union de la droite et du centre",
+          "#5b8fc9"
+        ],
+        [
+          "MoDem",
+          "#f0c040"
+        ],
+        [
+          "Renaissance",
+          "#e8c33d"
+        ],
+        [
+          "Horizons",
+          "#b9a14a"
+        ],
+        [
+          "Divers souverainiste",
+          "#6b7a8f"
+        ]
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "muni26_nuance_gagnante",
+        "type": "categorical",
+        "unit": "",
+        "label": "Nuance of the winning list"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Grey is not 'no winner' — it is 'no nuance recorded'. The Interior Ministry only assigns a political nuance to lists in communes above the population threshold, about 3,200 of 34,700, so this layer covers the towns and cities and leaves rural France blank by construction."
+  }
+]
