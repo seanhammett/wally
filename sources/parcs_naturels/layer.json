@@ -36,7 +36,7 @@
       "label": "Area"
     }
   ],
-  "default_visible": true,
+  "default_visible": false,
   "default_opacity": 0.45,
   "legend_note": "A PNR is a cooperative charter, not a regulation; a parc national cœur carries binding rules. Different things, drawn differently.",
   "z": 22

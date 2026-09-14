@@ -34,15 +34,15 @@ width_classes:
   - "Entre 15 et 50 m"
   - "Plus de 50 m"
 
-# Feature-level tippecanoe minzoom per width class, so what survives at low zoom
-# is chosen here rather than by --drop-densest-as-needed, which would thin the
-# Loire and a Breton stream with equal enthusiasm. Navigable waterways are
-# promoted one tier: the Canal du Midi is narrow and matters anyway.
+# Feature-level tippecanoe minzoom per width class. Every class is drawn from
+# zoom 4 so the whole network is on screen with all of France in view; the zoom-
+# interpolated line width in layer.json keeps the 5–15 m class hairline-thin
+# there. Raise a tier to thin the national view again.
 zoom_tiers:
   "Plus de 50 m": 4
-  "Entre 15 et 50 m": 6
-  "Entre 5 et 15 m": 8
-navigable_tier: 5
+  "Entre 15 et 50 m": 4
+  "Entre 5 et 15 m": 4
+navigable_tier: 4
 
 tiling:
   tiles: always

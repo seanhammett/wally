@@ -1,0 +1,25 @@
+[
+  {
+    "id": "floodpeak_2050",
+    "label": "River flood peaks at +2.7 °C (TRACC 2050)",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "crues_27_pct",
+      "scale": "numeric",
+      "breaks": [0, 5, 10, 15, 20, 30],
+      "colors": ["#d9d9d9", "#deebf7", "#c6dbef", "#9ecae1", "#6baed6", "#3182bd", "#08519c"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "crues_27_pct", "type": "numeric", "unit": "%", "label": "Change in the year's highest daily river flow at +2.7 °C (model median)" },
+      { "name": "crues_27_min", "type": "numeric", "unit": "%", "label": "Lower end of the model spread (q05)" },
+      { "name": "crues_27_max", "type": "numeric", "unit": "%", "label": "Higher end of the model spread (q95)" },
+      { "name": "crues_4_pct", "type": "numeric", "unit": "%", "label": "Change at +4 °C (model median)" },
+      { "name": "crues_origine", "type": "ordinal", "unit": "", "label": "Where the simulation points are", "value_labels": { "propre": "In the commune's own catchment", "proche": "Nearby catchment", "eloigne": "Distant catchment — weak inference" } }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Percentage change in QJXA — the year's highest daily mean river flow — at +2.7 °C against 1976–2005. It measures how much bigger river floods get, not who is in their way: pair it with the flood-plan and flood-zone layers for that. Grey is the minority where peaks fall. A daily mean, so it misses flash floods on small catchments. Explore2 models aggregated to communes by RARE; the popup carries the model spread, which is wide."
+  }
+]

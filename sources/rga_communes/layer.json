@@ -1,0 +1,23 @@
+[
+  {
+    "id": "clay_residents",
+    "label": "Residents on shrink–swell clay",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "rga_part_moyen_fort",
+      "scale": "numeric",
+      "breaks": [10, 25, 50, 75, 90],
+      "colors": ["#fff7bc", "#fee391", "#fec44f", "#fe9929", "#d95f0e", "#993404"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "rga_part_moyen_fort", "type": "numeric", "unit": "% of residents", "label": "Living on moderate or high clay shrink–swell exposure" },
+      { "name": "rga_part_fort", "type": "numeric", "unit": "% of residents", "label": "Living on high exposure" },
+      { "name": "rga_indice", "type": "numeric", "unit": "0–3", "label": "Average exposure class where residents live (0 none, 1 low, 2 moderate, 3 high)" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Share of each commune's residents whose home sits on moderate or high clay shrink–swell exposure, from the BRGM 2026 map crossed with INSEE's 200 m population grid. Nationally 64%. Counted where people live rather than over the commune's land, because the damage is to buildings. The map is drawn from 1:50,000 geology, so it says a place is prone, not that a given plot is. The zone-by-zone map is the separate clay exposure layer."
+  }
+]

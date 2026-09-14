@@ -4,8 +4,7 @@
     "label": "IGN Plan",
     "tiles": "https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/png&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",
     "attribution": "© IGN — Géoplateforme",
-    "maxzoom": 19,
-    "default": true
+    "maxzoom": 19
   },
   {
     "id": "gris",
@@ -39,7 +38,9 @@
     "id": "none",
     "label": "No map",
     "outline": "tiles/france_outline.geojson",
-    "attribution": "Outline from IGN ADMIN EXPRESS",
-    "note": "No background tiles: just the outline of metropolitan France, so the data is all there is to read."
+    "attribution": "Outline and towns from IGN ADMIN EXPRESS and INSEE",
+    "note": "No background tiles: the outline of metropolitan France and its towns, so the data is all there is to read.",
+    "default": true,
+    "cities": "tiles/france_cities.geojson"
   }
 ]

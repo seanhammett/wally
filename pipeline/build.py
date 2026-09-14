@@ -188,6 +188,8 @@ def stage_tiles(sources: list[Source], joined: Path | None) -> dict[str, dict]:
         Log.step("France outline (the 'No map' basemap)")
         Log.indent()
         tiling.country_outline(communes, TILES_DIR / "france_outline.geojson")
+        if joined is not None:
+            tiling.country_cities(joined, TILES_DIR / "france_cities.geojson")
         Log.dedent()
 
     for src in sources:

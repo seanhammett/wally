@@ -174,6 +174,30 @@ def country_outline(src: Path, out: Path, percent: str = "5%") -> Path | None:
     return out
 
 
+def country_cities(src: Path, out: Path, min_population: int = 10_000) -> Path | None:
+    """One point per commune of at least `min_population`, for the "No map" labels.
+
+    Cut from the joined commune file, so the population is the same INSEE figure
+    the choropleth shows. `-points inner` rather than a centroid: a centroid can
+    fall outside a crescent-shaped commune, and the label would sit in the sea.
+    Written largest first, which is the order the browser places labels in.
+    """
+    if not have("mapshaper"):
+        Log.warn("mapshaper not installed; the 'No map' basemap will have no city labels")
+        return None
+    out.parent.mkdir(parents=True, exist_ok=True)
+    _run([
+        "mapshaper", str(src),
+        "-filter", f"population >= {int(min_population)}",
+        "-points", "inner",
+        "-filter-fields", "nom,population",
+        "-sort", "population", "descending",
+        "-o", "format=geojson", "precision=0.0001", str(out),
+    ])
+    Log.ok(f"cities → {out.relative_to(ROOT)} ({human_bytes(out.stat().st_size)}, {feature_count(out):,} places)")
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Tile a GeoJSON file to PMTiles.")
     ap.add_argument("input")

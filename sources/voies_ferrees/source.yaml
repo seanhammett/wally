@@ -34,12 +34,12 @@ categories:
   "Ligne du réseau conventionnel à écartement normal": conventionnel
   "Ligne du réseau conventionnel à voie étroite": voie_etroite
 
-# Feature-level tippecanoe minzoom. The LGV network is the shape of the country
-# at a glance and earns zoom 4; the conventional network is legible from 6.
+# Feature-level tippecanoe minzoom. Every line type is drawn from zoom 4, so the
+# whole network is on screen with all of France in view.
 zoom_tiers:
   lgv: 4
-  conventionnel: 6
-  voie_etroite: 8
+  conventionnel: 4
+  voie_etroite: 4
 
 tiling:
   tiles: always

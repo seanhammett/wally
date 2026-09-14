@@ -18,9 +18,31 @@
       { "name": "etiage_4_pct", "type": "numeric", "unit": "%", "label": "Change at +4 °C (model median)" },
       { "name": "etiage_origine", "type": "ordinal", "unit": "", "label": "Where the simulation points are", "value_labels": { "propre": "In the commune's own catchment", "proche": "Nearby catchment", "eloigne": "Distant catchment — weak inference" } }
     ],
+    "default_visible": true,
+    "default_opacity": 0.3,
+    "legend_note": "Percentage change in VCN10 estival — the lowest 10-day average summer flow — against 1976–2005, at the +2.7 °C France trajectory TRACC uses for 2050. 94.7% of communes get drier; the median loses 14%. The blue class is the minority that gains, mostly Alpine catchments where earlier snowmelt lifts the summer minimum. Click a commune for the model spread and for how close the simulation points actually are."
+  },
+  {
+    "id": "lowflow_duration_2050",
+    "label": "Longer summer low water at +2.7 °C (TRACC 2050)",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "etiage_duree_27",
+      "scale": "numeric",
+      "breaks": [0, 5, 10, 15, 20, 30],
+      "colors": ["#4393c3", "#fee8c8", "#fdd49e", "#fdbb84", "#fc8d59", "#e34a33", "#b30000"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "etiage_duree_27", "type": "numeric", "unit": "days", "label": "Change in the length of the summer low-water period at +2.7 °C (model median)" },
+      { "name": "etiage_duree_27_min", "type": "numeric", "unit": "days", "label": "Shorter end of the model spread (q05)" },
+      { "name": "etiage_duree_27_max", "type": "numeric", "unit": "days", "label": "Longer end of the model spread (q95)" },
+      { "name": "etiage_duree_4", "type": "numeric", "unit": "days", "label": "Change at +4 °C (model median)" }
+    ],
     "default_visible": false,
     "default_opacity": 0.72,
-    "legend_note": "Percentage change in VCN10 estival — the lowest 10-day average summer flow — against 1976–2005, at the +2.7 °C France trajectory TRACC uses for 2050. 94.7% of communes get drier; the median loses 14%. The blue class is the minority that gains, mostly Alpine catchments where earlier snowmelt lifts the summer minimum. Click a commune for the model spread and for how close the simulation points actually are."
+    "legend_note": "How many more days a year rivers stay at summer low water (dtBE été) at +2.7 °C, against 1976–2005. The companion to the low-flow layer: that one says how low the summer minimum gets, this one how long the low stretch lasts. Median +12 days; the blue class is the few communes where it shortens. Explore2 models, aggregated to communes by RARE from the simulation points of each commune's catchment; the popup carries the model spread, which is wide."
   },
   {
     "id": "lowflow_4c",

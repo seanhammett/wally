@@ -1,6 +1,6 @@
 PY := .venv/bin/python
 
-.PHONY: setup build validate serve clean-processed
+.PHONY: setup build rebuild validate serve deploy clean-processed
 
 setup:                     ## create the venv and install Python dependencies
 	python3 -m venv .venv && .venv/bin/pip install -q -r requirements.txt
@@ -17,6 +17,9 @@ validate:                  ## check data/processed against the output contract
 
 serve:                     ## serve the built site
 	$(PY) pipeline/serve.py --port 8000
+
+deploy:                    ## publish site/ to the gh-pages branch (GitHub Pages)
+	pipeline/deploy.sh
 
 clean-processed:           ## drop intermediates; data/raw is never touched
 	rm -rf data/processed data/scratch site/tiles site/stats site/files site/layers.json

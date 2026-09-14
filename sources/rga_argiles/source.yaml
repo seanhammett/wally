@@ -18,5 +18,9 @@ notes: |
   clay shrink-swell is a foundation-engineering cost, not a habitability
   constraint: it changes what a renovation costs, not whether a place is livable.
 
+  The per-commune view — the share of each commune's residents living on
+  moderate or high exposure — is source rga_communes, which downloads this same
+  archive and reads its polygons with GDAL's PMTiles driver.
+
   If the remote file ever disappears, the fallback is the department shapefiles on
   Géorisques: fetch: manual, then a normal Pattern B transform.

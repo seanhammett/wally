@@ -15,14 +15,14 @@ What a full build produces today:
 
 | | |
 |---|---|
-| Sources | 25 built, 2 fetch-only inputs (population grid, terrain), 1 manual awaiting its download |
-| Layers | 52, across all four patterns |
+| Sources | 27 built, 2 fetch-only inputs (population grid, terrain), 1 manual awaiting its download |
+| Layers | 55, across all four patterns |
 | Communes | 34,746 (metropolitan France, ADMIN EXPRESS millésime 2026) |
 | `site/tiles/` | 150 MB — a 98 MB commune tileset, a 22 MB air quality grid, river and rail tilesets, four small GeoJSONs |
-| `site/stats/` | 10 MB — 67 correlatable commune columns plus a centroid index |
+| `site/stats/` | 11 MB — 78 correlatable commune columns plus a centroid index |
 | `site/files/` | 25 MB — the monthly climate tables, one JSON per department, fetched on demand |
 | Full rebuild from `data/raw` | ~35 min (139 s of it is join + tiling) |
-| First fetch of everything | ~2 h, ~3.9 GB into `data/raw` |
+| First fetch of everything | ~2 h, ~4.3 GB into `data/raw` |
 
 Layer groups: **Income & property** (median standard of living, income
 inequality, poverty rate, price per m², price of a house), **Population &
@@ -30,9 +30,10 @@ access** (population, density, median age, share aged 65 and over, ageing ratio,
 food access, food shops, everyday-services basket, service-provision class,
 health services),
 **Hazards** (drought days, worst restriction level, projected summer low flow at
-+2.7 °C and at +4 °C, tropical nights, summer days, area burned, fire count,
++2.7 °C and at +4 °C, longer summer low water, river flood peaks at +2.7 °C,
+tropical nights, summer days, area burned, fire count,
 flood disaster declarations, flood PPR status, coastal hazard, clay
-shrink–swell), **Air quality** (PM2.5, NO₂ and ozone per commune, weighted by
+shrink–swell zones and the share of residents living on them), **Air quality** (PM2.5, NO₂ and ozone per commune, weighted by
 where residents live, and the same three on the raw 1 km grid), **Climate
 (observed)** (rainy days, solar energy and summer afternoon highs over
 2016–2025, at residents' altitude and calibrated against Météo-France
@@ -173,9 +174,10 @@ Create `sources/<id>/` with four files:
   `projets_ferroviaires` (OpenStreetMap via Overpass, clipped to France against
   the commune geometry).
   `rivieres` is also where a layer decides its own zoom tiering: the transform
-  writes a per-feature `tippecanoe: {minzoom}` member, so major rivers survive at
-  zoom 4 and 5 m streams appear at zoom 8, rather than leaving
-  `--drop-densest-as-needed` to thin the Loire and a Breton stream alike.
+  writes a per-feature `tippecanoe: {minzoom}` member from `zoom_tiers` in
+  source.yaml, rather than leaving `--drop-densest-as-needed` to thin the Loire
+  and a Breton stream alike. Every tier is currently 4, so the whole network is
+  drawn with all of France in view.
 
 A source can also be a pure input with no layer of its own — `fetch` plus
 `no_output: true` — when several transforms need the same large download:

@@ -33,8 +33,8 @@
       { "name": "navigable", "type": "categorical", "unit": "", "label": "Navigable", "value_labels": { "true": "Yes", "false": "No" } },
       { "name": "longueur_km", "type": "numeric", "unit": "km", "label": "Length of this segment" }
     ],
-    "default_visible": false,
-    "default_opacity": 0.85,
-    "legend_note": "BD CARTO® V5, everything 5 m wide and over — 250,653 segments. Line weight is the width class, not a measurement: BD CARTO records width in four buckets. Blue is natural watercourse, teal is canal, violet marks where the network is traced through a reservoir, lake or marsh rather than flowing. Major rivers appear from zoom 4, 15–50 m from zoom 6, 5–15 m from zoom 8; navigable waterways one zoom earlier, because the Canal du Midi is narrow and matters anyway."
+    "default_visible": true,
+    "default_opacity": 1,
+    "legend_note": "BD CARTO® V5, everything 5 m wide and over — 250,653 segments. Line weight is the width class, not a measurement: BD CARTO records width in four buckets. Blue is natural watercourse, teal is canal, violet marks where the network is traced through a reservoir, lake or marsh rather than flowing. Every width class is drawn at every zoom, so the whole network shows with all of France in view."
   }
 ]

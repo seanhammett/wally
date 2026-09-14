@@ -28,9 +28,9 @@
       { "name": "exploitee", "type": "categorical", "unit": "", "label": "Still in service", "value_labels": { "true": "Yes", "false": "No — closed, lifted or reduced to sidings" } },
       { "name": "longueur_km", "type": "numeric", "unit": "km", "label": "Length of this segment" }
     ],
-    "default_visible": false,
-    "default_opacity": 0.9,
-    "legend_note": "SNCF Réseau's own classification. Red is LGV — purpose-built high-speed track, 146 of 2,166 segments. This is where the high-speed *track* is, not where the TGV *goes*: TGV services run off the LGV onto the conventional network to reach Brest, Nice and Hendaye. LGV draws from zoom 4, conventional from 6."
+    "default_visible": true,
+    "default_opacity": 1,
+    "legend_note": "SNCF Réseau's own classification. Red is LGV — purpose-built high-speed track, 146 of 2,166 segments. This is where the high-speed *track* is, not where the TGV *goes*: TGV services run off the LGV onto the conventional network to reach Brest, Nice and Hendaye."
   },
   {
     "id": "rail_speed",

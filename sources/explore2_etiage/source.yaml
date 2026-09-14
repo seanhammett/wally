@@ -1,5 +1,5 @@
 id: explore2_etiage
-name: "Évolution du débit d'étiage estival à l'horizon TRACC (Explore2)"
+name: "Étiages estivaux à l'horizon TRACC : débit et durée (Explore2)"
 attribution: "Explore2 (INRAE / OiEau / Météo-France / BRGM), agrégation communale par le réseau RARE — Licence Ouverte 2.0"
 url: "https://www.data.gouv.fr/datasets/indicateurs-de-debits-futurs-explore2-tracc-agreges-par-territoire"
 fetched: 2026-09-11
@@ -9,13 +9,19 @@ fetch: auto
 order: 22
 min_join_rate: 0.98
 
-resource:
-  # 154 MB of long-format CSV: one row per commune × warming level × ensemble
-  # statistic. transform.py streams it and keeps the 2 warming levels it needs.
-  # data.gouv rotates the dated path on republication — if this 404s, look the
-  # resource up again on the dataset page above.
-  url: "https://static.data.gouv.fr/resources/indicateurs-de-debits-futurs-explore-2-tracc-agreges-par-territoire-attention-test/20260206-150804/statistiques-multimodeles-agregation-spatiale-oui-territoire-commune-debit-etiage-vcn10-ete-ref-1976-2005.csv"
-  filename: "explore2_commune_vcn10_ete.csv"
+resources:
+  # 130–160 MB each of long-format CSV: one row per commune × warming level ×
+  # ensemble statistic. transform.py streams them and keeps what it needs.
+  # The /datasets/r/<id> links are data.gouv's stable resource URLs; the dated
+  # static paths behind them rotate on republication.
+  vcn10:
+    url: "https://www.data.gouv.fr/api/1/datasets/r/2d847dcc-26fb-4dbe-ad6c-5fb9e90b7cec"
+    filename: "explore2_commune_vcn10_ete.csv"
+    indicator: "VCN10_été"
+  duration:
+    url: "https://www.data.gouv.fr/api/1/datasets/r/c6a35c98-6d1a-4468-b40d-67fc21de89ea"
+    filename: "explore2_commune_dtbe.csv"
+    indicator: "dtBE_été"
 
 # Warming levels in the file, as France-wide temperature rise above pre-industrial.
 # TRACC uses +2.7 °C as the planning trajectory for 2050 and +4 °C for 2100.
@@ -48,6 +54,13 @@ notes: |
   catchment, 28% from a nearby one and 7% from a distant one. The last group is
   a weak inference and the field is exposed so it can be seen rather than
   assumed away.
+
+  dtBE été, the duration of the summer low-water period, comes from the same
+  RARE aggregation and is in days of change against 1976–2005: +20 means the
+  low-water stretch lasts twenty days longer. It is the other half of a drier
+  summer — a river can bottom out at much the same flow and still be low for
+  three weeks longer. Median +12 days at +2.7 °C; the model spread (q05 to q95)
+  typically runs from about −11 to +37 days, so it is kept in the popup.
 
   This is a projection, and it pairs with vigieau_secheresse, which is the
   opposite kind of evidence: restrictions actually imposed last year. Where a

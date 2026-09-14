@@ -14,22 +14,28 @@ expected_files:
   - "drias_communes_2050.csv"
 
 manual_instructions: |
-  DRIAS is behind an interactive order form, so this one cannot be automated and
-  should not be scraped. Order the indicators by hand:
+  DRIAS needs a personal account (free) and its site sits behind a bot-defence
+  challenge, so this cannot be automated and must not be scraped. Order by hand:
 
-    1. drias-climat.fr → "Commander des données" → DRIAS-2020, horizon 2050 (TRACC).
-    2. Indicators: NORTXD (jours Tx > 35 °C) and TR (nuits tropicales, Tn > 20 °C).
-    3. Export as CSV.
+    1. Create an account on drias-climat.fr (Espace Données et Produits).
+    2. Order the TRACC-2023 indicators by warming level — the mean at the
+       +2.7 °C France level (+2 °C global), not the annual time series, which is
+       tens of GB. Ensemble median, SAFRAN 8 km grid, NetCDF or CSV:
+         - TR     nuits tropicales (Tn ≥ 20 °C)
+         - TX35D  jours avec Tx ≥ 35 °C
+    3. On drias-eau.fr, the same TRACC-2023 set: SWI04D (days with soil wetness
+       index below 0.4 — dry soil).
+    4. Put everything that arrives, unrenamed, in data/raw/drias_chaleur/.
 
-  What arrives is an ~8 km grid in NetCDF or gridded CSV, not commune-keyed, so it
-  needs a zonal-statistics step (rasterstats or exactextract) against the commune
-  polygons before it can join. Save the commune-aggregated result as the expected
-  filename with columns: code_insee, nuits_tropicales_2050, jours_35c_2050.
+  Each indicator on the ~9,000-point SAFRAN grid should be a few MB. The files
+  are grid-keyed, not commune-keyed; transform.py is to be rewritten against the
+  delivered format to weight them by where residents live, the way meteo_climat
+  handles the same grid.
 
   Validate the result against Climadiag Commune (climadiag-commune.meteofrance.com),
   which publishes per-commune values as one PDF per commune. It is a spot-check
-  tool, not a data source — but if your computed tropical-nights figure for a
-  handful of communes does not match Climadiag's, your zonal stats are wrong.
+  tool, not a data source — but if the computed tropical-nights figure for a
+  handful of communes does not match Climadiag's, the aggregation is wrong.
 
 notes: |
   By some distance the most work in the catalogue. Left disabled until everything

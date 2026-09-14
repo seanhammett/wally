@@ -14,7 +14,7 @@
     "fields": [
       { "name": "population", "type": "numeric", "unit": "inhabitants", "label": "Population (INSEE legal population)" }
     ],
-    "default_visible": true,
+    "default_visible": false,
     "default_opacity": 0.7,
     "legend_note": "INSEE legal population, 2026 millésime. Classes are fixed, not quantiles, so the map is comparable between rebuilds."
   },

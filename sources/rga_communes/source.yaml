@@ -1,0 +1,52 @@
+id: rga_communes
+name: "Retrait-gonflement des argiles : exposition des habitants par commune (carte 2026)"
+attribution: "BRGM / Géorisques, carte d'exposition 2026 — Licence Ouverte 2.0 · population: INSEE Filosofi 2019"
+url: "https://www.data.gouv.fr/datasets/carte-des-risques-retrait-gonflement-des-argiles-2026/"
+fetched: 2026-09-14
+source_crs: "EPSG:3857"
+kind: commune_table
+fetch: auto
+order: 36
+min_join_rate: 0.99
+
+resource:
+  # The same 122 MB PMTiles archive the rga_argiles layer reads remotely,
+  # downloaded here so its polygons can be intersected with where people live.
+  # Stable data.gouv resource link.
+  url: "https://www.data.gouv.fr/api/1/datasets/r/ae4ad3ef-7dd4-4112-9ee7-8662fe3a1aa8"
+  filename: "argile-2026.pmtiles"
+  layer: "rga"
+  # Tippecanoe's full-detail zoom for this archive: tiles are ~10 km across and
+  # 4,096 units wide, so geometry is good to a few metres.
+  zoom: 12
+
+classes:
+  Faible: 1
+  Moyen: 2
+  Fort: 3
+
+notes: |
+  Clay shrink–swell per commune, measured where people live rather than over
+  the commune's land. The BRGM exposure map (arrêté of 9 January 2026) is read
+  polygon by polygon from the PMTiles archive Géorisques publishes, and every
+  populated INSEE 200 m cell takes the class of the zone its centre falls in:
+  none, low, medium or high. A commune's values are then shares of its
+  residents, and a population-weighted mean class from 0 to 3.
+
+  **Why residents and not area.** Shrink–swell damages buildings, so the land
+  that matters is the land people have built on. A commune can be half high-
+  exposure clay in its fields and have its village on limestone. Communes with
+  no populated cell use the class at their representative point.
+
+  **Checks.** Read at zoom 12, the archive's zones total 395,700 km², of which
+  moderate or high 301,800 km² — 55.5% of metropolitan France, the figure
+  published with the 2026 map. The 2020 map, which SDES crossed with individual
+  houses, totals 390,600 km², so coverage is complete; the difference is the
+  2026 revision, which moved land from low to high. Nationally 64% of residents
+  live on moderate or high exposure.
+
+  **Limits.** The map is drawn from 1:50,000 geology: it circumscribes zones
+  prone to the phenomenon, not the soil under a given plot. A 200 m cell is
+  assigned by its centre, which blurs zone edges by up to 140 m. Exposure is
+  not a climate projection, but drier summers are what turn it into damage,
+  which is why it sits next to the dry-soil and low-flow layers.

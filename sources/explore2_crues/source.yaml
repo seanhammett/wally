@@ -1,0 +1,44 @@
+id: explore2_crues
+name: "Évolution des crues à l'horizon TRACC : débit journalier maximal annuel (Explore2)"
+attribution: "Explore2 (INRAE / OiEau / Météo-France / BRGM), agrégation communale par le réseau RARE — Licence Ouverte 2.0"
+url: "https://www.data.gouv.fr/datasets/indicateurs-de-debits-futurs-explore2-tracc-agreges-par-territoire"
+fetched: 2026-09-14
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+order: 23
+min_join_rate: 0.98
+
+resource:
+  # 154 MB, the same long-format layout as the low-flow files in explore2_etiage
+  # (read through pipeline/explore2.py). Stable data.gouv resource link.
+  url: "https://www.data.gouv.fr/api/1/datasets/r/9fbd02f7-0e4b-4173-b9dc-1fc55b910edd"
+  filename: "explore2_commune_qjxa.csv"
+  indicator: "QJXA_yr"
+
+warming:
+  reference: "+2.7°C France"
+  high: "+4°C France"
+
+statistics:
+  median: "q50"
+  low: "q05"
+  high: "q95"
+
+notes: |
+  QJXA: the highest daily mean flow of the year, averaged over the years of each
+  warming level, as a percentage change against 1976–2005. It is the flood
+  indicator Explore2 publishes for every simulation point, and the one the
+  "Hausse des crues 2050" indicator of Projet Celsius's habitability map uses.
+
+  Read it for what it is. It is a daily mean, so it sees river floods that build
+  over a day or more, not flash floods from a storm cell on a small catchment,
+  and it says nothing about where water goes when the river overtops — that is
+  the flood-zone mapping in georisques_gaspar. A place can have a sharply rising
+  flood peak and no one living in the flood plain, and the reverse.
+
+  The spread across models is wide: the median commune is +13% at +2.7 °C, but
+  its q05–q95 range runs from about −13% to +47%. The median is the headline and
+  the spread is in the popup. The same RARE quality flag as the low-flow layers
+  applies: some communes get their value from simulation points in a
+  neighbouring or distant catchment.

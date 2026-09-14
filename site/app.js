@@ -111,9 +111,16 @@ function rasterPaint(b) {
 }
 
 // A basemap without `tiles` is the "No map" option: the raster is hidden and an
-// outline of France (land fill below the data, border line above it) stands in.
-const OUTLINE = { source: 'france-outline', land: 'france-land', line: 'france-line' };
+// outline of France (land fill below the data, border line above it) stands in,
+// with city dots and names on top of everything.
+const OUTLINE = { source: 'france-outline', land: 'france-land', line: 'france-line', cities: 'france-cities' };
 const BACKGROUND = { tiled: '#eef2f5', bare: '#dde5ec' };
+// Which towns are named at which zoom: [minzoom, smallest population]. The
+// biggest band goes on top, and MapLibre places the top layer's labels first, so
+// when names collide it is the smaller town that gives way.
+const CITY_BANDS = [[7, 10000], [6, 20000], [5, 50000], [0, 100000]];
+const cityLayerIds = () => CITY_BANDS.map(([, pop]) => `${OUTLINE.cities}-${pop}`);
+const bareLayerIds = () => [OUTLINE.land, OUTLINE.line, ...cityLayerIds()];
 
 function rasterStyle(basemaps) {
   const chosen = basemaps.find((x) => x.id === state.basemap) || basemaps[0];
@@ -125,8 +132,10 @@ function rasterStyle(basemaps) {
     glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: { basemap: { type: 'raster', tiles: [b.tiles], tileSize: 256, attribution: b.attribution, maxzoom: b.maxzoom || 19 } },
     layers: [
-      { id: 'background', type: 'background', paint: { 'background-color': BACKGROUND.tiled } },
-      { id: 'basemap', type: 'raster', source: 'basemap', paint: rasterPaint(b) },
+      { id: 'background', type: 'background', paint: { 'background-color': chosen.tiles ? BACKGROUND.tiled : BACKGROUND.bare } },
+      // Hidden from the start under "No map", so its tiles are never requested.
+      { id: 'basemap', type: 'raster', source: 'basemap', paint: rasterPaint(b),
+        layout: { visibility: chosen.tiles ? 'visible' : 'none' } },
     ],
   };
 }
@@ -139,16 +148,63 @@ function applyBasemapPaint(map, b) {
   }
 }
 
-// Added the first time "No map" is picked, so nobody else fetches the file.
-function addOutline(map, url) {
+// Added the first time "No map" is picked, so nobody else fetches the files.
+function addOutline(map, b) {
   if (map.getSource(OUTLINE.source)) return;
-  map.addSource(OUTLINE.source, { type: 'geojson', data: url, attribution: 'IGN ADMIN EXPRESS' });
+  map.addSource(OUTLINE.source, { type: 'geojson', data: b.outline, attribution: b.attribution });
   const style = map.getStyle().layers;
   const after = style[style.findIndex((l) => l.id === 'basemap') + 1];
   map.addLayer({ id: OUTLINE.land, type: 'fill', source: OUTLINE.source,
                  paint: { 'fill-color': '#fbfbfa' } }, after && after.id);
   map.addLayer({ id: OUTLINE.line, type: 'line', source: OUTLINE.source,
                  paint: { 'line-color': '#475569', 'line-width': ['interpolate', ['linear'], ['zoom'], 4, 0.8, 10, 1.6] } });
+  if (b.cities) addCities(map, b.cities);
+}
+
+// The dot is the symbol's icon rather than a separate circle layer, so a dot and
+// its name are placed or dropped together — never a dot left without a name.
+function cityDot() {
+  const size = 16;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size / 2 - 2.5, 0, Math.PI * 2);
+  ctx.fillStyle = '#1f2937';
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = '#ffffff';
+  ctx.stroke();
+  return ctx.getImageData(0, 0, size, size);
+}
+
+function addCities(map, url) {
+  map.addSource(OUTLINE.cities, { type: 'geojson', data: url });
+  if (!map.hasImage('city-dot')) map.addImage('city-dot', cityDot(), { pixelRatio: 2 });
+  const pop = ['get', 'population'];
+  CITY_BANDS.forEach(([minzoom, least], i) => {
+    const next = CITY_BANDS[i + 1];
+    map.addLayer({
+      id: `${OUTLINE.cities}-${least}`, type: 'symbol', source: OUTLINE.cities, minzoom,
+      filter: next ? ['all', ['>=', pop, least], ['<', pop, next[1]]] : ['>=', pop, least],
+      layout: {
+        'icon-image': 'city-dot',
+        'icon-size': ['step', pop, 0.75, 50000, 0.9, 200000, 1.1],
+        'text-field': ['get', 'nom'],
+        'text-font': ['Open Sans Semibold'],
+        'text-size': ['step', pop, 10, 100000, 11, 500000, 12.5],
+        'text-variable-anchor': ['left', 'right', 'top', 'bottom'],
+        'text-radial-offset': 0.55,
+        'text-justify': 'auto',
+        'symbol-sort-key': ['-', pop],
+      },
+      paint: {
+        'text-color': '#1f2937',
+        'text-halo-color': 'rgba(255, 255, 255, 0.9)',
+        'text-halo-width': 1.2,
+      },
+    });
+  });
 }
 
 function applyBasemap(map, b) {
@@ -159,11 +215,12 @@ function applyBasemap(map, b) {
     map.style.sourceCaches.basemap.update(map.transform);
     applyBasemapPaint(map, b);
   } else if (b.outline) {
-    addOutline(map, b.outline);
+    addOutline(map, b);
+    restack(map);                       // the outline and cities go above the data
   }
   map.setLayoutProperty('basemap', 'visibility', tiled ? 'visible' : 'none');
   map.setPaintProperty('background', 'background-color', tiled ? BACKGROUND.tiled : BACKGROUND.bare);
-  for (const id of [OUTLINE.land, OUTLINE.line]) {
+  for (const id of bareLayerIds()) {
     if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', tiled ? 'none' : 'visible');
   }
   map.triggerRepaint();
@@ -295,8 +352,11 @@ function restack(map) {
     if (map.getLayer(id)) map.moveLayer(id);
     if (map.getLayer(`${id}__outline`)) map.moveLayer(`${id}__outline`);
   }
-  // The country border reads over every data layer, or a choropleth hides it.
-  if (map.getLayer(OUTLINE.line)) map.moveLayer(OUTLINE.line);
+  // The country border and the city names read over every data layer, or a
+  // choropleth hides them.
+  for (const id of [OUTLINE.line, ...cityLayerIds()]) {
+    if (map.getLayer(id)) map.moveLayer(id);
+  }
 }
 
 // Rewrite the draw order of the visible layers while leaving every hidden layer

@@ -1,87 +1,51 @@
-"""Projected change in summer low flow → data/processed/explore2_etiage.csv.
+"""Projected summer low flow and its duration → data/processed/explore2_etiage.csv.
 
-The RARE file is long-format and 154 MB: one row per commune × warming level ×
-ensemble statistic. This keeps two warming levels and three statistics and
-pivots them into one row per commune.
+Two RARE files, each long-format and 130–160 MB: VCN10 (how low the summer
+minimum gets) and dtBE (how long the low-water period lasts). Two warming levels
+and three statistics are kept and pivoted into one row per commune.
 """
 from __future__ import annotations
 
-import csv
-from collections import defaultdict
-
 import pandas as pd
 
-from pipeline.common import BuildError, Log, is_metropolitan, normalise_insee
-
-# RARE's quality flag, verbatim from the file, mapped to something short enough
-# to put in a popup. It says where the simulation points behind a commune's
-# value actually are.
-ORIGIN = {
-    "Oui (bassin versant du territoire)": "propre",
-    "Non (bassin versant proche)": "proche",
-    "Non (bassin versant éloigné)": "eloigne",
-}
+from pipeline.common import Log
+from pipeline.explore2 import opt, read_commune_indicator
 
 
 def transform(ctx) -> None:
-    res = ctx.meta["resource"]
+    resources = ctx.meta["resources"]
     warming = ctx.meta["warming"]
     stats = ctx.meta["statistics"]
-    path = ctx.raw_dir / res["filename"]
-
-    wanted_warming = {warming["reference"], warming["high"]}
-    wanted_stats = {stats["median"], stats["low"], stats["high"]}
-
-    # (code, warming, statistic) → value, collected in one streaming pass.
-    values: dict[str, dict] = defaultdict(dict)
-    origin: dict[str, str] = {}
-    rows_read = 0
-
-    # utf-8-sig: the file carries a BOM, which would otherwise become part of
-    # the first column name and silently break the DictReader lookup.
-    with path.open(encoding="utf-8-sig", newline="") as fh:
-        reader = csv.DictReader(fh)
-        required = {"code_territoire", "rechauffement_france", "statistique", "resultat"}
-        missing = required - set(reader.fieldnames or [])
-        if missing:
-            raise BuildError(
-                f"{path.name} is missing expected column(s): {', '.join(sorted(missing))} — "
-                "the RARE export layout has changed"
-            )
-        for row in reader:
-            level = row["rechauffement_france"]
-            stat = row["statistique"]
-            if level not in wanted_warming or stat not in wanted_stats:
-                continue
-            code = normalise_insee(row["code_territoire"])
-            if code is None or not is_metropolitan(code):
-                continue
-            try:
-                values[code][(level, stat)] = float(row["resultat"])
-            except (TypeError, ValueError):
-                continue
-            origin.setdefault(code, ORIGIN.get(row.get("donnees_issues_territoire", ""), ""))
-            rows_read += 1
-
-    Log.info(f"{rows_read:,} rows kept for {len(values):,} communes")
-    if not values:
-        raise BuildError(f"{path.name} produced no usable rows — check the warming/statistic labels")
-
     ref, high = warming["reference"], warming["high"]
+    levels = {ref, high}
+    wanted = {stats["median"], stats["low"], stats["high"]}
+
+    def read(key):
+        res = resources[key]
+        return read_commune_indicator(ctx.raw_dir / res["filename"], levels, wanted, res["indicator"])
+
+    values, origin = read("vcn10")
+    duration, _ = read("duration")
+
     out = []
     for code in sorted(values):
         v = values[code]
         median = v.get((ref, stats["median"]))
         if median is None:
             continue
+        d = duration.get(code, {})
         out.append(
             {
                 "code_insee": code,
                 "etiage_27_pct": round(median, 1),
-                "etiage_27_min": _opt(v.get((ref, stats["low"]))),
-                "etiage_27_max": _opt(v.get((ref, stats["high"]))),
-                "etiage_4_pct": _opt(v.get((high, stats["median"]))),
+                "etiage_27_min": opt(v.get((ref, stats["low"]))),
+                "etiage_27_max": opt(v.get((ref, stats["high"]))),
+                "etiage_4_pct": opt(v.get((high, stats["median"]))),
                 "etiage_origine": origin.get(code, ""),
+                "etiage_duree_27": opt(d.get((ref, stats["median"]))),
+                "etiage_duree_27_min": opt(d.get((ref, stats["low"]))),
+                "etiage_duree_27_max": opt(d.get((ref, stats["high"]))),
+                "etiage_duree_4": opt(d.get((high, stats["median"]))),
             }
         )
 
@@ -93,9 +57,8 @@ def transform(ctx) -> None:
     Log.info(f"  median change at {high}: {at4.median():.1f}%")
     counts = df["etiage_origine"].value_counts()
     Log.info("  " + " · ".join(f"{k} {v:,} ({v / len(df):.0%})" for k, v in counts.items()))
+    dur = pd.to_numeric(df["etiage_duree_27"], errors="coerce")
+    longer = int((dur > 0).sum())
+    Log.info(f"  low-water period: median {dur.median():+.0f} days at {ref}, longer in {longer:,} communes "
+             f"({longer / dur.notna().sum():.1%}); {int(dur.isna().sum()):,} without a value")
     df.to_csv(ctx.out_path, index=False)
-
-
-def _opt(value):
-    """Keep blanks blank rather than writing a misleading zero."""
-    return "" if value is None else round(value, 1)
