@@ -348,8 +348,10 @@ def calibrate_table(obs: pd.DataFrame, stations: pd.DataFrame, row_of: pd.Series
     err = (scaled - per["obs"]).abs()
     Log.info(f"table rainy: SAFRAN counts scaled by {coef['rainy'].min():.3f}–{coef['rainy'].max():.3f} by month · "
              f"median error {err.median():.1f} days")
+    fewer = 1 - coef["rainy"]
     checks["rainy"] = (f"Scaled month by month to {per['NUM_POSTE'].nunique():,} rain gauges, which count "
-                       f"5–11% fewer rainy days than the grid; typical error {err.median():.1f} days a month.")
+                       f"{fewer.min():.0%}–{fewer.max():.0%} fewer rainy days than the grid; typical error "
+                       f"{err.median():.1f} days a month.")
 
     o["GLOT_kwh"] = o["GLOT"] / J_CM2_PER_KWH_M2
     for key, col, label in (("precip", "RR", "precip"), ("ssi", "GLOT_kwh", "solar")):
@@ -375,8 +377,8 @@ def calibrate_table(obs: pd.DataFrame, stations: pd.DataFrame, row_of: pd.Series
              f"whole-year MAE {season_err.mean():.1f} days over {len(season)} stations "
              f"(mean {season['obs'].mean():.1f} observed)")
     checks["snow"] = (f"A day with at least 1 mm of precipitation and a low at or below 0 °C at residents' altitude. "
-                      f"Checked against the {per['NUM_POSTE'].nunique():,} stations where observers log snowfall: "
-                      f"off by {season_err.mean():.0f} days over a year on average.")
+                      f"Checked against the {len(season):,} stations where observers logged snowfall in every "
+                      f"month: off by {season_err.mean():.0f} days a year on average, more in the mountains.")
     return coef, checks
 
 
@@ -593,7 +595,7 @@ def transform(ctx) -> None:
     # so the map and the table's Year column agree.
     table_coef, table_checks = calibrate_table(station_months, stations, row_of, months, snow_table, years,
                                                min_years, ctx.meta["max_cv_rmse_monthly"])
-    rainy_scaled = months["rainy"].mean(axis=0) @ table_coef["rainy"]
+    rainy_scaled = (months["rainy"].mean(axis=0) * table_coef["rainy"]).sum(axis=1)
     rain = joined[["NUM_POSTE", "rainy_obs", "LAMBX", "LAMBY"]].dropna().groupby("NUM_POSTE").agg(
         obs=("rainy_obs", "mean"), n=("rainy_obs", "size"), LAMBX=("LAMBX", "first"), LAMBY=("LAMBY", "first"))
     rain = rain[rain["n"] >= min_years]

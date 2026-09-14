@@ -20,6 +20,7 @@ What a full build produces today:
 | Communes | 34,746 (metropolitan France, ADMIN EXPRESS millésime 2026) |
 | `site/tiles/` | 150 MB — a 98 MB commune tileset, a 22 MB air quality grid, river and rail tilesets, four small GeoJSONs |
 | `site/stats/` | 10 MB — 67 correlatable commune columns plus a centroid index |
+| `site/files/` | 25 MB — the monthly climate tables, one JSON per department, fetched on demand |
 | Full rebuild from `data/raw` | ~35 min (139 s of it is join + tiling) |
 | First fetch of everything | ~2 h, ~3.9 GB into `data/raw` |
 
@@ -35,7 +36,8 @@ shrink–swell), **Air quality** (PM2.5, NO₂ and ozone per commune, weighted b
 where residents live, and the same three on the raw 1 km grid), **Climate
 (observed)** (rainy days, solar energy and summer afternoon highs over
 2016–2025, at residents' altitude and calibrated against Météo-France
-stations), **Elections** (2022 presidential second round, first-round
+stations; any commune's full month-by-month climate table opens from the
+click panel), **Elections** (2022 presidential second round, first-round
 leader, presidential turnout; 2026 municipal turnout, lists standing, winning
 nuance), **Transport** (railway lines by type and by speed, stations by annual passengers,
 rail under construction and proposed, airports, aircraft noise zoning),
@@ -115,6 +117,7 @@ pipeline/                 build.py · validate.py · tile.py
 data/processed/           normalised outputs, EPSG:4326
 site/                     the deployable static site
 site/stats/               one JSON column per correlatable stat, plus an index
+site/files/<name>/        static files a source publishes for the page to fetch on demand
 ```
 
 `python pipeline/build.py` runs every source's fetch and transform, validates
@@ -178,6 +181,13 @@ A source can also be a pure input with no layer of its own — `fetch` plus
 `no_output: true` — when several transforms need the same large download:
 `insee_carreaux_200m` (where people live, read through `pipeline/population.py`)
 and `copernicus_dem` (terrain, read through `pipeline/elevation.py`).
+
+A source can publish static files beside its layers with `site_files: <name>`:
+its transform writes them to `ctx.files_dir`, including an `index.json`, and
+the build copies them to `site/files/<name>/` and lists them under `files` in
+`site/layers.json`. This is for data read for one place at a time and too big
+to carry in every tile — `meteo_climat`'s month-by-month climate tables,
+twelve rows of thirteen values for every commune, one file per department.
 
 A source can also skip local data entirely and point a layer at a remote
 PMTiles archive with `source_url_tiles` — see `rga_argiles`, which reads the
@@ -244,11 +254,12 @@ survey, the second is somebody's drawing of a published scheme.
 ## Frontend
 
 `site/app.js` is plain ES modules, no bundler, no npm. It reads
-`site/layers.json` and does seven things: initialise the map, build the layer
+`site/layers.json` and does eight things: initialise the map, build the layer
 panel, keep the active layers stacked in the order the user chose, generate the
 legend from each layer's `paint` block, answer a click with every loaded value
-at that point grouped by source and attribution, run the correlator, and encode
-`#lat/lon/zoom/layers/correlation` in the URL.
+at that point grouped by source and attribution, run the correlator, open a
+commune's climate table (laid out like Wikipedia's, fetched per department from
+`site/files/climate/`), and encode `#lat/lon/zoom/layers/correlation` in the URL.
 
 `site/correlate.js` is the correlator's arithmetic and nothing else — Pearson,
 Spearman, a uniform grid for the neighbourhood search, and the local-r pass. No
@@ -263,7 +274,7 @@ promoted to a feature id on the commune source, so changing a dropdown never
 re-parses the style.
 
 Libraries are vendored and version-pinned in `site/lib/`: MapLibre GL JS 5.6.0
-and pmtiles 4.3.0. `app.js` is ~1,500 lines of plain JavaScript and
+and pmtiles 4.3.0. `app.js` is ~1,750 lines of plain JavaScript and
 `correlate.js` ~240; there is no build step for the frontend and nothing is
 minified, so dev tools show you the real source.
 
@@ -345,7 +356,7 @@ And four from air quality:
   out through `bsdtar` (libarchive: built into macOS, `libarchive-tools` on
   Linux).
 
-And four from observed climate:
+And five from observed climate:
 
 - **A grid cell's temperature is for its average altitude.** SAFRAN's 8 km
   cells in the Alps average far above the valley towns: at stations 300 m or
@@ -363,6 +374,15 @@ And four from observed climate:
   after correcting each day's temperature, from per-cell tables of counts at
   0.25 °C shifts. Shifting the ten-year count afterwards would not be the same
   thing, and the raw grid undercounts hot days by 13 a year.
+- **The climate table is calibrated month by month.** Lapse rates and SAFRAN's
+  bias change with the season, so the table's temperatures and humidity get
+  their own correction per month, and the extremes (mean maximum, mean minimum)
+  a further one fitted on stations' hottest and coldest days. Snowy days are
+  not SAFRAN's own snowfall, which splits rain from snow at the cell's mean
+  altitude and in the Alps counted ~70% more snowy days than valley stations
+  logged: they are wet days whose low, corrected to residents' altitude,
+  reaches 0 °C. The build prints each row's error against stations and the
+  page shows it under the table.
 - **A download can end short without raising anything.** Two of the ten
   137 MB SAFRAN files were saved truncated: the server closed the connection,
   the read simply ended, and nothing raised. `download()` now compares the

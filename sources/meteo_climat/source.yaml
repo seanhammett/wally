@@ -111,6 +111,21 @@ notes: |
   Rainfall is not altitude-corrected, so a sheltered valley town can get less
   than its mountainous cell (Chamonix: 1,758 mm shown, ~1,260 at the station).
 
+  **The climate table.** Clicking a commune offers its month-by-month table,
+  in the layout of Wikipedia's climate boxes: highest and lowest of the ten
+  years, mean maximum and minimum (each month's hottest and coldest day,
+  averaged), mean daily maximum / mean / minimum, precipitation, rainy days,
+  snowy days, relative humidity and solar energy. Temperatures and humidity
+  are corrected month by month with the same station fit as above, one per
+  month (and for the Year column's mean maximum and minimum, one on stations'
+  hottest and coldest day of the year). Typical cross-validated errors: mean
+  daily maximum 0.6 °C, daily mean 0.5, mean daily minimum 0.8, mean maximum
+  0.8, mean minimum 1.3, highest/lowest 1.2/1.6, humidity 2 points; rainy days
+  are scaled per month to gauges. Sunshine hours and UV index, which Wikipedia
+  tables often carry, are not available per commune and are left out. Against
+  the Marignane and Paris-Montsouris stations over the same ten years, most
+  cells agree within a few tenths.
+
   **Sunshine is solar energy, not hours.** Hours are measured at only ~190
   stations. Estimating them from radiation was tested and missed by up to 500
   hours at mountain stations, where terrain blocks the sun, so the map shows

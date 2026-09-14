@@ -86,7 +86,7 @@
    "unit": "days",
    "decimals": 1,
    "scale": "days",
-   "check": "Scaled month by month to 2,072 rain gauges, which count 5–11% fewer rainy days than the grid; typical error 0.5 days a month."
+   "check": "Scaled month by month to 2,072 rain gauges, which count 5%–10% fewer rainy days than the grid; typical error 0.5 days a month."
   },
   {
    "id": "snow",
@@ -94,7 +94,7 @@
    "unit": "days",
    "decimals": 1,
    "scale": "snow",
-   "check": "A day with at least 1 mm of precipitation and a low at or below 0 °C at residents' altitude. Checked against the 344 stations where observers log snowfall: off by 2 days over a year on average."
+   "check": "A day with at least 1 mm of precipitation and a low at or below 0 °C at residents' altitude. Checked against the 158 stations where observers logged snowfall in every month: off by 2 days a year on average, more in the mountains."
   },
   {
    "id": "hu",
@@ -102,7 +102,7 @@
    "unit": "%",
    "decimals": 0,
    "scale": "humidity",
-   "check": "Within 1.2 points of 739 stations month by month; not corrected."
+   "check": "Checked against 739 stations: typical error 2.0 points (3.8 points in the mountains)."
   },
   {
    "id": "solar",

@@ -1,10 +1,10 @@
 // France data overlay — the whole frontend.
 //
-// It does seven things: initialise the map, build the layer panel from
+// It does eight things: initialise the map, build the layer panel from
 // layers.json, keep the active layers stacked in the order the user chose,
 // generate the legend, answer clicks with every loaded value at that point, run
-// the correlator, and keep all of that in the URL hash. Adding a dataset never
-// touches this file.
+// the correlator, open a commune's climate table, and keep all of that in the
+// URL hash. Adding a dataset never touches this file.
 //
 // Any number of layers can be on at once. `state.order` is the draw order,
 // bottom first, and is the single source of truth for the map stack, the active
@@ -750,6 +750,14 @@ function inspect(map, point, lngLat) {
       row.append(el('span', 'k', k), el('span', 'v', String(v)));
       head.appendChild(row);
     }
+    if (climateFiles()) {
+      const code = props.code_insee;
+      const name = props.nom;
+      const button = el('button', 'insp-action', 'Show climate table');
+      button.type = 'button';
+      button.addEventListener('click', () => openClimateTable(code, name, button));
+      head.appendChild(button);
+    }
     body.appendChild(head);
   }
 
@@ -789,6 +797,150 @@ function inspect(map, point, lngLat) {
     body.appendChild(el('p', 'insp-empty', 'Nothing loaded at this point. Switch on a layer and click again.'));
   }
   $('#inspect').hidden = false;
+}
+
+// -------------------------------------------------------- climate table
+// A month-by-month climate table for one commune, laid out like the ones on
+// Wikipedia. Twelve rows of thirteen values for 35,000 communes is too much to
+// ride in the tiles, so the pipeline writes one file per department and a
+// department is fetched the first time one of its communes is opened.
+
+const climate = { index: null, depts: new Map(), code: null, opener: null };
+
+function climateFiles() {
+  return ((state.manifest || {}).files || {}).meteo_climat || null;
+}
+
+async function fetchJson(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
+  return res.json();
+}
+
+// Colour stops per kind of row, close to the scales Wikipedia's tables use.
+// Rows that sum over the year are coloured by their monthly average, so the
+// Year cell sits on the same scale as the months beside it.
+const CLIMATE_SCALES = {
+  temp: [[-25, '#2c2c8c'], [-15, '#5555d8'], [-5, '#a8a8fa'], [0, '#eeeeff'], [5, '#fff3e3'], [10, '#ffdcb0'],
+         [15, '#ffc07c'], [20, '#ff9c48'], [25, '#f47b2b'], [30, '#e3521b'], [35, '#c42e10'], [40, '#8c180a']],
+  precip: [[0, '#ffffff'], [25, '#e8fae8'], [50, '#c2f0c2'], [100, '#86dc86'], [200, '#40b048'], [300, '#1f7a2a']],
+  days: [[0, '#ffffff'], [5, '#e8e8fa'], [10, '#c9c9f4'], [15, '#a2a2ea'], [20, '#7a7adc'], [25, '#5252c8']],
+  snow: [[0, '#ffffff'], [2, '#eaf4fb'], [5, '#cde5f6'], [10, '#98c8ec'], [15, '#66abdf'], [25, '#3583c6']],
+  humidity: [[40, '#ffffff'], [60, '#e0e8ff'], [75, '#a3bbf5'], [85, '#5f82e6'], [95, '#2d4fbf']],
+  solar: [[0, '#9a9a8a'], [20, '#d6d6c4'], [60, '#efefb4'], [120, '#f7f06c'], [180, '#ffe414'], [240, '#ffc400']],
+};
+
+function hexRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function climateColour(scale, value) {
+  const stops = CLIMATE_SCALES[scale];
+  let rgb;
+  if (value <= stops[0][0]) rgb = hexRgb(stops[0][1]);
+  else if (value >= stops[stops.length - 1][0]) rgb = hexRgb(stops[stops.length - 1][1]);
+  else {
+    const i = stops.findIndex(([v]) => v > value);
+    const [v0, c0] = stops[i - 1];
+    const [v1, c1] = stops[i];
+    const t = (value - v0) / (v1 - v0);
+    const a = hexRgb(c0);
+    const b = hexRgb(c1);
+    rgb = a.map((x, k) => Math.round(x + (b[k] - x) * t));
+  }
+  const luminance = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+  return { bg: `rgb(${rgb.join(',')})`, fg: luminance < 0.5 ? '#fff' : '#111' };
+}
+
+function climateNumber(value, decimals) {
+  if (value === null || value === undefined) return '—';
+  const text = Math.abs(value).toLocaleString('en', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  return value < 0 && Number(text.replace(/,/g, '')) !== 0 ? `\u2212${text}` : text;
+}
+
+function renderClimateTable(index, data) {
+  const table = el('table', 'climate');
+  const head = el('tr');
+  head.appendChild(el('th', null, 'Month'));
+  index.columns.forEach((c, i) => head.appendChild(el('th', i === 12 ? 'year' : null, c)));
+  table.appendChild(el('thead')).appendChild(head);
+
+  const body = table.appendChild(el('tbody'));
+  index.rows.forEach((row, r) => {
+    const tr = body.appendChild(el('tr'));
+    const label = el('th', null, row.label);
+    label.scope = 'row';
+    label.appendChild(el('span', 'unit', ` ${row.unit === 'days' ? '' : row.unit}`.trimEnd()));
+    if (row.check) label.title = row.check;
+    tr.appendChild(label);
+    const summed = ['precip', 'days', 'snow', 'solar'].includes(row.scale);
+    data.rows[r].forEach((value, i) => {
+      const td = el('td', i === 12 ? 'year' : null, climateNumber(value, row.decimals));
+      if (value !== null) {
+        const { bg, fg } = climateColour(row.scale, i === 12 && summed ? value / 12 : value);
+        td.style.background = bg;
+        td.style.color = fg;
+      }
+      tr.appendChild(td);
+    });
+  });
+
+  const wrap = el('div');
+  wrap.appendChild(el('div', 'climate-scroll')).appendChild(table);
+  const notes = wrap.appendChild(el('div', 'climate-notes'));
+  for (const text of index.notes) notes.appendChild(el('p', null, text));
+  const details = notes.appendChild(el('details'));
+  details.appendChild(el('summary', null, 'How accurate each row is'));
+  const list = details.appendChild(el('dl'));
+  for (const row of index.rows) {
+    list.append(el('dt', null, row.label), el('dd', null, row.check));
+  }
+  notes.appendChild(el('p', null, index.attribution));
+  return wrap;
+}
+
+async function openClimateTable(code, name, opener) {
+  const files = climateFiles();
+  const modal = $('#climate');
+  const body = $('#climate-body');
+  climate.code = code;
+  climate.opener = opener || null;
+  $('#climate-title').textContent = `Climate data for ${name || code}`;
+  $('#climate-sub').textContent = '';
+  body.replaceChildren(el('p', 'muted', 'Loading…'));
+  modal.hidden = false;
+  $('#climate-close').focus();
+
+  const dep = code.slice(0, 2);
+  try {
+    if (!climate.index) climate.index = fetchJson(files.index);
+    if (!climate.depts.has(dep)) climate.depts.set(dep, fetchJson(`${files.dir}/${dep}.json`));
+    const [index, communes] = await Promise.all([climate.index, climate.depts.get(dep)]);
+    if (climate.code !== code || modal.hidden) return;      // closed, or another commune opened meanwhile
+    const data = communes[code];
+    if (!data) {
+      body.replaceChildren(el('p', 'muted', 'No climate data for this commune.'));
+      return;
+    }
+    const alt = data.alt == null ? '' : ` · where residents live, ${data.alt.toLocaleString('en')} m up`;
+    $('#climate-sub').textContent = `Averages of ${index.period}${alt}`;
+    body.replaceChildren(renderClimateTable(index, data));
+  } catch (err) {
+    // A failed request is not cached, so opening the table again retries it.
+    climate.index = null;
+    climate.depts.delete(dep);
+    if (climate.code === code) body.replaceChildren(el('p', 'muted', `Could not load the climate table: ${err.message}`));
+  }
+}
+
+function closeClimateTable() {
+  const modal = $('#climate');
+  if (modal.hidden) return;
+  modal.hidden = true;
+  climate.code = null;
+  if (climate.opener && document.contains(climate.opener)) climate.opener.focus();
+  climate.opener = null;
 }
 
 // ----------------------------------------------------------- correlator
@@ -1606,6 +1758,9 @@ async function main() {
   map.on('error', (e) => console.warn('[map]', e && e.error ? e.error.message : e));
 
   $('#inspect-close').addEventListener('click', () => { $('#inspect').hidden = true; });
+  $('#climate-close').addEventListener('click', closeClimateTable);
+  $('#climate').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeClimateTable(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeClimateTable(); });
   $('#panel-toggle').addEventListener('click', () => $('#panel').classList.toggle('hidden'));
 }
 
