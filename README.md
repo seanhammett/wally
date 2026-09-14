@@ -15,14 +15,14 @@ What a full build produces today:
 
 | | |
 |---|---|
-| Sources | 27 built, 2 fetch-only inputs (population grid, terrain), 1 manual awaiting its download |
-| Layers | 55, across all four patterns |
+| Sources | 29 built (one from a manual DRIAS order, one derived from the others), 2 fetch-only inputs (population grid, terrain) |
+| Layers | 60, across all four patterns |
 | Communes | 34,746 (metropolitan France, ADMIN EXPRESS millésime 2026) |
-| `site/tiles/` | 150 MB — a 98 MB commune tileset, a 22 MB air quality grid, river and rail tilesets, four small GeoJSONs |
-| `site/stats/` | 11 MB — 78 correlatable commune columns plus a centroid index |
+| `site/tiles/` | 177 MB — a 127 MB commune tileset, a 27 MB river tileset, a 23 MB air quality grid, rail tilesets, small GeoJSONs |
+| `site/stats/` | 15 MB — 104 correlatable commune columns plus a centroid index |
 | `site/files/` | 25 MB — the monthly climate tables, one JSON per department, fetched on demand |
 | Full rebuild from `data/raw` | ~35 min (139 s of it is join + tiling) |
-| First fetch of everything | ~2 h, ~4.3 GB into `data/raw` |
+| First fetch of everything | ~2 h, ~4.3 GB into `data/raw`, plus the DRIAS order (~215 MB) |
 
 Layer groups: **Income & property** (median standard of living, income
 inequality, poverty rate, price per m², price of a house), **Population &
@@ -31,7 +31,8 @@ food access, food shops, everyday-services basket, service-provision class,
 health services),
 **Hazards** (drought days, worst restriction level, projected summer low flow at
 +2.7 °C and at +4 °C, longer summer low water, river flood peaks at +2.7 °C,
-tropical nights, summer days, area burned, fire count,
+tropical nights, days reaching 35 °C, dry-soil days and fire-weather days at
++2.7 °C (DRIAS TRACC-2023), summer days, area burned, fire count,
 flood disaster declarations, flood PPR status, coastal hazard, clay
 shrink–swell zones and the share of residents living on them), **Air quality** (PM2.5, NO₂ and ozone per commune, weighted by
 where residents live, and the same three on the raw 1 km grid), **Climate
@@ -42,7 +43,8 @@ click panel), **Elections** (2022 presidential second round, first-round
 leader, presidential turnout; 2026 municipal turnout, lists standing, winning
 nuance), **Transport** (railway lines by type and by speed, stations by annual passengers,
 rail under construction and proposed, airports, aircraft noise zoning),
-**Protected areas**, **Water** (rivers and canals, piezometers), **Reference**.
+**Protected areas**, **Water** (rivers and canals, piezometers), **Reference**,
+**Habitability 2050** (Wally's 2050 habitability score, below).
 
 Several layers are deliberately paired so they can be stacked and compared: the
 projected low flow at +2.7 °C against the same indicator at +4 °C, the flood
@@ -56,6 +58,25 @@ completely differently — one from tax records of residents, one from the tax
 authority's record of what changed hands — so where they diverge, something is
 happening: second-home coasts where prices outrun local incomes, and former
 industrial towns where the reverse holds.
+
+## The 2050 habitability score
+
+`sources/score_habitabilite/` builds a habitability score for 2050 from the
+other sources' outputs, following the method Projet Celsius published for its
+own map (their note, not their data): 11 indicators in six equally weighted
+categories — heat, fire, drought and clay, floods, coast, lack of services —
+each turned into a 0–100 exposure, and the score is 100 minus the average of
+the six. Continuous indicators are positions among communes ("more exposed than
+X% of them"); register counts and the clay class are scaled linearly. Every
+indicator, scale and direction is declared in its `source.yaml`.
+
+Every build prints Celsius's worked example next to Wally's: for Mont-de-Marsan
+the heat, drought and flood indicators land within a point or two of theirs.
+The deliberate differences are fire, which is interim DRIAS fire-weather days
+until a model calibrated on observed fires exists (weather alone underrates the
+Landes pine forest), and services, which use Wally's everyday-services basket
+rather than facilities per 1,000 residents. Read it as where, not how much, and
+note that a quarter of it rests on administrative flood and coastal registers.
 
 ## The correlator
 
@@ -108,6 +129,23 @@ The whole thing runs in the browser. Selecting a pair fetches two ~150 KB
 columns; the neighbourhood pass over 34,746 communes takes under a tenth of a
 second. The selection lives in the URL alongside the view and the layer stack,
 so a correlation is a link someone else can open.
+
+## The optimiser
+
+"Find matching areas" turns the same columns into a shortlist. Add the
+statistics that matter; for each, say whether more or less is better, give it a
+weight from 1 to 5, and optionally a ramp — the value that is unacceptable and
+the value that is ideal. With no ramp a commune scores its percentile rank in the
+chosen direction; with one it scores 0 at the unacceptable end, 1 at the ideal
+end, and a straight line between.
+
+The scores are combined as a weighted geometric mean — multiplied, not averaged
+— so a commune at the unacceptable end of any one ramp is ruled out however well
+it does on the rest, and a commune missing any of the chosen statistics is left
+unscored rather than guessed at. The map shades the communes that pass by rank
+(top 1%, 5%, 10%, 25%, 50%, the rest), the panel lists the top ten (click to fly
+there), and clicking a commune shows each value, the score it earned, and its
+overall rank. The criteria live in the URL like the correlation does.
 
 ## How it fits together
 
@@ -184,6 +222,12 @@ A source can also be a pure input with no layer of its own — `fetch` plus
 `insee_carreaux_200m` (where people live, read through `pipeline/population.py`)
 and `copernicus_dem` (terrain, read through `pipeline/elevation.py`).
 
+A source can be built from other sources' outputs instead of raw files: list
+them under `inputs:` in `source.yaml` and read each with
+`ctx.processed(source_id)`. `--only` then re-runs the dependent whenever it
+re-runs one of its inputs, and the build skips it if an input failed, so it can
+never describe an older version of them. `score_habitabilite` is the example.
+
 A source can publish static files beside its layers with `site_files: <name>`:
 its transform writes them to `ctx.files_dir`, including an `index.json`, and
 the build copies them to `site/files/<name>/` and lists them under `files` in
@@ -221,12 +265,18 @@ no scraping behind forms, no faked sessions. `sources/drias_chaleur/` is the
 worked example: it is `optional: true`, so the build completes without it and
 tells you what is missing.
 
-It also shows what to do while a manual source is outstanding. Rather than leave
-heat unmapped, `sources/meteo_chaleur/` takes the same indicators from the
-Aladin-Climat files Météo-France publishes openly and ships them today. The
-manual route stays in the tree because it is still strictly better — it has the
-days-above-35 °C count and the newer model generation — but it is now an upgrade
-rather than a blocker.
+DRIAS needs a personal account, so its archives are ordered by hand and dropped
+in `data/raw/drias_chaleur/`; the transform reads them straight out of the tar
+files. The export has three defects — day counts written as pandas time spans,
+the dry-soil files stacked as a values table above a coordinates table, and
+median files headed "MAX" — which the transform repairs only after checking
+them (land masks position for position, min ≤ median ≤ max at every point).
+At the grid point containing Mont-de-Marsan its three values match those in
+Projet Celsius's methodology note exactly.
+
+`sources/meteo_chaleur/` is what shipped while that order was outstanding: the
+same families of indicator from the older Aladin-Climat files Météo-France
+publishes openly. It is kept for its 1976–2005 reference and RCP4.5 comparison.
 
 ## Known data gaps
 
@@ -259,13 +309,16 @@ survey, the second is somebody's drawing of a published scheme.
 `site/layers.json` and does eight things: initialise the map, build the layer
 panel, keep the active layers stacked in the order the user chose, generate the
 legend from each layer's `paint` block, answer a click with every loaded value
-at that point grouped by source and attribution, run the correlator, open a
-commune's climate table (laid out like Wikipedia's, fetched per department from
-`site/files/climate/`), and encode `#lat/lon/zoom/layers/correlation` in the URL.
+at that point grouped by source and attribution, run the correlator and the
+optimiser, open a commune's climate table (laid out like Wikipedia's, fetched per
+department from `site/files/climate/`), and encode
+`#lat/lon/zoom/layers/correlation/optimiser` in the URL.
 
 `site/correlate.js` is the correlator's arithmetic and nothing else — Pearson,
 Spearman, a uniform grid for the neighbourhood search, and the local-r pass. No
-DOM, no map, no fetch, so it can be read and tested on its own.
+DOM, no map, no fetch, so it can be read and tested on its own. `site/optimise.js`
+is the same for the optimiser: percentile and ramp desirabilities, the weighted
+geometric mean, and the rank classes.
 
 The correlation result is drawn by a layer called `__correlation` that no source
 published. It is a manifest entry in every other respect, which is what buys it
@@ -273,11 +326,13 @@ the stack, the opacity slider, the in-row colour scale, the legend, the
 attribution line and the shareable hash without a special case in any of them.
 Its values reach the map through `setFeatureState` keyed on the INSEE code,
 promoted to a feature id on the commune source, so changing a dropdown never
-re-parses the style.
+re-parses the style. The optimiser's `__optimiser` layer works the same way on the
+same source, under its own feature-state key, so the two can be on the map
+together without either clearing the other.
 
 Libraries are vendored and version-pinned in `site/lib/`: MapLibre GL JS 5.6.0
-and pmtiles 4.3.0. `app.js` is ~1,750 lines of plain JavaScript and
-`correlate.js` ~240; there is no build step for the frontend and nothing is
+and pmtiles 4.3.0. `app.js` is ~2,250 lines of plain JavaScript,
+`correlate.js` ~250 and `optimise.js` ~150; there is no build step for the frontend and nothing is
 minified, so dev tools show you the real source.
 
 Local preview must use `pipeline/serve.py`, not `python -m http.server` — the

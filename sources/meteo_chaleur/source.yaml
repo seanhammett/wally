@@ -39,8 +39,9 @@ max_grid_distance_km: 40
 
 notes: |
   The heat indicators DRIAS publishes openly, rather than the ones behind the
-  order form. `sources/drias_chaleur/` still documents that manual route and is
-  the upgrade path; this source is the part that can be automated today.
+  order form. `sources/drias_chaleur/` is that manual route, now built from a
+  TRACC-2023 order: tropical nights, days reaching 35 °C and dry-soil days at
+  +2.7 °C. This source is the part that can be automated.
 
   Two differences from what a DRIAS order would give you, both of which matter:
 

@@ -96,6 +96,6 @@
     ],
     "default_visible": false,
     "default_opacity": 0.72,
-    "legend_note": "Days above 25 °C, mid-century under RCP8.5 — median commune 66, up to 135 on the Mediterranean. The 35 °C threshold is not in the openly published files; it needs a manual DRIAS-2020 order, which sources/drias_chaleur documents. These are the DRIAS-2014 runs, which under-project French summer warming against the newer set, so read them as the conservative end."
+    "legend_note": "Days above 25 °C, mid-century under RCP8.5 — median commune 66, up to 135 on the Mediterranean. Days reaching 35 °C, from the newer TRACC-2023 ensemble at +2.7 °C, are their own layer. These are the DRIAS-2014 runs, which under-project French summer warming against the newer set, so read them as the conservative end."
   }
 ]

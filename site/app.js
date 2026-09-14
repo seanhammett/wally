@@ -3,8 +3,8 @@
 // It does eight things: initialise the map, build the layer panel from
 // layers.json, keep the active layers stacked in the order the user chose,
 // generate the legend, answer clicks with every loaded value at that point, run
-// the correlator, open a commune's climate table, and keep all of that in the
-// URL hash. Adding a dataset never touches this file.
+// the correlator and the optimiser, open a commune's climate table, and keep all
+// of that in the URL hash. Adding a dataset never touches this file.
 //
 // Any number of layers can be on at once. `state.order` is the draw order,
 // bottom first, and is the single source of truth for the map stack, the active
@@ -26,11 +26,15 @@ const state = {
   basemap: null,
   overlays: new Set(),
   fieldIndex: new Map(), // property name -> { label, unit, layer }
-  corr: {
+  // The published commune stat columns, shared by the correlator and the
+  // optimiser so a column either of them fetched is never fetched twice.
+  stats: {
     fields: [],          // manifest stats.fields, in panel order
     byName: new Map(),
-    index: null,         // { codes, names, dep, lon, lat }
+    index: null,         // { codes, names, dep, lon, lat, row }
     columns: new Map(),  // field name -> Float64Array, fetched once and kept
+  },
+  corr: {
     x: null, y: null,    // the two chosen stats
     mode: 'local',       // 'local' (r in a disc) | 'agree' (z-score product)
     radius: 25,          // km, for 'local'
@@ -40,6 +44,13 @@ const state = {
     busy: false,
     error: null,
     run: 0,              // guards against a slow request overwriting a newer one
+  },
+  opt: {
+    criteria: [],        // { name, dir: 'up'|'down', weight: 1–5, bad, ideal }, in panel order
+    result: null,        // Optimise.combine output plus the per-criterion desirabilities
+    busy: false,
+    error: null,
+    run: 0,
   },
 };
 
@@ -839,6 +850,19 @@ function inspect(map, point, lngLat) {
     renderScatter();                 // ring this commune in the scatter above
   }
 
+  const optRows = state.visible.has(OPT_ID) ? optInspectRows(props.code_insee) : null;
+  if (optRows) {
+    const block = el('div', 'insp-group');
+    block.appendChild(el('h3', null, state.byId.get(OPT_ID).label));
+    for (const { k, v } of optRows) {
+      const row = el('div', 'insp-row');
+      row.append(el('span', 'k', k), el('span', 'v', v));
+      block.appendChild(row);
+    }
+    block.appendChild(el('div', 'insp-attr', 'Computed in your browser from the commune stat columns.'));
+    body.appendChild(block);
+  }
+
   for (const { layer, rows } of bySource.values()) {
     const block = el('div', 'insp-group');
     block.appendChild(el('h3', null, layer.source_name || layer.label));
@@ -1060,7 +1084,7 @@ const SIDE_LABELS = {
 // {A} and {B} stand for the two chosen statistics. Placeholders rather than bare
 // letters, so substituting them cannot also swallow the article in "A commune".
 function namePair(text) {
-  const fx = corrField(state.corr.x), fy = corrField(state.corr.y);
+  const fx = statField(state.corr.x), fy = statField(state.corr.y);
   if (!fx || !fy) return text.replace(/\{A\}/g, 'A').replace(/\{B\}/g, 'B');
   return text.replace(/\{A\}/g, shortLabel(fx.label)).replace(/\{B\}/g, shortLabel(fy.label));
 }
@@ -1089,7 +1113,7 @@ function corrPalette(side, colors) {
 
 const corrMode = () => CORR_MODES.find((m) => m.id === state.corr.mode) || CORR_MODES[0];
 
-const corrField = (name) => state.corr.byName.get(name) || null;
+const statField = (name) => state.stats.byName.get(name) || null;
 
 // Field labels are full sentences, because the inspect panel wants the whole
 // gloss. A dropdown inside a 330px panel wants the head of it.
@@ -1112,37 +1136,35 @@ function strength(r) {
 // France. These columns are the same table the tiles were cut from, published
 // whole — one file per stat, so a pair costs two fetches and not the lot.
 async function loadColumn(name) {
-  const c = state.corr;
-  if (c.columns.has(name)) return c.columns.get(name);
-  const field = corrField(name);
+  if (state.stats.columns.has(name)) return state.stats.columns.get(name);
+  const field = statField(name);
   const res = await fetch(field.file);
   if (!res.ok) throw new Error(`${field.file} → HTTP ${res.status}`);
   // NaN rather than null, so a commune with no published figure drops out of
   // every sum without a branch inside the inner loop.
   const col = Float64Array.from(await res.json(), (v) => (v === null ? NaN : v));
-  c.columns.set(name, col);
+  state.stats.columns.set(name, col);
   return col;
 }
 
-async function loadCorrIndex() {
-  const c = state.corr;
-  if (c.index) return c.index;
+async function loadStatIndex() {
+  if (state.stats.index) return state.stats.index;
   const res = await fetch(state.manifest.stats.index);
   if (!res.ok) throw new Error(`${state.manifest.stats.index} → HTTP ${res.status}`);
   const raw = await res.json();
-  c.index = {
+  state.stats.index = {
     codes: raw.codes, names: raw.names, dep: raw.dep,
     lon: Float64Array.from(raw.lon), lat: Float64Array.from(raw.lat),
     row: new Map(raw.codes.map((code, i) => [code, i])),
   };
-  return c.index;
+  return state.stats.index;
 }
 
 // ---------------------------------------------------------------- compute
 function computeCorrelation() {
   const c = state.corr;
-  const x = c.columns.get(c.x);
-  const y = c.columns.get(c.y);
+  const x = state.stats.columns.get(c.x);
+  const y = state.stats.columns.get(c.y);
   const rows = Correlate.finitePairs(x, y);
   const result = {
     rows,
@@ -1152,7 +1174,7 @@ function computeCorrelation() {
 
   if (c.mode === 'local') {
     Object.assign(result, Correlate.localCorrelation({
-      x, y, lon: c.index.lon, lat: c.index.lat, rows,
+      x, y, lon: state.stats.index.lon, lat: state.stats.index.lat, rows,
       radiusKm: c.radius, minN: MIN_NEIGHBOURS,
     }));
   } else {
@@ -1172,19 +1194,35 @@ function computeCorrelation() {
 // calls, costing about a tenth of a second. The alternative — a match expression
 // with 35,000 branches — has to be re-parsed by the style on every change, and
 // is both slower and unreadable.
-function paintCorrelation(map) {
-  const c = state.corr;
-  const layer = state.byId.get(CORR_ID);
+//
+// Both computed layers paint the one commune source, and feature state belongs
+// to the source rather than to a layer. So each tool writes under its own key
+// and clears only the communes it wrote last time — a blanket removeFeatureState
+// here would wipe the other tool's map as a side effect.
+const paintedCodes = new Map();   // feature-state key -> INSEE codes written last time
+
+function paintFeatureState(map, layerId, key, values) {
+  const layer = state.byId.get(layerId);
   if (!layer || !map.getSource(sourceKeyFor(layer))) return;
   const target = { source: sourceKeyFor(layer), sourceLayer: layer.source_layer };
-  map.removeFeatureState(target);
-  if (!c.result) return;
-
-  const values = c.result.values;
-  const codes = c.index.codes;
-  for (let i = 0; i < values.length; i++) {
-    if (Number.isFinite(values[i])) map.setFeatureState({ ...target, id: codes[i] }, { v: values[i] });
+  for (const code of paintedCodes.get(key) || []) {
+    map.setFeatureState({ ...target, id: code }, { [key]: null });
   }
+  const written = [];
+  if (values) {
+    const codes = state.stats.index.codes;
+    for (let i = 0; i < values.length; i++) {
+      if (!Number.isFinite(values[i])) continue;
+      map.setFeatureState({ ...target, id: codes[i] }, { [key]: values[i] });
+      written.push(codes[i]);
+    }
+  }
+  paintedCodes.set(key, written);
+}
+
+function paintCorrelation(map) {
+  const c = state.corr;
+  paintFeatureState(map, CORR_ID, 'v', c.result ? c.result.values : null);
 }
 
 // The paint block is the single source of truth for the map, the in-row scale
@@ -1194,7 +1232,7 @@ function corrPaint() {
   const c = state.corr;
   const layer = state.byId.get(CORR_ID);
   const mode = corrMode();
-  const fx = corrField(c.x), fy = corrField(c.y);
+  const fx = statField(c.x), fy = statField(c.y);
   const unit = { local: `r within ${c.radius} km`, agree: 'z × z', gap: 'z(A) − z(B)' };
 
   layer.paint = {
@@ -1248,7 +1286,7 @@ async function runCorrelation(map, { recolourOnly = false, show = true } = {}) {
   c.error = null;
   renderCorrelator(map);
   try {
-    await loadCorrIndex();
+    await loadStatIndex();
     await Promise.all([loadColumn(c.x), loadColumn(c.y)]);
   } catch (err) {
     if (token !== c.run) return;
@@ -1298,7 +1336,7 @@ function renderScatter() {
   svg.innerHTML = '';
   if (!c.result) return;
 
-  const x = c.columns.get(c.x), y = c.columns.get(c.y);
+  const x = state.stats.columns.get(c.x), y = state.stats.columns.get(c.y);
   const { rows, global } = c.result;
   // Axes are trimmed to the 1st–99th percentile. One commune with a €14,000/m²
   // flat would otherwise squash the rest of France into the bottom-left pixel.
@@ -1366,7 +1404,7 @@ function renderScatter() {
 
   // The commune from the last click, so the inspect panel and the scatter are
   // looking at the same place.
-  const fi = c.focus != null ? c.index.row.get(c.focus) : undefined;
+  const fi = c.focus != null ? state.stats.index.row.get(c.focus) : undefined;
   if (fi !== undefined && Number.isFinite(x[fi]) && Number.isFinite(y[fi])) {
     add('circle', {
       cx: Math.max(SC.l, Math.min(SC.w - SC.r, px(x[fi]))),
@@ -1382,21 +1420,22 @@ function renderScatter() {
   add('text', { x: SC.l - 4, y: SC.t + 7, 'text-anchor': 'end', ...tick }, fmtAxis(y1));
   add('text', { x: (SC.l + SC.w - SC.r) / 2, y: SC.h - 4, 'text-anchor': 'middle',
                 'font-size': 9, fill: '#374151' },
-      `${shortLabel(corrField(c.x).label)} →    ↑ ${shortLabel(corrField(c.y).label)}`);
+      `${shortLabel(statField(c.x).label)} →    ↑ ${shortLabel(statField(c.y).label)}`);
   svg.setAttribute('aria-label',
-    `Scatter plot of ${corrField(c.x).label} against ${corrField(c.y).label} over `
+    `Scatter plot of ${statField(c.x).label} against ${statField(c.y).label} over `
     + `${rows.length.toLocaleString('en')} communes. Pearson r is ${fmtR(global.r)}.`);
 }
 
 // ------------------------------------------------------------------- UI
-function fillStatSelect(sel, value, onChange) {
+function fillStatSelect(sel, value, onChange, { blank: blankLabel = '— choose a statistic —', exclude = null } = {}) {
   sel.innerHTML = '';
-  const blank = el('option', null, '— choose a statistic —');
+  const blank = el('option', null, blankLabel);
   blank.value = '';
   sel.appendChild(blank);
 
   const groups = new Map();
-  for (const f of state.corr.fields) {
+  for (const f of state.stats.fields) {
+    if (exclude && exclude.has(f.name)) continue;
     if (!groups.has(f.group)) groups.set(f.group, []);
     groups.get(f.group).push(f);
   }
@@ -1449,7 +1488,7 @@ function corrHeadline() {
   fact('Spearman ρ', fmtR(c.result.spearman),
        'The same correlation computed on ranks. A long way from Pearson r means the relationship is real but not a straight line.');
   fact('Communes', rows.length.toLocaleString('en'),
-       `Communes where both statistics are published, out of ${c.index.codes.length.toLocaleString('en')}.`);
+       `Communes where both statistics are published, out of ${state.stats.index.codes.length.toLocaleString('en')}.`);
   fact('On the map', c.result.mapped.toLocaleString('en'),
        'Communes the current mode could give a value to.');
 
@@ -1459,7 +1498,7 @@ function corrHeadline() {
 function corrCaveats() {
   const c = state.corr;
   const { rows } = c.result;
-  const share = rows.length / c.index.codes.length;
+  const share = rows.length / state.stats.index.codes.length;
   const parts = [namePair(corrMode().hint)];
   if (c.mode === 'local') {
     const blank = rows.length - c.result.mapped;
@@ -1525,13 +1564,13 @@ function renderCorrelator(map) {
 function corrInspectRows(code) {
   const c = state.corr;
   if (!c.result || code == null) return null;
-  const i = c.index.row.get(code);
+  const i = state.stats.index.row.get(code);
   if (i === undefined) return null;
 
   const rows = [];
   for (const name of [c.x, c.y]) {
-    const f = corrField(name);
-    const v = c.columns.get(name)[i];
+    const f = statField(name);
+    const v = state.stats.columns.get(name)[i];
     rows.push({ k: shortLabel(f.label), v: Number.isFinite(v) ? formatValue(v, f) : '—' });
   }
   const v = c.result.values[i];
@@ -1542,8 +1581,8 @@ function corrInspectRows(code) {
   } else if (c.mode === 'gap') {
     // The two z-scores as well as their difference: "+1.8 against −0.9" says
     // which of the pair is doing the work, where the gap alone does not.
-    const zx = (c.columns.get(c.x)[i] - c.result.statsX.mean) / c.result.statsX.sd;
-    const zy = (c.columns.get(c.y)[i] - c.result.statsY.mean) / c.result.statsY.sd;
+    const zx = (state.stats.columns.get(c.x)[i] - c.result.statsX.mean) / c.result.statsX.sd;
+    const zy = (state.stats.columns.get(c.y)[i] - c.result.statsY.mean) / c.result.statsY.sd;
     rows.push({ k: 'Standard deviations from the mean', v: `${fmtR(zx)} and ${fmtR(zy)}` });
     rows.push({ k: 'Gap, z(A) − z(B)', v: Number.isFinite(v) ? fmtR(v) : '—' });
   } else {
@@ -1552,20 +1591,21 @@ function corrInspectRows(code) {
   return rows;
 }
 
-// The synthetic layer, built to look exactly like a published one so that the
-// rest of this file can go on not knowing it is different.
-function correlationLayer() {
+// A synthetic layer, built to look exactly like a published one so that the
+// rest of this file can go on not knowing it is different. The correlator and
+// the optimiser each own one.
+function computedLayer({ id, label, z, paint }) {
   const commune = state.layers.find((l) => l.type === 'choropleth');
-  if (!commune) return null;               // no commune tileset, nothing to correlate
+  if (!commune) return null;               // no commune tileset, nothing to paint onto
   return {
-    id: CORR_ID,
-    label: 'Correlation',
-    group: 'Correlation',
+    id,
+    label,
+    group: label,
     type: 'choropleth',
-    panel: false,                          // the correlator owns its switch
-    z: 12,                                 // above the published choropleths, below the rest
+    panel: false,                          // the tool that computes it owns its switch
+    z,                                     // above the published choropleths, below the rest
     fields: [],
-    source_id: CORR_ID,
+    source_id: id,
     source_name: 'Computed in your browser',
     source_url: '',
     fetched: '',
@@ -1576,11 +1616,30 @@ function correlationLayer() {
     default_visible: false,
     default_opacity: 0.8,
     legend_note: '',
-    paint: {
-      source: 'feature-state', property: 'v', scale: 'numeric',
-      breaks: CORR_BREAKS, colors: CORR_COLORS, no_data_color: BLANK, unit: 'r',
-    },
+    paint,
   };
+}
+
+const correlationLayer = () => computedLayer({
+  id: CORR_ID, label: 'Correlation', z: 12,
+  paint: { source: 'feature-state', property: 'v', scale: 'numeric',
+           breaks: CORR_BREAKS, colors: CORR_COLORS, no_data_color: BLANK, unit: 'r' },
+});
+
+// A section of the panel whose body folds away under its header. Folding only
+// hides the controls; whatever the tool has put on the map stays there, and the
+// header badge keeps its headline readable.
+function collapsible(block, toggle, body, storageKey) {
+  const setOpen = (open) => {
+    toggle.setAttribute('aria-expanded', String(open));
+    body.hidden = !open;
+    block.classList.toggle('collapsed', !open);
+    try { localStorage.setItem(storageKey, open ? '1' : '0'); } catch (err) { /* storage blocked */ }
+  };
+  let open = true;
+  try { open = localStorage.getItem(storageKey) !== '0'; } catch (err) { /* storage blocked */ }
+  setOpen(open);
+  toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));
 }
 
 function buildCorrelator(map) {
@@ -1590,22 +1649,7 @@ function buildCorrelator(map) {
     block.hidden = true;                   // built without stat columns; nothing to offer
     return;
   }
-  state.corr.fields = stats.fields;
-  state.corr.byName = new Map(stats.fields.map((f) => [f.name, f]));
-
-  // Collapsing only folds the panel section; a correlation already on the map
-  // stays there, and its r stays readable in the badge on the header.
-  const toggle = $('#corr-toggle');
-  const setOpen = (open) => {
-    toggle.setAttribute('aria-expanded', String(open));
-    $('#corr-body').hidden = !open;
-    block.classList.toggle('collapsed', !open);
-    try { localStorage.setItem('corr-open', open ? '1' : '0'); } catch (err) { /* storage blocked */ }
-  };
-  let open = true;
-  try { open = localStorage.getItem('corr-open') !== '0'; } catch (err) { /* storage blocked */ }
-  setOpen(open);
-  toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));
+  collapsible(block, $('#corr-toggle'), $('#corr-body'), 'corr-open');
 
   $('#corr-swap').addEventListener('click', () => {
     const c = state.corr;
@@ -1624,14 +1668,356 @@ function buildCorrelator(map) {
   renderCorrelator(map);
 }
 
+// ------------------------------------------------------------ optimiser
+// Pick the statistics that matter, say which way is better and how much each
+// counts, and the map shades the communes that fit best.
+//
+// The arithmetic is in optimise.js. As with the correlator, the result rides on
+// a computed layer, `__optimiser`, so the stack, opacity, in-row scale, legend
+// and hash all come for free. It paints under its own feature-state key, `opt`,
+// so it can sit on the map alongside a correlation without either erasing the
+// other.
+
+const OPT_ID = '__optimiser';
+const OPT_KEY = 'opt';
+const OPT_MAX_WEIGHT = 5;
+const OPT_TOP_N = 10;
+
+// Plasma, best first. Used by no published layer, so a match map cannot be
+// mistaken for a data map; the lowest passing class is a pale wash, distinct
+// from the blank of a commune that is ruled out.
+const OPT_CLASSES = [
+  { color: '#0d0887', label: 'Top 1%' },
+  { color: '#7e03a8', label: 'Top 5%' },
+  { color: '#cc4778', label: 'Top 10%' },
+  { color: '#f89540', label: 'Top 25%' },
+  { color: '#f0f921', label: 'Top 50%' },
+  { color: '#d8d0e6', label: 'Passes, lower half' },
+];
+
+const OPT_DIRS = [
+  { id: 'up', label: 'More is better', title: 'Higher values score better' },
+  { id: 'down', label: 'Less is better', title: 'Lower values score better' },
+];
+
+const optimiserLayer = () => computedLayer({ id: OPT_ID, label: 'Best match', z: 13, paint: optPaintBlock() });
+
+function optPaintBlock() {
+  return {
+    source: 'feature-state',
+    property: OPT_KEY,
+    scale: 'ordinal',
+    stops: OPT_CLASSES.map((c, i) => [i, c.color, c.label]),
+    no_data_color: BLANK,
+  };
+}
+
+const fmtNum = (n) => (Number.isFinite(n) ? Number(n.toPrecision(4)).toLocaleString('en') : '—');
+const fmtPct = (d) => `${Math.round(d * 100)}%`;
+const optNumber = (text) => (text === '' || text == null || !Number.isFinite(Number(text)) ? null : Number(text));
+
+function computeOptimiser() {
+  const o = state.opt;
+  const n = state.stats.index.codes.length;
+  const parts = o.criteria.map((crit) => {
+    const col = state.stats.columns.get(crit.name);
+    const d = Optimise.desirability(col, crit);
+    // A ramp typed with both ends decides the direction; the chips follow it.
+    if (d.ramp) crit.dir = d.ramp.dir;
+    let present = 0;
+    for (let i = 0; i < col.length; i++) if (Number.isFinite(col[i])) present++;
+    const sorted = Correlate.sortedValues(col, Correlate.finitePairs(col, col));
+    return { ...d, present, p5: Correlate.quantile(sorted, 0.05), p95: Correlate.quantile(sorted, 0.95) };
+  });
+  const combined = Optimise.combine(parts.map((p) => p.values), o.criteria.map((c) => c.weight), n);
+  o.result = { ...combined, parts, names: optNames() };
+}
+
+// Which criteria a result was computed for. The cards redraw the moment one is
+// added or removed, before the recompute lands, and a result for a different
+// list must not be read against them.
+const optNames = () => state.opt.criteria.map((c) => c.name).join(',');
+
+function optPaint() {
+  const o = state.opt;
+  const layer = state.byId.get(OPT_ID);
+  const fields = o.criteria.map((c) => statField(c.name)).filter(Boolean);
+  const names = fields.map((f) => shortLabel(f.label));
+  layer.paint = optPaintBlock();
+  layer.label = names.length > 2
+    ? `Best match: ${names.slice(0, 2).join(' · ')} +${names.length - 2}`
+    : `Best match: ${names.join(' · ')}`;
+  layer.legend_note = 'Communes ranked by a weighted geometric mean of how well each meets every criterion. '
+    + 'A commune at the unacceptable end of any ramp is ruled out and left blank, as is one missing any of the statistics.';
+  layer.attribution = [...new Set(fields.map((f) => f.attribution).filter(Boolean))].join(' · ');
+}
+
+function paintOptimiser(map) {
+  const r = state.opt.result;
+  paintFeatureState(map, OPT_ID, OPT_KEY, r ? Float64Array.from(r.cls, (c) => (c < 0 ? NaN : c)) : null);
+}
+
+async function runOptimiser(map, { show = true } = {}) {
+  const o = state.opt;
+  clearTimeout(o.timer);
+  if (!o.criteria.length) {
+    o.run++;
+    o.result = null;
+    o.busy = false;
+    o.error = null;
+    paintOptimiser(map);
+    if (state.visible.has(OPT_ID)) toggleLayer(map, OPT_ID, false);
+    else writeHash(map);
+    renderOptimiser(map);
+    return;
+  }
+
+  const token = ++o.run;
+  o.busy = true;
+  o.error = null;
+  renderOptimiserResult(map);
+  try {
+    await loadStatIndex();
+    await Promise.all(o.criteria.map((c) => loadColumn(c.name)));
+  } catch (err) {
+    if (token !== o.run) return;
+    o.busy = false;
+    o.error = err.message;
+    renderOptimiserResult(map);
+    return;
+  }
+  if (token !== o.run) return;
+
+  computeOptimiser();
+  optPaint();
+  o.busy = false;
+  paintOptimiser(map);
+  if (show && !state.visible.has(OPT_ID)) toggleLayer(map, OPT_ID, true);
+  else applyStack(map);
+  renderOptimiserResult(map);
+}
+
+// Typing into a ramp box recomputes once the typing stops, not on every key.
+function runOptimiserSoon(map) {
+  clearTimeout(state.opt.timer);
+  state.opt.timer = setTimeout(() => runOptimiser(map), 350);
+}
+
+// The cards are rebuilt only when a criterion is added or removed. Everything a
+// recompute changes is written into the existing cards, so a ramp box being
+// typed into never loses focus underneath the cursor.
+function renderOptimiser(map) {
+  const o = state.opt;
+  fillStatSelect($('#opt-add'), '', (name) => {
+    if (!name || o.criteria.some((c) => c.name === name)) return;
+    o.criteria.push({ name, dir: 'up', weight: 3, bad: null, ideal: null });
+    $('#opt-add').value = '';
+    renderOptimiser(map);
+    runOptimiser(map);
+  }, { blank: '+ Add a statistic…', exclude: new Set(o.criteria.map((c) => c.name)) });
+
+  const host = $('#opt-criteria');
+  host.innerHTML = '';
+  o.criteria.forEach((crit) => host.appendChild(optCard(map, crit)));
+  renderOptimiserResult(map);
+}
+
+function optCard(map, crit) {
+  const o = state.opt;
+  const f = statField(crit.name);
+  const card = el('div', 'opt-card');
+  card.dataset.name = crit.name;
+
+  const head = el('div', 'opt-head');
+  const name = el('span', 'opt-name', shortLabel(f.label));
+  name.title = f.description || f.label;
+  if (f.unit) name.appendChild(el('span', 'opt-unit', ` ${f.unit}`));
+  const remove = el('button', 'act-btn off', '×');
+  remove.type = 'button';
+  remove.title = 'Remove this criterion';
+  remove.setAttribute('aria-label', `Remove ${f.label}`);
+  remove.addEventListener('click', () => {
+    o.criteria = o.criteria.filter((c) => c !== crit);
+    renderOptimiser(map);
+    runOptimiser(map);
+  });
+  head.append(name, remove);
+
+  const dirRow = el('div', 'corr-row');
+  const dirChips = el('div', 'chips opt-dir');
+  dirRow.append(el('span', 'corr-lbl', 'Better'), dirChips);
+  const drawDir = () => chipRow(dirChips, OPT_DIRS, crit.dir, (id) => {
+    if (id === crit.dir) return;
+    crit.dir = id;
+    // A two-ended ramp carries its own direction, so flipping the direction
+    // flips the ramp rather than being silently overruled by it.
+    if (crit.bad !== null && crit.ideal !== null) {
+      [crit.bad, crit.ideal] = [crit.ideal, crit.bad];
+      bad.value = crit.bad;
+      ideal.value = crit.ideal;
+    }
+    drawDir();
+    runOptimiser(map);
+  });
+  card.drawDir = drawDir;
+  drawDir();
+
+  const weightRow = el('div', 'corr-row');
+  const weight = el('input', 'opt-weight');
+  Object.assign(weight, { type: 'range', min: 1, max: OPT_MAX_WEIGHT, step: 1, value: crit.weight });
+  weight.setAttribute('aria-label', `Weight of ${f.label}`);
+  const weightVal = el('span', 'act-pct', `×${crit.weight}`);
+  weight.addEventListener('input', () => {
+    crit.weight = Number(weight.value);
+    weightVal.textContent = `×${crit.weight}`;
+  });
+  weight.addEventListener('change', () => runOptimiser(map));
+  weightRow.append(el('span', 'corr-lbl', 'Weight'), weight, weightVal);
+
+  const rampRow = el('div', 'corr-row opt-ramp');
+  const box = (placeholder, key, label) => {
+    const input = el('input', 'opt-num');
+    Object.assign(input, { type: 'number', step: 'any', placeholder });
+    input.setAttribute('aria-label', `${label} value of ${f.label}`);
+    input.value = crit[key] ?? '';
+    input.addEventListener('input', () => {
+      crit[key] = optNumber(input.value);
+      runOptimiserSoon(map);
+    });
+    return input;
+  };
+  const bad = box('Unacceptable', 'bad', 'Unacceptable');
+  const ideal = box('Ideal', 'ideal', 'Ideal');
+  rampRow.append(el('span', 'corr-lbl', 'Ramp'), bad, el('span', 'opt-arrow', '→'), ideal);
+
+  card.append(head, dirRow, weightRow, rampRow, el('p', 'opt-note'));
+  return card;
+}
+
+// What each card's ramp resolved to, the summary, the top list and the badge.
+function renderOptimiserResult(map) {
+  const o = state.opt;
+  const hint = $('#opt-hint');
+  const summary = $('#opt-summary');
+  const top = $('#opt-top');
+  const badge = $('#opt-badge');
+
+  const say = (text) => {
+    hint.hidden = false;
+    hint.textContent = text;
+    summary.hidden = true;
+    top.hidden = true;
+    badge.hidden = true;
+  };
+  if (!o.criteria.length) {
+    return say('Add the statistics that matter. For each, say whether more or less is better, how much it counts, '
+               + 'and optionally the values that are unacceptable and ideal. The map then shades the communes that fit best.');
+  }
+  if (o.error) return say(`Could not load the stat columns: ${o.error}`);
+  if (o.busy || !o.result || o.result.names !== optNames()) return say('Working…');
+
+  const r = o.result;
+  const unit = (crit) => (statField(crit.name).unit ? ` ${statField(crit.name).unit}` : '');
+  o.criteria.forEach((crit, k) => {
+    const card = [...$('#opt-criteria').children].find((c) => c.dataset.name === crit.name);
+    const part = r.parts[k];
+    if (!card || !part) return;
+    card.drawDir();
+    const note = part.ramp
+      ? `0 at ${fmtNum(part.ramp.bad)} → 1 at ${fmtNum(part.ramp.ideal)}${unit(crit)}.`
+      : 'No ramp: scored by percentile rank.';
+    card.querySelector('.opt-note').textContent =
+      `${note} Most communes: ${fmtNum(part.p5)}–${fmtNum(part.p95)}${unit(crit)}.`;
+  });
+
+  hint.hidden = true;
+  summary.hidden = false;
+  const total = state.stats.index.codes.length;
+  const lines = [`${r.passing.toLocaleString('en')} communes pass (${fmtPct(r.passing / total)}).`];
+  if (r.excluded) lines.push(`${r.excluded.toLocaleString('en')} ruled out by a ramp.`);
+  if (r.missing) {
+    // Name the thinnest column: it is nearly always the one doing the excluding.
+    const thin = o.criteria.map((c, k) => ({ c, present: r.parts[k].present }))
+      .sort((a, b) => a.present - b.present)[0];
+    lines.push(`${r.missing.toLocaleString('en')} lack data`
+      + (thin.present < total * 0.9
+        ? ` — ${shortLabel(statField(thin.c.name).label)} is published for only ${fmtPct(thin.present / total)} of communes.`
+        : '.'));
+  }
+  summary.textContent = lines.join(' ');
+
+  badge.hidden = false;
+  badge.textContent = r.passing.toLocaleString('en');
+
+  top.innerHTML = '';
+  top.hidden = !r.passing;
+  const index = state.stats.index;
+  for (let k = 0; k < Math.min(OPT_TOP_N, r.order.length); k++) {
+    const i = r.order[k];
+    const li = el('li');
+    const go = el('button', 'opt-top-item');
+    go.type = 'button';
+    go.title = 'Zoom to this commune';
+    go.append(el('span', 'opt-top-rank', `${r.rank[i] + 1}`),
+              el('span', 'opt-top-name', `${index.names[i]} (${index.dep[i]})`),
+              el('span', 'opt-top-score', fmtPct(r.score[i])));
+    go.addEventListener('click', () => {
+      map.flyTo({ center: [index.lon[i], index.lat[i]], zoom: 10,
+                  padding: { left: $('#panel').classList.contains('hidden') ? 0 : PANEL_W } });
+    });
+    li.appendChild(go);
+    top.appendChild(li);
+  }
+}
+
+// The inspect panel's reading for one commune: each statistic with the score it
+// earned, then the combined score and where that ranks.
+function optInspectRows(code) {
+  const o = state.opt;
+  if (!o.result || code == null) return null;
+  const i = state.stats.index.row.get(code);
+  if (i === undefined) return null;
+  const r = o.result;
+  const rows = o.criteria.map((crit, k) => {
+    const f = statField(crit.name);
+    const v = state.stats.columns.get(crit.name)[i];
+    const d = r.parts[k].values[i];
+    return { k: shortLabel(f.label), v: Number.isFinite(v) ? `${formatValue(v, f)} → ${fmtPct(d)}` : 'no data' };
+  });
+  const score = r.score[i];
+  if (!Number.isFinite(score)) rows.push({ k: 'Match', v: 'Not scored — missing data' });
+  else if (score <= 0) rows.push({ k: 'Match', v: 'Ruled out by a ramp' });
+  else {
+    rows.push({ k: 'Match score', v: fmtPct(score) });
+    rows.push({ k: 'Rank', v: `${(r.rank[i] + 1).toLocaleString('en')} of ${r.passing.toLocaleString('en')}` });
+  }
+  return rows;
+}
+
+function buildOptimiser(map) {
+  const stats = state.manifest.stats;
+  const block = $('#opt-block');
+  if (!stats || !(stats.fields || []).length || !state.byId.has(OPT_ID)) {
+    block.hidden = true;
+    return;
+  }
+  collapsible(block, $('#opt-toggle'), $('#opt-body'), 'opt-open');
+  $('#opt-clear').addEventListener('click', () => {
+    state.opt.criteria = [];
+    renderOptimiser(map);
+    runOptimiser(map);
+  });
+  renderOptimiser(map);
+}
+
 // ------------------------------------------------------------------ hash
-// #lat/lon/zoom/layer1,layer2 — shareable and bookmarkable, and the only map
+// #lat/lon/zoom/layer1,layer2/corr/opt — shareable and bookmarkable, and the only map
 // state this app persists (the correlator's folded/unfolded panel is kept in
 // localStorage, as a preference of this browser rather than of the link).
 function readHash() {
   const raw = location.hash.replace(/^#/, '');
   if (!raw) return null;
-  const [lat, lon, zoom, layers, corr] = raw.split('/');
+  const [lat, lon, zoom, layers, corr, opt] = raw.split('/');
   const view = (lat && lon && zoom)
     ? { center: [Number(lon), Number(lat)], zoom: Number(zoom) }
     : null;
@@ -1640,7 +2026,18 @@ function readHash() {
     view,
     layers: layers ? layers.split(',').filter(Boolean) : null,
     corr: x && y ? { x, y, mode, radius: Number(radius), side } : null,
+    opt: (opt || '').split(',').filter(Boolean).map((part) => {
+      const [name, dir, weight, bad, ideal] = part.split(':');
+      return { name, dir, weight: Number(weight), bad: optNumber(bad), ideal: optNumber(ideal) };
+    }),
   };
+}
+
+// name:dir:weight:bad:ideal per criterion, comma-separated, blanks left blank.
+function optHash() {
+  const o = state.opt;
+  if (!o.criteria.length) return '';
+  return o.criteria.map((c) => [c.name, c.dir, c.weight, c.bad ?? '', c.ideal ?? ''].join(':')).join(',');
 }
 
 // x:y:mode:radius:side — enough to rebuild a correlation exactly, and short
@@ -1659,7 +2056,10 @@ function writeHash(map) {
     // Bottom of the stack first, so a shared link restores the same stacking.
     const parts = [c.lat.toFixed(4), c.lng.toFixed(4), map.getZoom().toFixed(2), activeIds().join(',')];
     const corr = corrHash();
-    if (corr) parts.push(corr);
+    const opt = optHash();
+    // Positional, so an optimiser with no correlation still leaves corr's slot.
+    if (corr || opt) parts.push(corr);
+    if (opt) parts.push(opt);
     history.replaceState(null, '', `#${parts.join('/')}`);
   }, 200);
 }
@@ -1726,13 +2126,18 @@ async function main() {
 
   state.manifest = manifest;
   state.layers = manifest.layers.slice();
-  // The correlator's output is a layer nothing published. It joins the list here,
-  // at the position its own z asks for, and from this point on every part of the
-  // file treats it exactly as it treats a layer that came out of the pipeline.
-  const computed = ((manifest.stats || {}).fields || []).length ? correlationLayer() : null;
-  if (computed) {
-    const at = state.layers.findIndex((l) => (l.z != null ? l.z : 20) > computed.z);
-    state.layers.splice(at < 0 ? state.layers.length : at, 0, computed);
+  // The correlator's and optimiser's outputs are layers nothing published. They
+  // join the list here, at the position their own z asks for, and from this
+  // point on every part of the file treats them exactly as it treats a layer that
+  // came out of the pipeline.
+  const statFields = (manifest.stats || {}).fields || [];
+  state.stats.fields = statFields;
+  state.stats.byName = new Map(statFields.map((f) => [f.name, f]));
+  const computed = statFields.length ? correlationLayer() : null;
+  for (const layer of statFields.length ? [computed, optimiserLayer()] : []) {
+    if (!layer) continue;
+    const at = state.layers.findIndex((l) => (l.z != null ? l.z : 20) > layer.z);
+    state.layers.splice(at < 0 ? state.layers.length : at, 0, layer);
   }
   state.order = state.layers.map((l) => l.id);      // manifest order = initial draw order
   for (const layer of state.layers) {
@@ -1756,10 +2161,25 @@ async function main() {
       if (hash.corr.radius >= 10 && hash.corr.radius <= 80) c.radius = hash.corr.radius;
     }
   }
+  if (hash && hash.opt.length && state.byId.has(OPT_ID)) {
+    const seen = new Set();
+    state.opt.criteria = hash.opt.filter((c) => {
+      if (!state.stats.byName.has(c.name) || seen.has(c.name)) return false;
+      seen.add(c.name);
+      return true;
+    }).map((c) => ({
+      name: c.name,
+      dir: c.dir === 'down' ? 'down' : 'up',
+      weight: Number.isInteger(c.weight) && c.weight >= 1 && c.weight <= OPT_MAX_WEIGHT ? c.weight : 3,
+      bad: c.bad,
+      ideal: c.ideal,
+    }));
+  }
   if (hash && hash.layers) {
     const wanted = hash.layers
       .filter((id) => state.byId.has(id))
-      .filter((id) => id !== CORR_ID || (state.corr.x && state.corr.y));
+      .filter((id) => id !== CORR_ID || (state.corr.x && state.corr.y))
+      .filter((id) => id !== OPT_ID || state.opt.criteria.length);
     state.visible = new Set(wanted);
     // The hash lists the stack bottom-first; hidden layers keep their manifest
     // order underneath it.
@@ -1797,6 +2217,7 @@ async function main() {
     buildBasemaps(map);
     buildPanel(map);
     buildCorrelator(map);
+    buildOptimiser(map);
     buildActive(map);
     renderLegend();
     writeHash(map);
@@ -1805,6 +2226,9 @@ async function main() {
     // shipping 35,000 results in the URL.
     if (state.corr.x && state.corr.y) {
       runCorrelation(map, { show: !(hash && hash.layers) || hash.layers.includes(CORR_ID) });
+    }
+    if (state.opt.criteria.length) {
+      runOptimiser(map, { show: !(hash && hash.layers) || hash.layers.includes(OPT_ID) });
     }
   });
 

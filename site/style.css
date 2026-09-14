@@ -181,6 +181,54 @@ body.reordering { cursor: grabbing; user-select: none; }
 #corr-radius { flex: 1; margin: 0; accent-color: var(--accent); height: 14px; cursor: pointer; }
 .corr-note { font-size: 10px; color: var(--muted); line-height: 1.5; margin: 8px 0 0; }
 
+/* ----------------------------------------------------------- optimiser */
+/* One card per criterion: direction, weight, and an optional ramp from the
+   unacceptable value to the ideal one. */
+#opt-block h2 { margin: 0 0 8px; }
+#opt-block.collapsed h2 { margin-bottom: 0; }
+#opt-badge { background: #7e03a8; font-variant-numeric: tabular-nums; }
+
+.opt-add-row { display: flex; gap: 5px; margin-bottom: 6px; }
+#opt-add {
+  flex: 1; min-width: 0; font-size: 11.5px; padding: 4px 5px; background: #fff;
+  border: 1px solid var(--line); border-radius: 5px; color: var(--fg); cursor: pointer;
+}
+#opt-add:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+#opt-clear {
+  border: 1px solid var(--line); border-radius: 5px; background: #fff; cursor: pointer;
+  color: var(--muted); font-size: 11px; padding: 4px 8px;
+}
+#opt-clear:hover { color: var(--accent); border-color: var(--accent); }
+
+#opt-criteria { display: flex; flex-direction: column; gap: 5px; }
+.opt-card { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px 5px; background: #fff; }
+.opt-head { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+.opt-name { flex: 1; min-width: 0; font-size: 12px; font-weight: 600; line-height: 1.3; }
+.opt-unit { font-weight: 400; color: var(--muted); font-size: 10.5px; }
+.opt-card .corr-row { margin-bottom: 4px; }
+.opt-card .corr-lbl { width: 44px; }
+.opt-card .chip { font-size: 10.5px; padding: 2px 8px; }
+.opt-weight { flex: 1; margin: 0; accent-color: #7e03a8; height: 14px; cursor: pointer; }
+.opt-ramp { gap: 4px; }
+.opt-num {
+  flex: 1; min-width: 0; width: 0; font-size: 11px; padding: 3px 5px;
+  border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--fg);
+}
+.opt-num:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+.opt-arrow { color: var(--muted); font-size: 11px; flex: none; }
+.opt-note { font-size: 10px; color: var(--muted); line-height: 1.4; margin: 2px 0 0; }
+
+#opt-top { list-style: none; margin: 6px 0 0; padding: 0; }
+.opt-top-item {
+  display: flex; align-items: baseline; gap: 6px; width: 100%; padding: 3px 4px;
+  border: 0; border-radius: 4px; background: none; cursor: pointer; text-align: left;
+  font: inherit; font-size: 11.5px; color: var(--fg);
+}
+.opt-top-item:hover, .opt-top-item:focus-visible { background: #f3f0f7; outline: none; }
+.opt-top-rank { flex: none; width: 18px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.opt-top-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opt-top-score { flex: none; font-weight: 600; font-variant-numeric: tabular-nums; }
+
 /* --------------------------------------------------------------- chips */
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .chip {

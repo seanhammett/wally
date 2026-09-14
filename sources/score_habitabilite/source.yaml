@@ -1,0 +1,120 @@
+id: score_habitabilite
+name: "Score d'habitabilité 2050 de Wally (méthode d'après Projet Celsius)"
+attribution: "Score Wally d'après la méthode publiée par Projet Celsius (aucune donnée Celsius utilisée) · DRIAS / Météo-France TRACC-2023 · Explore2 via RARE · BRGM / Géorisques · GASPAR · INSEE BPE — Licence Ouverte 2.0"
+url: "https://projetcelsius.com/documents/ou-vivre-en-2050-note-methodologique.pdf"
+fetched: 2026-09-14
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: none
+order: 95
+min_join_rate: 0.99
+
+# Built from other sources' data/processed outputs, never from raw files. The
+# build re-runs this source whenever --only names one of these.
+inputs:
+  - drias_chaleur
+  - explore2_etiage
+  - explore2_crues
+  - rga_communes
+  - georisques_gaspar
+  - bpe_services
+
+# Six equally weighted categories; within a category, indicators are equally
+# weighted. Each indicator becomes a 0–100 exposure:
+#   rank    share of communes strictly less exposed × 100 ("more exposed than
+#           X% of communes"), so tied values share the lower position and a
+#           commune tied at the least-exposed value scores 0.
+#   linear  value / max × 100, for ordinal and register-count indicators.
+# worse: lower flips the direction (a larger fall in low flow, fewer services).
+# derived: columns built in transform.py from GASPAR registers, each 0–3.
+categories:
+  - id: chaleur
+    label: Heat
+    indicators:
+      - { source: drias_chaleur, column: nuits_tropicales_2050, scale: rank }
+      - { source: drias_chaleur, column: jours_35c_2050, scale: rank }
+  - id: feux
+    label: Fire weather
+    # Interim: fire *weather* only, until a model calibrated on observed fires
+    # replaces it. Known to underrate fuel-heavy humid areas (the Landes).
+    interim: true
+    indicators:
+      - { source: drias_chaleur, column: feux_meteo_2050, scale: rank }
+  - id: secheresse
+    label: Drought and clay
+    indicators:
+      - { source: drias_chaleur, column: sol_sec_2050, scale: rank }
+      - { source: explore2_etiage, column: etiage_27_pct, scale: rank, worse: lower }
+      - { source: explore2_etiage, column: etiage_duree_27, scale: rank }
+      - { source: rga_communes, column: rga_indice, scale: linear, max: 3 }
+  - id: inondations
+    label: Floods
+    indicators:
+      - { derived: inond_terrain, scale: linear, max: 3 }
+      - { source: explore2_crues, column: crues_27_pct, scale: rank }
+  - id: littoral
+    label: Coast
+    indicators:
+      - { derived: littoral_expo, scale: linear, max: 3 }
+  - id: services
+    label: Few services
+    indicators:
+      - { source: bpe_services, column: serv_panier, scale: rank, worse: lower }
+
+# Heat is the category every commune with climate data has. Without it there is
+# no score: a score from the remaining registers alone would say very little.
+required_category: chaleur
+# A category is flagged in hab_alertes when any of its indicators reaches this.
+alert_at: 90
+
+# Projet Celsius's worked example (methodology note, section 4), logged next to
+# Wally's values for the same commune on every build. Not a gate: the commune
+# sets, the fire and services indicators and several inputs differ on purpose.
+check:
+  code_insee: "40192"
+  name: Mont-de-Marsan
+  celsius:
+    nuits_tropicales_2050: 87.7
+    jours_35c_2050: 91.5
+    feux: 81.7
+    sol_sec_2050: 38.2
+    etiage_27_pct: 47.4
+    etiage_duree_27: 92.3
+    rga_indice: 33.3
+    inond_terrain: 33.3
+    crues_27_pct: 4.8
+    littoral_expo: 0.0
+    services: 25.4
+    score: 55
+
+notes: |
+  A habitability score for 2050 per commune, built from public data by
+  following the method Projet Celsius published for its own map: 11 indicators
+  in 6 equally weighted categories — heat, fire, drought and clay, floods, coast,
+  service deserts — each indicator turned into a 0–100 exposure, averaged within
+  its category, and the score is 100 minus the mean of the six. Higher is more
+  habitable. No Celsius data is used; their method note is the reference, and
+  their Mont-de-Marsan example is printed beside Wally's in every build log.
+
+  **It says where, not how much.** Most indicators are positions among French
+  communes: 90 means more exposed than 90% of them. A pale commune is less
+  exposed than most, not safe. A score of 60 does not mean twice as habitable
+  as 30.
+
+  **Where Wally differs from Celsius, deliberately.**
+  - Fire is interim: DRIAS fire-weather days (IFM40D) at +2.7 °C, not Celsius's
+    model calibrated on observed fires. Weather alone underrates humid forests
+    with a heavy fuel load; Mont-de-Marsan is the case in point.
+  - Services use Wally's 0–20 basket of everyday services, not facilities per
+    1,000 residents, which rewards commercial and tourist hubs.
+  - Climate inputs are weighted by where residents live, and clay is the
+    population-weighted exposure class on the 2026 BRGM map, where Celsius
+    appears to use one class per commune.
+  - GASPAR registers are the August 2026 extract; the commune set is ADMIN
+    EXPRESS 2026 (34,746 communes against Celsius's 35,191).
+
+  **Its weakest parts are Celsius's too.** Flood-prone ground and coastal
+  exposure come from administrative registers (flood atlases, the préfecture
+  risk register, prevention plans), which follow where people and property are
+  as much as the hazard itself — a quarter of the score. Nothing is below the
+  commune: a hill village and its flood-prone valley floor get one value.

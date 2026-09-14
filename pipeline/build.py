@@ -70,6 +70,16 @@ class Ctx:
             )
         return path
 
+    def processed(self, source_id: str) -> Path:
+        """Another source's data/processed output, for a source that declares it in `inputs`."""
+        if source_id not in self.source.meta.get("inputs", []):
+            raise BuildError(f"{self.source.id} reads '{source_id}' but does not list it in source.yaml inputs")
+        path = load_sources([source_id])[0].output_path
+        if not path.exists():
+            raise BuildError(f"{self.source.id} needs the output of '{source_id}', which has not been built yet "
+                             f"({path.relative_to(ROOT)})")
+        return path
+
 
 def make_ctx(source: Source) -> Ctx:
     source.raw_dir.mkdir(parents=True, exist_ok=True)
@@ -311,7 +321,21 @@ def main() -> int:
     # downstream — validation, the commune join, tiling, the manifest — always
     # runs over every source that has an output, or a partial run would silently
     # publish a tileset and a manifest missing all the other layers.
+    #
+    # A source built from other sources' outputs (`inputs:` in source.yaml) is
+    # re-run whenever one of its inputs is, so it can never be left describing
+    # an older version of them.
     if args.only:
+        chosen = {s.id for s in targets}
+        grew = True
+        while grew:
+            extra = [s for s in all_sources if s.id not in chosen and chosen & set(s.meta.get("inputs", []))]
+            chosen |= {s.id for s in extra}
+            grew = bool(extra)
+        if len(chosen) > len(targets):
+            Log.info(f"--only: also re-running {', '.join(sorted(chosen - {s.id for s in targets}))}, "
+                     "which read(s) their output")
+        targets = [s for s in all_sources if s.id in chosen]
         Log.info(f"--only: re-running {', '.join(s.id for s in targets)}; "
                  "other sources reuse their existing data/processed output")
 
@@ -327,6 +351,9 @@ def main() -> int:
         Log.indent()
         ctx = make_ctx(src)
         try:
+            failed_inputs = sorted(set(src.meta.get("inputs", [])) & set(skipped))
+            if failed_inputs:
+                raise BuildError(f"not rebuilt: its input(s) {', '.join(failed_inputs)} failed in this run")
             if not args.skip_fetch:
                 stage_fetch(src, ctx, force=args.force_fetch)
             stage_transform(src, ctx)

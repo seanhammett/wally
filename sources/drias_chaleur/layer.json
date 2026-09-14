@@ -1,22 +1,93 @@
 [
   {
     "id": "tropical_nights_2050",
-    "label": "Tropical nights per year, 2050",
+    "label": "Tropical nights at +2.7 °C (TRACC 2050)",
     "group": "Hazards",
     "type": "choropleth",
     "paint": {
       "property": "nuits_tropicales_2050",
       "scale": "numeric",
-      "breaks": [5, 15, 30, 50, 75],
-      "colors": ["#ffffcc", "#ffeda0", "#feb24c", "#fc4e2a", "#bd0026", "#800026"],
+      "breaks": [5, 10, 20, 30, 45, 60],
+      "colors": ["#ffffcc", "#ffeda0", "#fed976", "#feb24c", "#fc4e2a", "#bd0026", "#800026"],
       "no_data_color": "#e5e7eb"
     },
     "fields": [
-      { "name": "nuits_tropicales_2050", "type": "numeric", "unit": "nights/yr", "label": "Nights above 20 °C (2050 horizon)" },
-      { "name": "jours_35c_2050", "type": "numeric", "unit": "days/yr", "label": "Days above 35 °C (2050 horizon)" }
+      { "name": "nuits_tropicales_2050", "type": "numeric", "unit": "nights/year", "label": "Nights staying above 20 °C at +2.7 °C (ensemble median)" },
+      { "name": "nuits_tropicales_2050_min", "type": "numeric", "unit": "nights/year", "label": "Lowest of the model ensemble" },
+      { "name": "nuits_tropicales_2050_max", "type": "numeric", "unit": "nights/year", "label": "Highest of the model ensemble" },
+      { "name": "nuits_tropicales_ecart", "type": "numeric", "unit": "nights/year", "label": "Change against 1976–2005 (median)" },
+      { "name": "nuits_tropicales_4", "type": "numeric", "unit": "nights/year", "label": "At +4 °C (median)" }
     ],
     "default_visible": false,
     "default_opacity": 0.72,
-    "legend_note": "DRIAS-2020 projection aggregated from an ~8 km grid, so commune values carry the grid's resolution error. Modelled, not observed."
+    "legend_note": "Nights a year when the temperature never drops below 20 °C — the nights that stop bodies and buildings recovering from a hot day — at +2.7 °C, the warming France plans for 2050 (TRACC). Median of 17 bias-corrected regional simulations (DRIAS, Explore2), 20-year average, weighted by where residents live. From the 8 km grid with no altitude correction, so a valley town below its cell's mean altitude reads a little low. The popup has the model range, the change since 1976–2005 and +4 °C."
+  },
+  {
+    "id": "hot_days_35_2050",
+    "label": "Days reaching 35 °C at +2.7 °C (TRACC 2050)",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "jours_35c_2050",
+      "scale": "numeric",
+      "breaks": [1, 2, 4, 6, 9, 13],
+      "colors": ["#fff5eb", "#fee6ce", "#fdd0a2", "#fdae6b", "#fd8d3c", "#e6550d", "#a63603"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "jours_35c_2050", "type": "numeric", "unit": "days/year", "label": "Days reaching 35 °C at +2.7 °C (ensemble median)" },
+      { "name": "jours_35c_2050_min", "type": "numeric", "unit": "days/year", "label": "Lowest of the model ensemble" },
+      { "name": "jours_35c_2050_max", "type": "numeric", "unit": "days/year", "label": "Highest of the model ensemble" },
+      { "name": "jours_35c_ecart", "type": "numeric", "unit": "days/year", "label": "Change against 1976–2005 (median)" },
+      { "name": "jours_35c_4", "type": "numeric", "unit": "days/year", "label": "At +4 °C (median)" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Days a year reaching 35 °C at +2.7 °C (TRACC 2050): the heat at which outdoor work, sleep and older people's health suffer. Median of 17 bias-corrected regional simulations (DRIAS, Explore2), 20-year average, weighted by where residents live. An 8 km grid without altitude correction, and a median that smooths extremes: the hottest years will bring several times this. The popup has the model range, the change since 1976–2005 and +4 °C."
+  },
+  {
+    "id": "dry_soil_2050",
+    "label": "Dry-soil days at +2.7 °C (TRACC 2050)",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "sol_sec_2050",
+      "scale": "numeric",
+      "breaks": [60, 90, 110, 130, 150, 180],
+      "colors": ["#f7fcf5", "#f6e8c3", "#dfc27d", "#c7a252", "#bf812d", "#8c510a", "#543005"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "sol_sec_2050", "type": "numeric", "unit": "days/year", "label": "Days with dry soil (soil wetness index below 0.4) at +2.7 °C (ensemble median)" },
+      { "name": "sol_sec_2050_max", "type": "numeric", "unit": "days/year", "label": "Highest of the model ensemble" },
+      { "name": "sol_sec_ecart", "type": "numeric", "unit": "days/year", "label": "Change against 1976–2005 (median)" },
+      { "name": "sol_sec_4", "type": "numeric", "unit": "days/year", "label": "At +4 °C (median)" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Days a year when the soil is dry — Météo-France's soil wetness index below 0.4 — at +2.7 °C (TRACC 2050). Dry soil is agricultural drought, fire-prone vegetation and, on clay, the shrinkage that cracks houses: pair it with the clay layer. Median of the Explore2 SIM2 hydrology runs (DRIAS), 20-year average, weighted by where residents live. The popup has the ensemble maximum, the change since 1976–2005 and +4 °C."
+  },
+  {
+    "id": "fire_weather_2050",
+    "label": "Fire-weather days at +2.7 °C (TRACC 2050)",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "feux_meteo_2050",
+      "scale": "numeric",
+      "breaks": [1, 3, 6, 10, 20, 35],
+      "colors": ["#fff7ec", "#fee8c8", "#fdd49e", "#fdbb84", "#fc8d59", "#d7301f", "#7f0000"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "feux_meteo_2050", "type": "numeric", "unit": "days/year", "label": "Days with fire-danger weather (Fire Weather Index ≥ 40) at +2.7 °C (ensemble median)" },
+      { "name": "feux_meteo_2050_min", "type": "numeric", "unit": "days/year", "label": "Lowest of the model ensemble" },
+      { "name": "feux_meteo_2050_max", "type": "numeric", "unit": "days/year", "label": "Highest of the model ensemble" },
+      { "name": "feux_meteo_ecart", "type": "numeric", "unit": "days/year", "label": "Change against 1976–2005 (median)" },
+      { "name": "feux_meteo_4", "type": "numeric", "unit": "days/year", "label": "At +4 °C (median)" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Days a year when hot, dry, windy weather makes a fire hard to control — the Fire Weather Index at 40 or above — at +2.7 °C (TRACC 2050). It measures the weather only: not how much vegetation there is to burn, nor how often fires start. That is why it underrates the pine forests of the Landes, where humid Atlantic weather hides a large fuel load. Median of 17 bias-corrected simulations (DRIAS, Explore2), weighted by where residents live."
   }
 ]

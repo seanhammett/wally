@@ -1,51 +1,86 @@
 id: drias_chaleur
-name: "Nuits tropicales et jours >35 °C à l'horizon 2050 (DRIAS)"
-attribution: "DRIAS / Météo-France — DRIAS-2020, TRACC"
-url: "https://drias-climat.fr/commande"
-fetched: null
+name: "Nuits tropicales, jours ≥ 35 °C, sols secs et météo propice aux feux à +2,7 °C (DRIAS, TRACC-2023)"
+attribution: "DRIAS / Météo-France — TRACC-2023, ensemble Explore2-Climat 2022 (ADAMONT) et Explore2-Hydro SIM2 · population: INSEE Filosofi 2019"
+url: "https://www.drias-climat.fr/commande"
+fetched: 2026-09-14
 source_crs: "EPSG:4326"
 kind: commune_table
 fetch: manual
 optional: true          # the build succeeds without it and prints instructions instead
 order: 50
-min_join_rate: 0.90
+min_join_rate: 0.99
 
+# Two of the archives DRIAS delivers: 20-year means around each warming level,
+# absolute values plus anomalies against 1976–2005, as ensemble percentiles.
+# The per-model archives and the relative-anomaly ones are not needed.
 expected_files:
-  - "drias_communes_2050.csv"
+  - "Indicateurs-Absolue_Centiles-Explore2-Climat_Moyenne-20ans_RWL27_csv.tar"
+  - "Indicateurs-Absolue_Centiles-Explore2-Climat_Moyenne-20ans_RWL40_csv.tar"
+
+# Regional warming levels, France: +2.7 °C is TRACC's 2050, +4 °C its 2100.
+levels:
+  reference: "27"
+  high: "40"
+
+# Indicator code in the file names → output column stem. Every file holds the
+# SAFRAN 8 km grid (19,162 points, 8,981 over land) in lat/lon.
+indicators:
+  TR: nuits_tropicales
+  TX35D: jours_35c
+  SWI04D: sol_sec
+  # Days with the Fire Weather Index at 40 or above. Fire *weather* only — no
+  # fuel, no ignitions — and the interim fire input to the habitability score
+  # until a model calibrated on observed fires replaces it.
+  IFM40D: feux_meteo
 
 manual_instructions: |
   DRIAS needs a personal account (free) and its site sits behind a bot-defence
   challenge, so this cannot be automated and must not be scraped. Order by hand:
 
     1. Create an account on drias-climat.fr (Espace Données et Produits).
-    2. Order the TRACC-2023 indicators by warming level — the mean at the
-       +2.7 °C France level (+2 °C global), not the annual time series, which is
-       tens of GB. Ensemble median, SAFRAN 8 km grid, NetCDF or CSV:
-         - TR     nuits tropicales (Tn ≥ 20 °C)
-         - TX35D  jours avec Tx ≥ 35 °C
-    3. On drias-eau.fr, the same TRACC-2023 set: SWI04D (days with soil wetness
-       index below 0.4 — dry soil).
-    4. Put everything that arrives, unrenamed, in data/raw/drias_chaleur/.
+    2. Order the TRACC-2023 indicators by warming level, 20-year means
+       ("Moyenne-20ans"), absolute values, ensemble percentiles ("Centiles"),
+       CSV, at the +2.7 °C and +4 °C levels. The archive holds TR, TX35D,
+       SWI04D and IFM40D among ~25 indicators.
+    3. Put the two archives named in expected_files, unrenamed, in
+       data/raw/drias_chaleur/. They are ~108 MB each.
 
-  Each indicator on the ~9,000-point SAFRAN grid should be a few MB. The files
-  are grid-keyed, not commune-keyed; transform.py is to be rewritten against the
-  delivered format to weight them by where residents live, the way meteo_climat
-  handles the same grid.
-
-  Validate the result against Climadiag Commune (climadiag-commune.meteofrance.com),
-  which publishes per-commune values as one PDF per commune. It is a spot-check
-  tool, not a data source — but if the computed tropical-nights figure for a
-  handful of communes does not match Climadiag's, the aggregation is wrong.
+  The per-model ("Models") archives are ~620 MB each and are not used.
 
 notes: |
-  By some distance the most work in the catalogue. Left disabled until everything
-  else runs, exactly as the plan advises — and kept in the tree as the worked
-  example of a `fetch: manual` source.
+  Four TRACC-2023 indicators at the +2.7 °C France warming level, the 2050
+  horizon of the national adaptation trajectory: tropical nights (TR, minimum
+  above 20 °C), days reaching 35 °C (TX35D), dry-soil days (SWI04D, days a
+  year with the soil wetness index below 0.4, from the Explore2 SIM2 hydrology
+  runs) and fire-weather days (IFM40D, days with the Fire Weather Index at 40
+  or more — weather only, the interim fire input to the habitability score).
+  Each is the median of the Explore2 ensemble — 17 regional climate
+  simulations bias-corrected with ADAMONT onto the SAFRAN grid — averaged over
+  the 20 years around the warming level. The popup adds the ensemble range, the
+  change against 1976–2005 and the +4 °C median.
 
-  `sources/meteo_chaleur/` now covers the automatable part of this: the same two
-  families of indicator from the openly published Aladin-Climat files, joined to
-  communes by nearest grid point. It does not replace this source. What is still
-  only available through the order form below is the days-above-35 °C count, and
-  the DRIAS-2020/TRACC model generation, which projects more French summer
-  warming than the 2014 runs meteo_chaleur uses. Ordering this data upgrades
-  both; until then meteo_chaleur is the conservative stand-in.
+  **Grid to commune.** Every populated INSEE 200 m cell takes the value of its
+  nearest land grid point, and a commune is the population-weighted mean of its
+  cells (communes with no populated cell use their representative point). Unlike
+  meteo_climat there is no altitude correction: these are projected counts over
+  a threshold and the daily series needed to move a threshold count to another
+  altitude are not in this product. A mountain town below its cell's mean
+  altitude will be shown with somewhat too few hot days and tropical nights.
+
+  **The files have three defects, which transform.py handles and checks.**
+  1. Day counts in the TR, TX35D and IFM40D files are written as pandas time
+     spans — "2 days 12:00:00" for 2.5 days — apparently a units mix-up in the
+     export. They are converted back to days; SWI04D is plain numbers.
+  2. The SWI04D files are two tables stacked: 19,162 rows of values with no
+     coordinates, then the same 19,162 grid points with coordinates and no
+     values. The transform only realigns them after checking that the value
+     block's land/sea mask matches the TR grid's position for position.
+  3. Headers of the median (ENSq50) files for TR and TX35D say "MAX de
+     l'ensemble". The values are medians: they sit between the ensemble minimum
+     and maximum at every point, which the transform asserts.
+
+  **Checks.** At the grid point containing Mont-de-Marsan the TR, TX35D and
+  SWI04D medians are 25.0 nights, 8.3 days and 104.1 days, exactly the values
+  in Projet Celsius's methodology note for that commune, which used the same
+  product. Its IFM40D median is 2.2 days — low, as Celsius found for fire
+  weather in the humid, pine-covered Landes.

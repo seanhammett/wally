@@ -1,0 +1,28 @@
+[
+  {
+    "id": "habitability_2050",
+    "label": "Wally 2050 habitability score",
+    "group": "Habitability 2050",
+    "type": "choropleth",
+    "paint": {
+      "property": "habitabilite_2050",
+      "scale": "numeric",
+      "breaks": [45, 52, 58, 62, 68, 75],
+      "colors": ["#8c2d04", "#e6550d", "#fdae6b", "#f7f4e9", "#c7e9c0", "#41ab5d", "#00441b"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "habitabilite_2050", "type": "numeric", "unit": "/ 100", "label": "Habitability score at +2.7 °C (higher is more habitable)" },
+      { "name": "hab_chaleur", "type": "numeric", "unit": "/ 100", "label": "Heat exposure (tropical nights, days ≥ 35 °C)" },
+      { "name": "hab_feux", "type": "numeric", "unit": "/ 100", "label": "Fire-weather exposure (interim, weather only)" },
+      { "name": "hab_secheresse", "type": "numeric", "unit": "/ 100", "label": "Drought and clay exposure (dry soil, low flow, low-water duration, clay)" },
+      { "name": "hab_inondations", "type": "numeric", "unit": "/ 100", "label": "Flood exposure (flood-prone ground in registers, rising flood peaks)" },
+      { "name": "hab_littoral", "type": "numeric", "unit": "/ 100", "label": "Coastal exposure (submersion, retreating shoreline, coastal plan)" },
+      { "name": "hab_services", "type": "numeric", "unit": "/ 100", "label": "Lack of everyday services" },
+      { "name": "hab_alertes", "type": "categorical", "unit": "", "label": "Categories with an indicator at 90/100 or more" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.75,
+    "legend_note": "Higher is more habitable in 2050 (+2.7 °C). Eleven indicators in six equal categories — heat, fire weather, drought and clay, floods, coast, lack of services — each scored 0–100, mostly as a position among French communes, and the score is 100 minus their average. Median commune 60; the Aude and Roussillon coast is lowest, inland Normandy and Brittany highest. It says where, not how much: a green commune is less exposed than most, not safe. Method after Projet Celsius; fire is interim (weather only, underrates the Landes pine forest). Click a commune for the six categories."
+  }
+]
