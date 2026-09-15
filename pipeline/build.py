@@ -289,6 +289,8 @@ def stage_manifest(sources: list[Source], published: dict[str, dict], skipped: l
         "generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "basemaps": json.loads((ROOT / "pipeline" / "basemaps.json").read_text(encoding="utf-8")),
         "overlays": json.loads((ROOT / "pipeline" / "overlays.json").read_text(encoding="utf-8")),
+        # The view a visitor with no link lands on, and the layers listed first.
+        "start": json.loads((ROOT / "pipeline" / "start.json").read_text(encoding="utf-8")),
         "layers": layers,
         "stats": stats or {"index": None, "count": 0, "fields": []},
         "files": files or {},

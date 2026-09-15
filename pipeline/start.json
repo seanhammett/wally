@@ -1,0 +1,20 @@
+{
+  "top_items": {
+    "label": "Top items",
+    "layers": ["habitability_2050", "left_right_index", "climate_sunshine", "population"]
+  },
+  "layers": ["population", "left_right_index", "habitability_2050", "__optimiser", "rivieres", "rail_type"],
+  "opacity": {
+    "population": 0.65,
+    "left_right_index": 0.65,
+    "habitability_2050": 1,
+    "__optimiser": 1,
+    "rivieres": 1,
+    "rail_type": 1
+  },
+  "optimiser": [
+    { "name": "habitabilite_2050", "dir": "up", "weight": 4 },
+    { "name": "climat_soleil_kwh", "dir": "up", "weight": 1 },
+    { "name": "gd_indice", "dir": "down", "weight": 3 }
+  ]
+}

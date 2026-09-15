@@ -719,11 +719,27 @@ function buildActive(map) {
 }
 
 // ----------------------------------------------------------------- panel
+// The start view's top items open the layer list and every statistic menu,
+// taken out of their own groups so that each is listed once.
+function topItems() {
+  const top = (state.manifest.start || {}).top_items;
+  const layers = ((top && top.layers) || []).map((id) => state.byId.get(id)).filter(Boolean);
+  return {
+    label: (top && top.label) || 'Top items',
+    layers,
+    // A layer's statistic is the field it draws.
+    stats: layers.map((l) => l.paint && l.paint.property).filter((name) => state.stats.byName.has(name)),
+  };
+}
+
 function buildPanel(map) {
   const host = $('#layers');
   host.innerHTML = '';
+  const top = topItems();
   const groups = new Map();
+  if (top.layers.length) groups.set(top.label, top.layers);
   for (const layer of state.layers) {
+    if (top.layers.includes(layer)) continue;
     if (!groups.has(layer.group)) groups.set(layer.group, []);
     groups.get(layer.group).push(layer);
   }
@@ -1861,13 +1877,16 @@ function fillStatSelect(sel, value, onChange, { blank: blankLabel = '— choose 
   blank.value = '';
   sel.appendChild(blank);
 
-  const groups = new Map();
+  const top = topItems();
+  const groups = new Map([[top.label, top.stats.map((name) => state.stats.byName.get(name))]]);
   for (const f of state.stats.fields) {
-    if (exclude && exclude.has(f.name)) continue;
+    if (top.stats.includes(f.name)) continue;
     if (!groups.has(f.group)) groups.set(f.group, []);
     groups.get(f.group).push(f);
   }
-  for (const [group, fields] of groups) {
+  for (const [group, all] of groups) {
+    const fields = all.filter((f) => !(exclude && exclude.has(f.name)));
+    if (!fields.length) continue;
     const og = document.createElement('optgroup');
     og.label = group;
     for (const f of fields) {
@@ -2461,6 +2480,22 @@ function readHash() {
   };
 }
 
+// The view a visitor with no link lands on (pipeline/start.json), in the shape
+// readHash returns so that one restore path serves both. Opacity is the one
+// thing a link does not carry, so the start view's is applied here.
+function startView(start) {
+  if (!start) return null;
+  for (const [id, value] of Object.entries(start.opacity || {})) {
+    if (state.byId.has(id)) state.opacity.set(id, value);
+  }
+  return {
+    view: null,
+    layers: start.layers || null,
+    corr: null,
+    opt: (start.optimiser || []).map((c) => ({ bad: null, ideal: null, ...c })),
+  };
+}
+
 // name:dir:weight:bad:ideal per criterion, comma-separated, blanks left blank.
 function optHash() {
   const o = state.opt;
@@ -2577,7 +2612,7 @@ async function main() {
   state.basemap = (manifest.basemaps.find((b) => b.default) || manifest.basemaps[0]).id;
   $('#built').textContent = (manifest.generated || '').replace('T', ' ').replace('Z', ' UTC');
 
-  const hash = readHash();
+  const hash = readHash() || startView(manifest.start);
   if (hash && hash.corr && computed) {
     const c = state.corr;
     const known = new Set(((manifest.stats || {}).fields || []).map((f) => f.name));

@@ -395,6 +395,12 @@ Basemaps and the overlay chips are declared in `pipeline/basemaps.json` and
 OpenTopoMap (topographic, to zoom 17), OpenStreetMap and "No map"; the cadastre
 from zoom 14 and IGN contour lines from zoom 11 stack over any of them.
 
+The view a visitor with no link lands on is `pipeline/start.json`: the layers
+switched on (bottom of the stack first, spelled as in a shared link), their
+opacities, the optimiser's criteria, and the "Top items" that open the layer
+list and every statistic menu. It overrides each layer's `default_visible`; a
+link overrides it in turn.
+
 Libraries are vendored and version-pinned in `site/lib/`: MapLibre GL JS 5.6.0
 and pmtiles 4.3.0. `app.js` is ~2,700 lines of plain JavaScript,
 `correlate.js` ~250 and `optimise.js` ~150; there is no build step for the frontend and nothing is
