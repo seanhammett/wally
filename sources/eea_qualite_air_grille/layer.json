@@ -1,6 +1,7 @@
 [
   {
     "id": "air_grid_pm25",
+    "panel": false,
     "label": "PM2.5 per km² (zoom in)",
     "group": "Air quality",
     "type": "polygon",
@@ -23,6 +24,7 @@
   },
   {
     "id": "air_grid_no2",
+    "panel": false,
     "label": "NO₂ per km² (zoom in)",
     "group": "Air quality",
     "type": "polygon",
@@ -45,6 +47,7 @@
   },
   {
     "id": "air_grid_somo35",
+    "panel": false,
     "label": "Ozone SOMO35 per km² (zoom in)",
     "group": "Air quality",
     "type": "polygon",

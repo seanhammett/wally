@@ -14,6 +14,7 @@ min_join_rate: 0.99
 # absolute values plus anomalies against 1976–2005, as ensemble percentiles.
 # The per-model archives and the relative-anomaly ones are not needed.
 expected_files:
+  - "Indicateurs-Absolue_Centiles-Explore2-Climat_Moyenne-20ans_RWL20_csv.tar"
   - "Indicateurs-Absolue_Centiles-Explore2-Climat_Moyenne-20ans_RWL27_csv.tar"
   - "Indicateurs-Absolue_Centiles-Explore2-Climat_Moyenne-20ans_RWL40_csv.tar"
 
@@ -21,6 +22,11 @@ expected_files:
 levels:
   reference: "27"
   high: "40"
+  # +2.0 °C (TRACC's 2030) stands in for today's climate in the fire model:
+  # France's 2006–2025 fire record sits between the 1976–2005 baseline and it.
+  # Only these indicators are read at this level.
+  present: "20"
+present_indicators: [IFM40D]
 
 # Indicator code in the file names → output column stem. Every file holds the
 # SAFRAN 8 km grid (19,162 points, 8,981 over land) in lat/lon.
@@ -29,8 +35,8 @@ indicators:
   TX35D: jours_35c
   SWI04D: sol_sec
   # Days with the Fire Weather Index at 40 or above. Fire *weather* only — no
-  # fuel, no ignitions — and the interim fire input to the habitability score
-  # until a model calibrated on observed fires replaces it.
+  # fuel, no ignitions. feux_modele uses it as a predictor (at +2.0 °C) and for
+  # its 2050 factor (+2.7 °C against +2.0 °C).
   IFM40D: feux_meteo
 
 manual_instructions: |
@@ -40,9 +46,9 @@ manual_instructions: |
     1. Create an account on drias-climat.fr (Espace Données et Produits).
     2. Order the TRACC-2023 indicators by warming level, 20-year means
        ("Moyenne-20ans"), absolute values, ensemble percentiles ("Centiles"),
-       CSV, at the +2.7 °C and +4 °C levels. The archive holds TR, TX35D,
+       CSV, at the +2.0 °C, +2.7 °C and +4 °C levels. The archive holds TR, TX35D,
        SWI04D and IFM40D among ~25 indicators.
-    3. Put the two archives named in expected_files, unrenamed, in
+    3. Put the three archives named in expected_files, unrenamed, in
        data/raw/drias_chaleur/. They are ~108 MB each.
 
   The per-model ("Models") archives are ~620 MB each and are not used.
@@ -53,7 +59,8 @@ notes: |
   above 20 °C), days reaching 35 °C (TX35D), dry-soil days (SWI04D, days a
   year with the soil wetness index below 0.4, from the Explore2 SIM2 hydrology
   runs) and fire-weather days (IFM40D, days with the Fire Weather Index at 40
-  or more — weather only, the interim fire input to the habitability score).
+  or more — weather only; it feeds the fire model in feux_modele). IFM40D is
+  also read at +2.0 °C, as feux_meteo_20, the fire model's present-day weather.
   Each is the median of the Explore2 ensemble — 17 regional climate
   simulations bias-corrected with ADAMONT onto the SAFRAN grid — averaged over
   the 20 years around the warming level. The popup adds the ensemble range, the

@@ -1,0 +1,27 @@
+[
+  {
+    "id": "fire_risk_2050",
+    "label": "Wildfire risk at +2.7 °C (model of large fires)",
+    "group": "Hazards",
+    "type": "choropleth",
+    "paint": {
+      "property": "feux_risque_2050",
+      "scale": "numeric",
+      "breaks": [0.5, 1, 2, 5, 10, 25],
+      "colors": ["#fff7ec", "#fee8c8", "#fdd49e", "#fc8d59", "#ef6548", "#b30000", "#67000d"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "feux_risque_2050", "type": "numeric", "unit": "fires / 1,000 km² / decade", "label": "Expected forest fires of 10 ha or more at +2.7 °C" },
+      { "name": "feux_risque_actuel", "type": "numeric", "unit": "fires / 1,000 km² / decade", "label": "Expected today (model fitted on 2006–2025)" },
+      { "name": "feux_facteur_2050", "type": "numeric", "unit": "×", "label": "2050 factor: fire-weather days at +2.7 °C against +2.0 °C" },
+      { "name": "feux_grands_nb", "type": "numeric", "unit": "fires", "label": "Fires of 10 ha or more that started here, 2006–2025", "correlate": false },
+      { "name": "feux_voisins", "type": "numeric", "unit": "fires / 1,000 km² / decade", "label": "Recorded rate of 10 ha fires within 20 km, 2006–2025", "correlate": false },
+      { "name": "feux_vent_jours", "type": "numeric", "unit": "days/year", "label": "Windy fire-season days (June–September, daily mean ≥ 5 m/s)" },
+      { "name": "feux_regime", "type": "categorical", "unit": "", "label": "Fire regime" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.75,
+    "legend_note": "How many forest fires of 10 ha or more to expect per 1,000 km² per decade at +2.7 °C, the warming France plans for 2050. A model after Projet Celsius's: fitted on 20 years of BDIFF fires from the record of neighbouring communes, fire-weather days, fire regime, windy days and population density, and tested on seasons it never saw (2022–2025), where it ranks the communes hit better than fire weather alone. The step to 2050 multiplies by the rise in fire-weather days, an extrapolation rather than a model output. It does not see fuel: forest cover is not an input."
+  }
+]

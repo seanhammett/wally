@@ -25,6 +25,7 @@ const state = {
   opacity: new Map(),
   basemap: null,
   overlays: new Set(),
+  selected: null,        // INSEE code of the commune in the inspect pane, outlined on the map
   fieldIndex: new Map(), // property name -> { label, unit, layer }
   // The published commune stat columns, shared by the correlator and the
   // optimiser so a column either of them fetched is never fetched twice.
@@ -221,7 +222,12 @@ function addCities(map, url) {
 function applyBasemap(map, b) {
   const tiled = Boolean(b.tiles);
   if (tiled) {
-    map.getSource('basemap').setTiles([b.tiles]);
+    // setTiles reloads the source from its options, so the credit and the zoom
+    // limit are swapped in with the tiles — otherwise the first basemap's
+    // attribution stays on screen and a zoom-17 service is asked for zoom 19.
+    const source = map.getSource('basemap');
+    Object.assign(source._options, { attribution: b.attribution, maxzoom: b.maxzoom || 19 });
+    source.setTiles([b.tiles]);
     map.style.sourceCaches.basemap.clearTiles();
     map.style.sourceCaches.basemap.update(map.transform);
     applyBasemapPaint(map, b);
@@ -235,6 +241,54 @@ function applyBasemap(map, b) {
     if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', tiled ? 'none' : 'visible');
   }
   map.triggerRepaint();
+}
+
+// GitHub Pages refuses files of 100 MiB or more, so the build cuts a large
+// tileset into consecutive byte slices (tile.py split_parts) and lists them as
+// `source_parts`. This hands pmtiles those slices as the one archive they came
+// from; a range that straddles a boundary is read from both parts and joined.
+class PartsSource {
+  constructor(url, parts) {
+    this.url = url;
+    let start = 0;
+    this.parts = parts.map(([file, bytes]) => {
+      const part = { fetcher: new pmtiles.FetchSource(`tiles/${file}`), start, bytes };
+      start += bytes;
+      return part;
+    });
+  }
+
+  getKey() {
+    return this.url;
+  }
+
+  async getBytes(offset, length, signal) {
+    const end = offset + length;
+    const reads = [];
+    for (const p of this.parts) {
+      const lo = Math.max(offset, p.start);
+      const hi = Math.min(end, p.start + p.bytes);
+      if (lo < hi) reads.push(p.fetcher.getBytes(lo - p.start, hi - lo, signal));
+    }
+    const got = await Promise.all(reads);
+    if (got.length === 1) return { data: got[0].data };
+    const joined = new Uint8Array(got.reduce((n, g) => n + g.data.byteLength, 0));
+    let at = 0;
+    for (const g of got) {
+      joined.set(new Uint8Array(g.data), at);
+      at += g.data.byteLength;
+    }
+    return { data: joined.buffer };
+  }
+}
+
+function registerSplitArchives(protocol, layers) {
+  for (const layer of layers) {
+    if (layer.remote || !layer.source_parts) continue;
+    const url = `tiles/${layer.source_file}`;
+    if (protocol.get(url)) continue;
+    protocol.add(new pmtiles.PMTiles(new PartsSource(url, layer.source_parts)));
+  }
 }
 
 function sourceKeyFor(layer) {
@@ -300,10 +354,23 @@ function addLayer(map, layer) {
     return;
   }
   if (layer.type === 'line') {
-    map.addLayer({
+    const line = {
       ...common, type: 'line',
       paint: { 'line-color': color, 'line-width': layer.paint.width || 0.7, 'line-opacity': opacity },
-    });
+    };
+    // A line layer with `areas` also carries polygons in the same tileset — the
+    // rivers' lakes. They are filled beneath the lines under the same switch, and
+    // each MapLibre layer is filtered to its own geometry, or the line layer would
+    // trace every lake shore as if it were a river.
+    const areas = layer.paint.areas;
+    if (areas) {
+      map.addLayer({
+        ...common, id: `${layer.id}__areas`, type: 'fill', filter: POLYGONS,
+        paint: { 'fill-color': color, 'fill-outline-color': areas.outline_color || color, 'fill-opacity': opacity },
+      });
+      line.filter = ['!', POLYGONS];
+    }
+    map.addLayer(line);
     return;
   }
   // choropleth and polygon are both fills; polygons additionally get an outline
@@ -320,6 +387,12 @@ function addLayer(map, layer) {
   }
 }
 
+// Every MapLibre layer drawn for one manifest layer, bottom first: a line layer's
+// lake fill, the layer itself, a polygon's outline. Whatever applies to a layer —
+// switching, opacity, draw order, clicks — applies to all of them.
+const POLYGONS = ['match', ['geometry-type'], ['Polygon', 'MultiPolygon'], true, false];
+const drawnIds = (id) => [`${id}__areas`, id, `${id}__outline`];
+
 // A zero-opacity fill over the commune tileset, always present, so a click can
 // report commune attributes even when no choropleth is switched on.
 function addProbeLayer(map) {
@@ -335,7 +408,7 @@ function addProbeLayer(map) {
 function applyVisibility(map) {
   for (const layer of state.layers) {
     const on = state.visible.has(layer.id) ? 'visible' : 'none';
-    for (const id of [layer.id, `${layer.id}__outline`]) {
+    for (const id of drawnIds(layer.id)) {
       if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on);
     }
   }
@@ -348,6 +421,7 @@ function applyOpacity(map, layer) {
     if (map.getLayer(layer.id)) map.setPaintProperty(layer.id, prop, o);
   }
   if (map.getLayer(`${layer.id}__outline`)) map.setPaintProperty(`${layer.id}__outline`, 'line-opacity', o);
+  if (map.getLayer(`${layer.id}__areas`)) map.setPaintProperty(`${layer.id}__areas`, 'fill-opacity', o);
 }
 
 // ----------------------------------------------------------- stack order
@@ -358,14 +432,14 @@ function activeIds() {
 
 function restack(map) {
   // Moving each layer to the top in bottom-to-top order leaves the stack in
-  // exactly `state.order`. Outlines ride immediately above their own fill.
+  // exactly `state.order`. Outlines ride immediately above their own fill, lake
+  // fills immediately below their own lines.
   for (const id of state.order) {
-    if (map.getLayer(id)) map.moveLayer(id);
-    if (map.getLayer(`${id}__outline`)) map.moveLayer(`${id}__outline`);
+    for (const part of drawnIds(id)) if (map.getLayer(part)) map.moveLayer(part);
   }
-  // The country border and the city names read over every data layer, or a
-  // choropleth hides them.
-  for (const id of [OUTLINE.line, ...cityLayerIds()]) {
+  // The selected commune's border, the country border and the city names read
+  // over every data layer, or a choropleth hides them.
+  for (const id of [SELECTED.casing, SELECTED.line, OUTLINE.line, ...cityLayerIds()]) {
     if (map.getLayer(id)) map.moveLayer(id);
   }
 }
@@ -659,7 +733,10 @@ function buildPanel(map) {
     const block = el('div', 'group');
     block.appendChild(el('h3', null, name));
     for (const layer of layers) {
-      if (layer.panel === false) continue;   // the correlator owns its own switch
+      // Not listed: the computed layers, whose tools own their switch, and data
+      // layers retired from the list. A hidden data layer still reports in the
+      // inspect panel, feeds the stat tools, and turns on from a shared link.
+      if (layer.panel === false) continue;
       const item = el('div', 'layer');
       item.dataset.id = layer.id;
 
@@ -754,19 +831,25 @@ function formatValue(value, field) {
   return String(value);
 }
 
-function inspect(map, point, lngLat) {
-  const ids = state.layers.filter((l) => state.visible.has(l.id)).map((l) => l.id);
+function inspect(map, point, lngLat, { code = null } = {}) {
+  const ids = state.layers.filter((l) => state.visible.has(l.id)).flatMap((l) => drawnIds(l.id));
   if (map.getLayer('__commune_probe')) ids.push('__commune_probe');
+  const hitOf = (layer) => hits.find((f) => f.layer.id === layer.id || f.layer.id === `${layer.id}__areas`);
   const hits = map.queryRenderedFeatures([[point.x - 3, point.y - 3], [point.x + 3, point.y + 3]],
     { layers: ids.filter((id) => map.getLayer(id)) });
 
   const body = $('#inspect-body');
   body.innerHTML = '';
 
-  // The commune is the join key for everything, so it leads.
-  const communeFeature = hits.find((f) => f.layer.id === '__commune_probe')
-    || hits.find((f) => (f.properties || {}).code_insee && (f.properties || {}).nom);
+  // The commune is the join key for everything, so it leads. A commune picked
+  // from the search is looked up by its code: its centre point can sit in a
+  // neighbour's shape when the commune is a crescent or a ring.
+  const isCommune = (f) => (f.properties || {}).code_insee && (f.properties || {}).nom;
+  let communeFeature = code
+    ? hits.find((f) => isCommune(f) && f.properties.code_insee === code) || communeByCode(map, code)
+    : hits.find((f) => f.layer.id === '__commune_probe') || hits.find(isCommune);
   const props = communeFeature ? communeFeature.properties : {};
+  highlightCommune(map, props.code_insee || null);
   $('#inspect-title').textContent = props.nom
     ? `${props.nom} (${props.code_insee})`
     : `${lngLat.lat.toFixed(4)}, ${lngLat.lng.toFixed(4)}`;
@@ -786,7 +869,7 @@ function inspect(map, point, lngLat) {
     if (layer.type === 'choropleth') {
       source = communeFeature ? communeFeature.properties : null;
     } else {
-      const hit = hits.find((f) => f.layer.id === layer.id);
+      const hit = hitOf(layer);
       source = hit ? hit.properties : null;
     }
     if (!source) continue;
@@ -804,7 +887,7 @@ function inspect(map, point, lngLat) {
   const identityKeys = new Set(['code_insee', 'nom', 'dep', 'reg']);
   for (const layer of state.layers) {
     if (layer.type === 'choropleth' || layer.type === 'line' || !state.visible.has(layer.id)) continue;
-    const hit = hits.find((f) => f.layer.id === layer.id);
+    const hit = hitOf(layer);
     if (!hit) continue;
     const extra = Object.entries(hit.properties || {})
       .filter(([k, v]) => !declaredAnywhere.has(k) && !identityKeys.has(k) && v !== null && v !== '')
@@ -829,6 +912,7 @@ function inspect(map, point, lngLat) {
       button.addEventListener('click', () => openClimateTable(code, name, button));
       head.appendChild(button);
     }
+    head.appendChild(communeLinks(props.code_insee, props.nom, lngLat));
     body.appendChild(head);
   }
 
@@ -881,6 +965,350 @@ function inspect(map, point, lngLat) {
     body.appendChild(el('p', 'insp-empty', 'Nothing loaded at this point. Switch on a layer and click again.'));
   }
   $('#inspect').hidden = false;
+}
+
+// Outbound searches for the commune under the cursor. Both are centred on the
+// commune's own point from the stat index, so a click near a border still
+// searches the commune named in the title; until that index has loaded, the
+// clicked point stands in.
+const LBC_RADIUS_M = 5000;
+
+function communeLinks(code, name, lngLat) {
+  const row = el('div', 'insp-links');
+  const maps = el('a', 'insp-action', 'Google Maps ↗');
+  const lbc = el('a', 'insp-action', `Leboncoin +${LBC_RADIUS_M / 1000} km ↗`);
+  for (const a of [maps, lbc]) {
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+  }
+  lbc.title = `Property for sale within ${LBC_RADIUS_M / 1000} km of ${name}`;
+  maps.title = `Search Google Maps for ${name}`;
+
+  const point = (lat, lon) => {
+    const la = lat.toFixed(5), lo = lon.toFixed(5);
+    maps.href = `https://www.google.com/maps/search/${encodeURIComponent(name)}/@${la},${lo},13z`;
+    // Leboncoin's location token: name _ postcode (left empty) __ lat _ lng _ radius _ radius.
+    const where = `${name}__${la}_${lo}_${LBC_RADIUS_M}_${LBC_RADIUS_M}`;
+    lbc.href = `https://www.leboncoin.fr/recherche?category=9&locations=${encodeURIComponent(where)}`;
+  };
+  const fromIndex = (index) => {
+    const i = index ? index.row.get(code) : undefined;
+    if (i === undefined || !Number.isFinite(index.lat[i])) return false;
+    point(index.lat[i], index.lon[i]);
+    return true;
+  };
+
+  if (!fromIndex(state.stats.index)) {
+    point(lngLat.lat, lngLat.lng);
+    if (state.manifest.stats) loadStatIndex().then(fromIndex).catch(() => {});
+  }
+  row.append(maps, lbc);
+  return row;
+}
+
+// ------------------------------------------------- commune selection
+// The commune being inspected gets a heavy border: a white casing under a dark
+// line, so it reads over a dark choropleth as well as over the bare map.
+const SELECTED = { casing: '__commune_selected_casing', line: '__commune_selected' };
+const NO_COMMUNE = ['==', ['get', 'code_insee'], ''];
+
+function addSelectionLayers(map) {
+  const commune = state.layers.find((l) => l.type === 'choropleth');
+  if (!commune) return;
+  const base = { source: sourceKeyFor(commune), 'source-layer': commune.source_layer, filter: NO_COMMUNE };
+  map.addLayer({
+    ...base, id: SELECTED.casing, type: 'line',
+    layout: { 'line-join': 'round' },
+    paint: { 'line-color': '#ffffff', 'line-opacity': 0.9,
+             'line-width': ['interpolate', ['linear'], ['zoom'], 5, 3.5, 10, 7] },
+  });
+  map.addLayer({
+    ...base, id: SELECTED.line, type: 'line',
+    layout: { 'line-join': 'round' },
+    paint: { 'line-color': '#111827',
+             'line-width': ['interpolate', ['linear'], ['zoom'], 5, 1.8, 10, 3.5] },
+  });
+}
+
+function highlightCommune(map, code) {
+  state.selected = code;
+  const filter = code ? ['==', ['get', 'code_insee'], code] : NO_COMMUNE;
+  for (const id of [SELECTED.casing, SELECTED.line]) {
+    if (map.getLayer(id)) map.setFilter(id, filter);
+  }
+}
+
+// A commune feature from the loaded tiles, wherever it is drawn. Tiles cut a
+// commune into pieces, but every piece carries the same properties.
+function communeByCode(map, code) {
+  const commune = state.layers.find((l) => l.type === 'choropleth');
+  if (!commune || !map.getSource(sourceKeyFor(commune))) return null;
+  const found = map.querySourceFeatures(sourceKeyFor(commune), {
+    sourceLayer: commune.source_layer, filter: ['==', ['get', 'code_insee'], code],
+  });
+  return found[0] || null;
+}
+
+function closeInspect(map) {
+  $('#inspect').hidden = true;
+  highlightCommune(map, null);
+}
+
+// ---------------------------------------------------------- commune search
+// Picks from the list of communes and nothing else: typing only filters, and a
+// name that was typed but not chosen is cleared. Matching ignores case, accents,
+// hyphens and apostrophes, and a word can match anywhere in the name, so
+// "nazaire" finds Saint-Nazaire-le-Désert and "st etienne" finds Saint-Étienne.
+const SEARCH_LIMIT = 60;
+const SEARCH_ALIASES = { st: 'saint', ste: 'sainte' };
+const search = { map: null, entries: null, loading: null, results: [], more: 0, active: -1, run: 0 };
+
+// Lower case, no accents, anything that is not a letter or digit as a space —
+// plus, for each character of the folded text, where it came from in the name,
+// so a match can be marked in the name as written.
+function foldName(name) {
+  let text = '';
+  const from = [];
+  for (let i = 0; i < name.length; i++) {
+    let f = name[i].normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    f = f.replace(/œ/g, 'oe').replace(/æ/g, 'ae').replace(/[^a-z0-9]/g, ' ');
+    for (const ch of f) { text += ch; from.push(i); }
+  }
+  return { text, from };
+}
+
+async function loadSearchEntries() {
+  if (search.entries) return search.entries;
+  if (!search.loading) {
+    search.loading = (async () => {
+      const index = await loadStatIndex();
+      // Population orders the matches, so "saint" offers the big places first.
+      let population = null;
+      try { if (statField('population')) population = await loadColumn('population'); } catch { /* order by name */ }
+      search.entries = index.codes.map((code, i) => {
+        const { text, from } = foldName(index.names[i]);
+        return { i, code, name: index.names[i], text, from, pop: population && Number.isFinite(population[i]) ? population[i] : 0 };
+      });
+      return search.entries;
+    })().catch((err) => { search.loading = null; throw err; });
+  }
+  return search.loading;
+}
+
+function queryTokens(query) {
+  return foldName(query).text.split(' ').filter(Boolean);
+}
+
+// One commune against the typed words: null when a word is missing, otherwise a
+// rank (lower is better) and the stretches of the name to mark.
+function matchEntry(entry, tokens, digits) {
+  if (digits) {
+    if (!entry.code.startsWith(digits)) return null;
+    return { rank: entry.code === digits ? 0 : 1, marks: [] };
+  }
+  const marks = [];
+  let wordStarts = true;
+  let first = -1;
+  for (const token of tokens) {
+    let at = -1, len = token.length;
+    for (const alt of [token, SEARCH_ALIASES[token]]) {
+      if (!alt) continue;
+      // Prefer the word start: "ain" should mark Ain, not the middle of Saint.
+      const re = new RegExp(`(^| )${alt}`);
+      const m = re.exec(entry.text);
+      if (m) { at = m.index + m[1].length; len = alt.length; break; }
+    }
+    if (at < 0) {
+      at = entry.text.indexOf(token);
+      if (at < 0) return null;
+      wordStarts = false;
+    }
+    if (first < 0) first = at;
+    marks.push([entry.from[at], entry.from[at + len - 1] + 1]);
+  }
+  const whole = entry.text.trim() === tokens.join(' ');
+  const rank = whole ? 0 : first === 0 ? 1 : wordStarts ? 2 : 3;
+  return { rank, marks };
+}
+
+function markedName(name, marks) {
+  const span = el('span', 'cs-name');
+  const merged = marks.slice().sort((a, b) => a[0] - b[0]).reduce((out, m) => {
+    const last = out[out.length - 1];
+    if (last && m[0] <= last[1]) last[1] = Math.max(last[1], m[1]);
+    else out.push([...m]);
+    return out;
+  }, []);
+  let pos = 0;
+  for (const [a, b] of merged) {
+    if (a > pos) span.append(name.slice(pos, a));
+    span.appendChild(el('mark', null, name.slice(a, b)));
+    pos = b;
+  }
+  if (pos < name.length) span.append(name.slice(pos));
+  return span;
+}
+
+function renderSearchResults(input, list, note) {
+  list.replaceChildren();
+  if (note) {
+    list.appendChild(el('li', 'cs-note', note));
+  } else {
+    search.results.forEach(({ entry, marks }, k) => {
+      const li = el('li', 'cs-opt');
+      li.id = `cs-opt-${k}`;
+      li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', String(k === search.active));
+      li.classList.toggle('active', k === search.active);
+      li.append(markedName(entry.name, marks), el('span', 'cs-code', `(${entry.code})`));
+      li.addEventListener('mousemove', () => setSearchActive(input, list, k));
+      li.addEventListener('click', () => chooseSearchResult(input, list, k));
+      list.appendChild(li);
+    });
+    if (search.more) list.appendChild(el('li', 'cs-note', `${search.more.toLocaleString('en')} more — keep typing to narrow the list`));
+  }
+  list.hidden = false;
+  input.setAttribute('aria-expanded', 'true');
+}
+
+function setSearchActive(input, list, k) {
+  if (k === search.active) return;
+  const items = list.querySelectorAll('.cs-opt');
+  if (!items.length) return;
+  search.active = Math.max(0, Math.min(items.length - 1, k));
+  items.forEach((li, j) => {
+    li.classList.toggle('active', j === search.active);
+    li.setAttribute('aria-selected', String(j === search.active));
+  });
+  const current = items[search.active];
+  input.setAttribute('aria-activedescendant', current.id);
+  current.scrollIntoView({ block: 'nearest' });
+}
+
+function closeSearchList(input, list) {
+  list.hidden = true;
+  input.setAttribute('aria-expanded', 'false');
+  input.removeAttribute('aria-activedescendant');
+  search.active = -1;
+}
+
+async function updateSearch(input, list) {
+  const query = input.value;
+  const tokens = queryTokens(query);
+  if (!tokens.length) { closeSearchList(input, list); return; }
+  const run = ++search.run;
+  if (!search.entries) renderSearchResults(input, list, 'Loading communes…');
+  let entries;
+  try {
+    entries = await loadSearchEntries();
+  } catch (err) {
+    if (run === search.run) renderSearchResults(input, list, `Could not load the commune list: ${err.message}`);
+    return;
+  }
+  if (run !== search.run) return;
+
+  const digits = /^\d[\dab]*$/i.test(query.trim()) ? query.trim().toUpperCase() : null;
+  const found = [];
+  for (const entry of entries) {
+    const m = matchEntry(entry, tokens, digits);
+    if (m) found.push({ entry, ...m });
+  }
+  found.sort((a, b) => a.rank - b.rank || b.entry.pop - a.entry.pop || a.entry.name.localeCompare(b.entry.name, 'fr'));
+  search.results = found.slice(0, SEARCH_LIMIT);
+  search.more = Math.max(0, found.length - SEARCH_LIMIT);
+  search.active = search.results.length ? 0 : -1;
+  if (!search.results.length) { renderSearchResults(input, list, 'No commune matches'); return; }
+  renderSearchResults(input, list);
+  input.setAttribute('aria-activedescendant', 'cs-opt-0');
+}
+
+function chooseSearchResult(input, list, k) {
+  const hit = search.results[k];
+  if (!hit) return;
+  input.value = '';
+  closeSearchList(input, list);
+  input.blur();
+  goToCommune(search.map, hit.entry.i);
+}
+
+let goToken = 0;
+
+// Frame the commune roughly by its size — area from population ÷ density — so a
+// village is not a dot and Arles is not cut off, then inspect it once the tiles
+// under it have loaded.
+async function goToCommune(map, i) {
+  const index = state.stats.index;
+  const code = index.codes[i];
+  const center = [index.lon[i], index.lat[i]];
+  const token = ++goToken;
+
+  $('#inspect-title').textContent = `${index.names[i]} (${code})`;
+  $('#inspect-body').replaceChildren(el('p', 'insp-empty', 'Loading…'));
+  $('#inspect').hidden = false;
+  highlightCommune(map, code);
+
+  let zoom = 11;
+  try {
+    const [pop, dens] = await Promise.all([loadColumn('population'), loadColumn('densite_hab_km2')]);
+    const areaKm2 = pop[i] / dens[i];
+    if (Number.isFinite(areaKm2) && areaKm2 > 0) {
+      const diameterM = 2 * Math.sqrt(areaKm2 / Math.PI) * 1000;
+      const visiblePx = map.getCanvas().clientWidth - leftInset() - rightInset();
+      const metresPerPx = (diameterM * 2.2) / Math.max(visiblePx, 200);
+      zoom = Math.log2((78271.517 * Math.cos(center[1] * Math.PI / 180)) / metresPerPx);
+      zoom = Math.max(8, Math.min(14, zoom));
+    }
+  } catch { /* keep zoom 11 */ }
+  if (token !== goToken) return;
+
+  map.flyTo({ center, zoom, padding: { left: leftInset(), right: rightInset(), top: 0, bottom: 0 } });
+  map.once('moveend', () => {
+    if (token !== goToken) return;
+    map.once('idle', () => {
+      if (token !== goToken) return;
+      inspect(map, map.project(center), maplibregl.LngLat.convert(center), { code });
+    });
+  });
+}
+
+const leftInset = () => ($('#panel').classList.contains('hidden') ? 0 : PANEL_W);
+const rightInset = () => ($('#inspect').hidden ? 0 : $('#inspect').offsetWidth);
+
+function buildCommuneSearch(map) {
+  search.map = map;
+  const input = $('#commune-search');
+  const list = $('#commune-results');
+
+  input.addEventListener('focus', () => { loadSearchEntries().catch(() => {}); if (input.value) updateSearch(input, list); });
+  input.addEventListener('input', () => updateSearch(input, list));
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (list.hidden) { updateSearch(input, list); return; }
+      setSearchActive(input, list, search.active + (e.key === 'ArrowDown' ? 1 : -1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (!list.hidden && search.active >= 0) chooseSearchResult(input, list, search.active);
+    } else if (e.key === 'Escape') {
+      e.stopPropagation();
+      if (!list.hidden) closeSearchList(input, list);
+      else { input.value = ''; input.blur(); }
+    }
+  });
+  // Nothing typed stands on its own: leaving the box without choosing clears it.
+  input.addEventListener('blur', () => { input.value = ''; closeSearchList(input, list); });
+  // Keep focus in the box while a result is clicked, or blur would clear the list first.
+  list.addEventListener('mousedown', (e) => e.preventDefault());
+
+  $('#search-open').addEventListener('click', () => {
+    const pane = $('#inspect');
+    if (pane.hidden) {
+      $('#inspect-title').textContent = 'Communes';
+      $('#inspect-body').replaceChildren(el('p', 'insp-empty', 'Search for a commune above, or click anywhere on the map.'));
+      pane.hidden = false;
+    }
+    input.focus();
+  });
 }
 
 // -------------------------------------------------------- climate table
@@ -2188,6 +2616,7 @@ async function main() {
 
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
+  registerSplitArchives(protocol, manifest.layers);
 
   const map = new maplibregl.Map({
     container: 'map',
@@ -2213,6 +2642,7 @@ async function main() {
     addSources(map);
     for (const layer of state.layers) addLayer(map, layer);
     addProbeLayer(map);
+    addSelectionLayers(map);
     restack(map);                       // honour an order restored from the hash
     buildBasemaps(map);
     buildPanel(map);
@@ -2235,13 +2665,14 @@ async function main() {
   map.on('moveend', () => writeHash(map));
   map.on('click', (e) => inspect(map, e.point, e.lngLat));
   map.on('mousemove', (e) => {
-    const ids = state.layers.filter((l) => state.visible.has(l.id) && l.type !== 'choropleth').map((l) => l.id);
+    const ids = state.layers.filter((l) => state.visible.has(l.id) && l.type !== 'choropleth').flatMap((l) => drawnIds(l.id));
     const over = ids.length && map.queryRenderedFeatures(e.point, { layers: ids.filter((id) => map.getLayer(id)) }).length;
     map.getCanvas().style.cursor = over ? 'pointer' : '';
   });
   map.on('error', (e) => console.warn('[map]', e && e.error ? e.error.message : e));
 
-  $('#inspect-close').addEventListener('click', () => { $('#inspect').hidden = true; });
+  $('#inspect-close').addEventListener('click', () => closeInspect(map));
+  buildCommuneSearch(map);
   $('#climate-close').addEventListener('click', closeClimateTable);
   $('#climate').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeClimateTable(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeClimateTable(); });

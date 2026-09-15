@@ -12,6 +12,9 @@ min_join_rate: 0.97
 years:
   start: 2016
   end: 2025
+# The fetch goes back further than the layers: feux_modele learns from every
+# year since 2006, when the type-F series begins. The layers keep `years`.
+archive_start: 2006
 
 bdiff:
   # BDIFF has no bulk file and no API: /incendies/zip exports whatever criteria

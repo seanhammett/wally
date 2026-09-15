@@ -34,6 +34,7 @@
   },
   {
     "id": "rail_speed",
+    "panel": false,
     "label": "Line speed",
     "group": "Transport",
     "type": "line",

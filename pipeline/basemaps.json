@@ -27,6 +27,14 @@
     "maxzoom": 19
   },
   {
+    "id": "topo",
+    "label": "OpenTopoMap (topographic)",
+    "tiles": "https://tile.opentopomap.org/{z}/{x}/{y}.png",
+    "attribution": "Map data © OpenStreetMap contributors, SRTM · map style © OpenTopoMap (CC-BY-SA)",
+    "maxzoom": 17,
+    "note": "Topographic map: contour lines, hill shading, peaks and paths, from OpenStreetMap and SRTM elevation. Volunteer-run; tiles stop at zoom 17 and are enlarged beyond."
+  },
+  {
     "id": "osm",
     "label": "OpenStreetMap",
     "tiles": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",

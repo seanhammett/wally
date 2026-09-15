@@ -1,6 +1,6 @@
 id: score_habitabilite
 name: "Score d'habitabilité 2050 de Wally (méthode d'après Projet Celsius)"
-attribution: "Score Wally d'après la méthode publiée par Projet Celsius (aucune donnée Celsius utilisée) · DRIAS / Météo-France TRACC-2023 · Explore2 via RARE · BRGM / Géorisques · GASPAR · INSEE BPE — Licence Ouverte 2.0"
+attribution: "Score Wally d'après la méthode publiée par Projet Celsius (aucune donnée Celsius utilisée) · DRIAS / Météo-France TRACC-2023 · BDIFF · Explore2 via RARE · BRGM / Géorisques · GASPAR · INSEE BPE — Licence Ouverte 2.0"
 url: "https://projetcelsius.com/documents/ou-vivre-en-2050-note-methodologique.pdf"
 fetched: 2026-09-14
 source_crs: "EPSG:4326"
@@ -13,6 +13,7 @@ min_join_rate: 0.99
 # build re-runs this source whenever --only names one of these.
 inputs:
   - drias_chaleur
+  - feux_modele
   - explore2_etiage
   - explore2_crues
   - rga_communes
@@ -34,12 +35,10 @@ categories:
       - { source: drias_chaleur, column: nuits_tropicales_2050, scale: rank }
       - { source: drias_chaleur, column: jours_35c_2050, scale: rank }
   - id: feux
-    label: Fire weather
-    # Interim: fire *weather* only, until a model calibrated on observed fires
-    # replaces it. Known to underrate fuel-heavy humid areas (the Landes).
-    interim: true
+    label: Wildfire
+    # Expected ≥ 10 ha fires at +2.7 °C from the model calibrated on BDIFF fires.
     indicators:
-      - { source: drias_chaleur, column: feux_meteo_2050, scale: rank }
+      - { source: feux_modele, column: feux_risque_2050, scale: rank }
   - id: secheresse
     label: Drought and clay
     indicators:
@@ -102,9 +101,10 @@ notes: |
   as 30.
 
   **Where Wally differs from Celsius, deliberately.**
-  - Fire is interim: DRIAS fire-weather days (IFM40D) at +2.7 °C, not Celsius's
-    model calibrated on observed fires. Weather alone underrates humid forests
-    with a heavy fuel load; Mont-de-Marsan is the case in point.
+  - Fire follows Celsius's model calibrated on observed fires (source
+    feux_modele), fitted by Wally: 2006–2025 rather than 2006–2021, today's
+    weather taken at +2.0 °C, and Wally's own regime boundaries and wind
+    measure. Like Celsius's, it does not see fuel.
   - Services use Wally's 0–20 basket of everyday services, not facilities per
     1,000 residents, which rewards commercial and tourist hubs.
   - Climate inputs are weighted by where residents live, and clay is the

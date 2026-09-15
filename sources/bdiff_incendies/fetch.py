@@ -46,7 +46,8 @@ def fetch_year(cfg, year: int, dest, timeout: int = 300) -> None:
 def fetch(ctx, force: bool = False) -> None:
     cfg = ctx.meta["bdiff"]
     years = ctx.meta["years"]
-    for year in range(int(years["start"]), int(years["end"]) + 1):
+    start = int(ctx.meta.get("archive_start", years["start"]))
+    for year in range(start, int(years["end"]) + 1):
         dest = ctx.raw_dir / f"incendies-{year}.zip"
         if dest.exists() and not force:
             Log.info(f"cached {dest.name} ({dest.stat().st_size:,} bytes)")

@@ -1,0 +1,175 @@
+id: gauche_droite
+name: "Indice gauche–droite par commune (présidentielle 2022, européennes 2024, législatives 2024 × positions CHES)"
+attribution: "Résultats : Ministère de l'Intérieur — Licence Ouverte / Etalab 2.0 · positions des partis : Chapel Hill Expert Survey (Jolly et al. 2022; CHES 2024), trend file 1999–2024"
+url: "https://www.chesdata.eu/ches-europe"
+fetched: 2026-09-15
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+order: 72
+min_join_rate: 0.98
+
+inputs: [presidentielle_2022]
+
+# The CHES trend file: expert placements of every national party per survey wave.
+# `lrgen` is the overall ideological stance, 0 = extreme left, 5 = centre,
+# 10 = extreme right. Free for research use with citation.
+ches:
+  url: "https://github.com/chesdata/chesdata.github.io/releases/download/ches-trend/1999-2024_CHES_dataset_meansV2.csv"
+  filename: "1999-2024_CHES_dataset_meansV2.csv"
+  country: 6              # France
+  variable: lrgen
+  waves: [2019, 2024]     # the surveys either side of these elections; a party's position is their mean
+
+# Named positions the elections below point at: the mean CHES position of the
+# listed party ids (each first averaged over its waves). A party a wave did not
+# rate simply contributes the waves that did (DLF: 2019, Reconquête and
+# Horizons: 2024).
+positions:
+  LO:       { party_id: [614], waves: [1999] }   # LO and the LCR/NPA, only ever rated jointly, in 1999
+  PCF:      { party_id: [601] }
+  LFI:      { party_id: [627] }
+  EELV:     { party_id: [605] }
+  PS:       { party_id: [602] }
+  NFP:      { party_id: [627, 602, 605, 601] }   # the 2024 left alliance (nuance UG): mean of its four parties
+  MoDem:    { party_id: [613] }
+  RE:       { party_id: [626] }
+  Horizons: { party_id: [631] }
+  LR:       { party_id: [609] }
+  UXD:      { party_id: [609, 610] }             # Ciotti's LR candidates allied with the RN: between the two
+  DLF:      { party_id: [628] }
+  RN:       { party_id: [610] }
+  REC:      { party_id: [630] }
+
+blocs: [gauche, centre, droite, droite_radicale]
+
+# Every option on each ballot → [named position, bloc]. [null, null] = not placed:
+# its votes are left out of the index and counted as unplaced. An option in the
+# file that is not listed here fails the build, so nothing is dropped silently.
+# "Divers" nuances (DVG, DVD, DVC …) are the Ministry's catch-alls; they are placed
+# at the nearest rated party and marked "proxy".
+elections:
+  pres22:
+    label: "Presidential 2022, first round"
+    input: presidentielle_2022          # first-round shares from that source's output
+    options:
+      arthaud:       [LO, gauche]
+      poutou:        [LO, gauche]
+      roussel:       [PCF, gauche]
+      melenchon:     [LFI, gauche]
+      jadot:         [EELV, gauche]
+      hidalgo:       [PS, gauche]
+      macron:        [RE, centre]
+      pecresse:      [LR, droite]
+      dupont_aignan: [DLF, droite_radicale]
+      lepen:         [RN, droite_radicale]
+      zemmour:       [REC, droite_radicale]
+      lassalle:      [null, null]       # Résistons !, never rated
+
+  euro24:
+    label: "European 2024"
+    url: "https://www.data.gouv.fr/api/1/datasets/r/6a782ef9-8ad6-4e66-832d-338b1041a42d"
+    filename: "europeennes-2024-communes.csv"     # 127 MB, one row per commune, 38 lists
+    layout: { prefix_columns: 18, block_size: 8, option: 1, votes: 4, expressed: 9, dept: 0, commune: 2 }
+    options:                            # list nuance codes
+      LEXG: [LO, gauche]                # Lutte ouvrière and three small communist lists
+      LCOM: [PCF, gauche]
+      LFI:  [LFI, gauche]
+      LUG:  [PS, gauche]                # Réveiller l'Europe: PS–Place publique (Glucksmann)
+      LVEC: [EELV, gauche]
+      LDVG: [PS, gauche]                # proxy: two small left lists
+      LENS: [RE, centre]                # Besoin d'Europe (Renaissance, MoDem, Horizons)
+      LLR:  [LR, droite]
+      LDVD: [LR, droite]                # proxy: Alliance rurale
+      LRN:  [RN, droite_radicale]
+      LREC: [REC, droite_radicale]
+      LEXD: [REC, droite_radicale]      # proxy: Forteresse Europe, Les Patriotes
+      LDIV: [null, null]                # single-issue and sovereigntist lists of every stripe
+      LECO: [null, null]                # centrist and animal-welfare ecologists
+
+  legi24:
+    label: "Legislative 2024, first round"
+    url: "https://www.data.gouv.fr/api/1/datasets/r/bd32fcd3-53df-47ac-bf1d-8d8003fe23a1"
+    filename: "legislatives-2024-t1-communes.csv" # 77 MB, one row per commune (codes without leading zero)
+    layout: { prefix_columns: 18, block_size: 9, option: 1, name: 2, votes: 5, expressed: 9, dept: 0, commune: 2 }
+    # "department:SURNAME" → the option a candidate's votes are counted under, where
+    # the Ministry nuance contradicts the alliance they stood for. Kept to cases
+    # large enough to move a constituency; the build logs the votes each one moves.
+    overrides:
+      "17:FALORNI": ENS                 # nuance DVG, but stood with Ensemble's backing and no Ensemble opponent
+    options:                            # candidate nuance codes
+      EXG: [LO, gauche]
+      COM: [PCF, gauche]
+      FI:  [LFI, gauche]
+      SOC: [PS, gauche]
+      RDG: [PS, gauche]                 # proxy: Parti radical de gauche
+      VEC: [EELV, gauche]
+      UG:  [NFP, gauche]                # Nouveau Front populaire
+      DVG: [PS, gauche]                 # proxy
+      ENS: [RE, centre]
+      HOR: [Horizons, centre]
+      UDI: [Horizons, centre]           # proxy: centre-right, unrated
+      DVC: [MoDem, centre]              # proxy
+      LR:  [LR, droite]
+      DVD: [LR, droite]                 # proxy
+      UXD: [UXD, droite_radicale]
+      RN:  [RN, droite_radicale]
+      REC: [REC, droite_radicale]
+      DSV: [DLF, droite_radicale]       # proxy: sovereigntist right
+      EXD: [REC, droite_radicale]       # proxy
+      REG: [null, null]                 # regionalists (Corsica, Brittany, Alsace …)
+      ECO: [EELV, gauche]               # proxy: mostly left ecologists here (Batho, Génération écologie, stood for the NFP)
+      DIV: [null, null]
+
+# Small communes: the index of a village of 40 voters moves a whole point when
+# one family changes its vote. The published index is shrunk toward the
+# department's, by how noisy the commune's own figure is (empirical Bayes); the
+# unshrunk value is kept alongside. false disables it.
+shrink: true
+
+notes: |
+  A single left–right number per commune, averaged over three national
+  elections: the first round of the 2022 presidential election, the 2024
+  European election and the first round of the 2024 legislative election. On
+  each ballot every candidate or list sits at their party's position in the
+  Chapel Hill Expert Survey (`lrgen`, 0 extreme left – 10 extreme right, the mean
+  of the 2019 and 2024 waves); a commune's index for that election is its voters'
+  mean position, and the published index is the mean of the three, each election
+  counting equally whatever its turnout. First rounds only: a runoff is a forced
+  choice between two and measures something else.
+
+  **Why three.** Each election on its own carries its own distortion. The
+  presidential vote follows candidates as much as parties (Macron drew from both
+  old governing parties; Lassalle dominated parts of the Béarn). The European
+  vote is the purest party vote — proportional lists, every family standing
+  everywhere — but on low turnout. The legislative vote has local candidates and
+  alliances: one Nouveau Front populaire candidate stands for four parties, and
+  where Ensemble stood aside its voters had to go elsewhere. Averaging cancels
+  much of what is specific to one ballot. Each election's own index is in the
+  popup, and where they disagree that disagreement is information.
+
+  **Positions.** Named in `positions:` and resolved from the CHES file at build
+  time; the build logs every value. Two are composites: the NFP (mean of LFI, PS,
+  EELV and PCF) and Ciotti's UXD candidates (between LR and RN). The Ministry's
+  catch-all nuances (divers gauche, divers droite, divers centre …) are placed at
+  the nearest rated party and marked as proxies; regionalist, miscellaneous and
+  unrated ecologist European lists are not placed and are reported as unplaced
+  (about 1.5% of the legislative vote, 5% of the European, 3% of the
+  presidential — far more locally: Lassalle in the Béarn, regionalists in
+  Corsica). Where a legislative candidate's nuance contradicts the alliance
+  they stood for, `overrides:` counts their votes under the right option; the
+  list is short and every entry is commented.
+
+  **Shrinkage.** A commune's index is treated as an estimate of its lean with a
+  sampling variance of (spread of its voters' positions)² / votes, combined over
+  the elections, and pulled toward its department's vote-weighted index by the
+  between-commune variance within the department (method of moments). Towns
+  barely move; hamlets of a few dozen voters are pulled most of the way.
+
+  **What it is not.** A mean hides polarisation — a commune split between LFI
+  and the RN reads as centre, like one that voted Renaissance — which is why the
+  spread of positions is published next to it. It is ecological: where a
+  commune's voters sit together, not what any resident thinks. And a commune
+  created by merger after an election takes that election from the codes that
+  still match; the 2022 results of merged communes are lost for the ~90 whose
+  codes no longer exist.

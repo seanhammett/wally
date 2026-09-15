@@ -277,6 +277,8 @@ def stage_manifest(sources: list[Source], published: dict[str, dict], skipped: l
                 entry["format"] = info["format"]
                 if info.get("source_layer"):
                     entry["source_layer"] = info["source_layer"]
+                if info.get("source_parts"):
+                    entry["source_parts"] = info["source_parts"]
             entry.setdefault("z", DEFAULT_Z.get(entry["type"], 20))
             layers.append(entry)
 

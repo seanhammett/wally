@@ -101,10 +101,22 @@
 
   <button id="panel-toggle" title="Show/hide the layer panel" aria-label="Toggle layer panel">☰</button>
 
+  <button id="search-open" title="Search communes" aria-label="Search communes">
+    <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><circle cx="6.8" cy="6.8" r="4.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10.3 10.3 14.2 14.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </button>
+
   <aside id="inspect" hidden>
-    <header>
-      <h2 id="inspect-title">Inspect</h2>
-      <button id="inspect-close" aria-label="Close">×</button>
+    <header id="inspect-head">
+      <div class="insp-titlebar">
+        <h2 id="inspect-title">Inspect</h2>
+        <button id="inspect-close" aria-label="Close">×</button>
+      </div>
+      <div class="commune-search">
+        <input id="commune-search" type="search" placeholder="Search communes by name or INSEE code"
+               role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="commune-results"
+               autocomplete="off" spellcheck="false">
+        <ul id="commune-results" role="listbox" aria-label="Matching communes" hidden></ul>
+      </div>
     </header>
     <div id="inspect-body"></div>
   </aside>

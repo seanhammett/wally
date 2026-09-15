@@ -8,7 +8,7 @@ import pandas as pd
 from pipeline.common import BuildError, Log, is_metropolitan, normalise_insee
 
 # Fixed-prefix positions shared by both rounds.
-DEPT, COMMUNE3, TURNOUT = 0, 2, 9
+DEPT, COMMUNE3, TURNOUT, EXPRESSED = 0, 2, 9, 16
 # Offsets inside each repeating candidate block.
 NAME, VOTES, PCT_EXPRESSED = 2, 4, 6
 
@@ -27,6 +27,14 @@ DISPLAY = {
     "DUPONT-AIGNAN": "Dupont-Aignan",
     "POUTOU": "Poutou",
 }
+
+# The surname as printed → the column slug of that candidate's first-round share.
+SLUG = {
+    "ARTHAUD": "arthaud", "POUTOU": "poutou", "ROUSSEL": "roussel", "MÉLENCHON": "melenchon",
+    "HIDALGO": "hidalgo", "JADOT": "jadot", "MACRON": "macron", "LASSALLE": "lassalle",
+    "PÉCRESSE": "pecresse", "DUPONT-AIGNAN": "dupont_aignan", "LE PEN": "lepen", "ZEMMOUR": "zemmour",
+}
+SHARE_COLUMNS = [f"pres22_t1_{slug}_pct" for slug in SLUG.values()]
 
 
 def number(value):
@@ -82,23 +90,27 @@ def transform(ctx) -> None:
 
     records: dict[str, dict] = {}
 
-    # -- first round: who came top, wherever the ballot was cast ---------
+    # -- first round: who came top, and everyone's share ------------------
     unknown = set()
     for row in read(by_tour[1], layout):
         code = insee(row)
         if code is None or not is_metropolitan(code):
             continue
         best = None
-        for name, votes, _pct in candidates(row, prefix, block):
+        rec = {"pres22_exprimes_t1": number(row[EXPRESSED])}
+        for name, votes, pct in candidates(row, prefix, block):
+            if name not in SLUG:
+                unknown.add(name)
+                continue
+            rec[f"pres22_t1_{SLUG[name]}_pct"] = pct
             if votes is not None and (best is None or votes > best[0]):
                 best = (votes, name)
         if best is None:
             continue
-        if best[1] not in DISPLAY:
-            unknown.add(best[1])
-        records[code] = {"pres22_tete_t1": DISPLAY.get(best[1], best[1].title())}
+        rec["pres22_tete_t1"] = DISPLAY[best[1]]
+        records[code] = rec
     if unknown:
-        Log.warn(f"first-round leader(s) with no display name mapped: {', '.join(sorted(unknown))}")
+        raise BuildError(f"first-round candidate(s) with no slug mapped: {', '.join(sorted(unknown))}")
     Log.info(f"first round: {len(records):,} metropolitan communes")
 
     # -- second round: the two-way split and turnout ---------------------
@@ -124,13 +136,20 @@ def transform(ctx) -> None:
         columns=[
             "code_insee",
             "pres22_tete_t1",
+            "pres22_exprimes_t1",
+            *SHARE_COLUMNS,
             "pres22_lepen_t2_pct",
             "pres22_macron_t2_pct",
             "pres22_participation_t2_pct",
         ],
     )
-    for col in ("pres22_lepen_t2_pct", "pres22_macron_t2_pct", "pres22_participation_t2_pct"):
+    for col in (*SHARE_COLUMNS, "pres22_lepen_t2_pct", "pres22_macron_t2_pct", "pres22_participation_t2_pct"):
         df[col] = pd.to_numeric(df[col], errors="coerce").round(2)
+    df["pres22_exprimes_t1"] = pd.to_numeric(df["pres22_exprimes_t1"], errors="coerce").astype("Int64")
+    total = df[SHARE_COLUMNS].sum(axis=1)
+    off = df.loc[(df["pres22_exprimes_t1"] > 0) & ((total - 100).abs() > 0.2), "code_insee"]
+    if len(off):
+        raise BuildError(f"{len(off):,} commune(s) whose first-round shares do not sum to 100, e.g. {off.iloc[0]}")
 
     lead = df["pres22_tete_t1"].value_counts()
     Log.info(f"{len(df):,} communes · first-round leader: " + ", ".join(f"{k} {v:,}" for k, v in lead.head(4).items()))

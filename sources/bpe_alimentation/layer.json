@@ -1,6 +1,7 @@
 [
   {
     "id": "food_access",
+    "panel": false,
     "label": "Food access (nearest shop type)",
     "group": "Population & access",
     "type": "choropleth",

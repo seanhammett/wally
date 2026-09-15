@@ -23,6 +23,11 @@ from pipeline.common import ROOT, TILES_DIR, BuildError, Log, human_bytes, scrat
 TILE_THRESHOLD_FEATURES = 5000
 TILE_THRESHOLD_BYTES = 4 * 1024 * 1024
 
+# GitHub Pages refuses any file of 100 MiB or more, and warns past 50 MB. A
+# tileset larger than this is published as consecutive byte slices, which
+# app.js reads back as the one archive they were cut from.
+PART_BYTES = 48 * 1024 * 1024
+
 
 def have(tool: str) -> bool:
     return shutil.which(tool) is not None
@@ -102,6 +107,27 @@ def to_pmtiles(
     return out
 
 
+def split_parts(path: Path, part_bytes: int = PART_BYTES) -> list[list]:
+    """Cut an archive over part_bytes into `<name>.000`, `<name>.001`, … and delete it.
+
+    Returns [[part file name, bytes], …] in order, or [] when the file is left
+    whole. Parts from an earlier, larger build are always cleared first.
+    """
+    for stale in path.parent.glob(f"{path.name}.[0-9][0-9][0-9]"):
+        stale.unlink()
+    if path.stat().st_size <= part_bytes:
+        return []
+    parts: list[list] = []
+    with path.open("rb") as fh:
+        while chunk := fh.read(part_bytes):
+            name = f"{path.name}.{len(parts):03d}"
+            (path.parent / name).write_bytes(chunk)
+            parts.append([name, len(chunk)])
+    path.unlink()
+    Log.ok(f"split {path.name} into {len(parts)} parts of at most {human_bytes(part_bytes)} (GitHub Pages file limit)")
+    return parts
+
+
 def feature_count(path: Path) -> int:
     try:
         return len(json.loads(path.read_text(encoding="utf-8")).get("features", []))
@@ -149,7 +175,11 @@ def publish(src: Path, source_id: str, *, layer_name: str | None = None, options
         max_zoom=int(options.get("max_zoom", 11)),
         extra=options.get("tippecanoe_args"),
     )
-    return {"source_file": out.name, "format": "pmtiles", "source_layer": layer_name, "features": n}
+    fragment = {"source_file": out.name, "format": "pmtiles", "source_layer": layer_name, "features": n}
+    parts = split_parts(out)
+    if parts:
+        fragment["source_parts"] = parts
+    return fragment
 
 
 def country_outline(src: Path, out: Path, percent: str = "5%") -> Path | None:

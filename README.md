@@ -15,14 +15,14 @@ What a full build produces today:
 
 | | |
 |---|---|
-| Sources | 29 built (one from a manual DRIAS order, one derived from the others), 2 fetch-only inputs (population grid, terrain) |
-| Layers | 60, across all four patterns |
+| Sources | 31 built (one from a manual DRIAS order, three derived from the others), 2 fetch-only inputs (population grid, terrain) |
+| Layers | 62, across all four patterns |
 | Communes | 34,746 (metropolitan France, ADMIN EXPRESS millésime 2026) |
-| `site/tiles/` | 177 MB — a 127 MB commune tileset, a 27 MB river tileset, a 23 MB air quality grid, rail tilesets, small GeoJSONs |
-| `site/stats/` | 15 MB — 104 correlatable commune columns plus a centroid index |
+| `site/tiles/` | 231 MB — a 161 MB commune tileset, a 38 MB river and lake tileset, a 23 MB air quality grid, rail tilesets, small GeoJSONs |
+| `site/stats/` | 20 MB — 132 correlatable commune columns plus a centroid index |
 | `site/files/` | 25 MB — the monthly climate tables, one JSON per department, fetched on demand |
 | Full rebuild from `data/raw` | ~35 min (139 s of it is join + tiling) |
-| First fetch of everything | ~2 h, ~4.3 GB into `data/raw`, plus the DRIAS order (~215 MB) |
+| First fetch of everything | ~2 h, ~4.5 GB into `data/raw`, plus the DRIAS order (~215 MB) |
 
 Layer groups: **Income & property** (median standard of living, income
 inequality, poverty rate, price per m², price of a house), **Population &
@@ -32,18 +32,19 @@ health services),
 **Hazards** (drought days, worst restriction level, projected summer low flow at
 +2.7 °C and at +4 °C, longer summer low water, river flood peaks at +2.7 °C,
 tropical nights, days reaching 35 °C, dry-soil days and fire-weather days at
-+2.7 °C (DRIAS TRACC-2023), summer days, area burned, fire count,
++2.7 °C (DRIAS TRACC-2023), wildfire risk at +2.7 °C (a model of large fires
+calibrated on observed ones, below), summer days, area burned, fire count,
 flood disaster declarations, flood PPR status, coastal hazard, clay
 shrink–swell zones and the share of residents living on them), **Air quality** (PM2.5, NO₂ and ozone per commune, weighted by
 where residents live, and the same three on the raw 1 km grid), **Climate
 (observed)** (rainy days, solar energy and summer afternoon highs over
 2016–2025, at residents' altitude and calibrated against Météo-France
 stations; any commune's full month-by-month climate table opens from the
-click panel), **Elections** (2022 presidential second round, first-round
-leader, presidential turnout; 2026 municipal turnout, lists standing, winning
-nuance), **Transport** (railway lines by type and by speed, stations by annual passengers,
+click panel), **Elections** (a left–right index over three elections, below; 2022 presidential
+second round, first-round leader with every candidate's share, presidential
+turnout; 2026 municipal turnout, lists standing, winning nuance), **Transport** (railway lines by type and by speed, stations by annual passengers,
 rail under construction and proposed, airports, aircraft noise zoning),
-**Protected areas**, **Water** (rivers and canals, piezometers), **Reference**,
+**Protected areas**, **Water** (rivers and canals as lines with lakes and reservoirs filled beneath them, piezometers), **Reference**,
 **Habitability 2050** (Wally's 2050 habitability score, below).
 
 Several layers are deliberately paired so they can be stacked and compared: the
@@ -72,11 +73,60 @@ indicator, scale and direction is declared in its `source.yaml`.
 
 Every build prints Celsius's worked example next to Wally's: for Mont-de-Marsan
 the heat, drought and flood indicators land within a point or two of theirs.
-The deliberate differences are fire, which is interim DRIAS fire-weather days
-until a model calibrated on observed fires exists (weather alone underrates the
-Landes pine forest), and services, which use Wally's everyday-services basket
-rather than facilities per 1,000 residents. Read it as where, not how much, and
-note that a quarter of it rests on administrative flood and coastal registers.
+Fire follows the model Celsius adopted in September 2026, rebuilt in
+`sources/feux_modele/`: a Poisson regression that predicts fires of 10 ha or
+more per commune. Its inputs are the large-fire record of communes within 20 km
+(the commune itself excluded), fire-weather days, the fire regime, windy
+fire-season days and population density. It learns from BDIFF 2006–2021 and is
+then tested on 2022–2025, seasons it never saw. On 2022 it ranks the communes hit
+with an AUC of 0.72, against 0.67 for fire weather alone (0.80 against 0.68 in
+2025), and the build fails if that margin shrinks below 0.02. The published
+model is refitted on 2006–2025. The step to 2050 multiplies by the rise in
+fire-weather days from +2.0 °C to +2.7 °C, an extrapolation rather than a model
+output. It does not see fuel, firefighting or vegetation change.
+
+The model moves the Landes from the 18th to the 68th percentile and the Nord
+from the 35th to the 13th, the same direction as Celsius's own revision.
+Mont-de-Marsan rises from 26 to 61, still short of Celsius's 82: few large fires
+have started within 20 km of it. Services are the other deliberate difference:
+they use Wally's everyday-services basket rather than facilities per 1,000
+residents. Read the score as where, not how much, and note that a quarter of it
+rests on administrative flood and coastal registers.
+
+## The left–right index
+
+`sources/gauche_droite/` places every commune on one left–right axis, 0 (far
+left) to 10 (far right), averaged over three first-round national elections:
+the 2022 presidential, the 2024 European and the 2024 legislative. On each
+ballot every candidate or list sits at their party's position in the Chapel
+Hill Expert Survey (`lrgen`, the mean of its 2019 and 2024 waves, read from the
+CHES trend file at build time); a commune's index for one election is its
+voters' mean position, and the published index is the mean of the three.
+Communes with few voters are shrunk toward their department (empirical Bayes)
+so a single family cannot colour a hamlet. The popup has each election's own
+index, the unshrunk mean, average bloc shares and the spread of positions (a
+mean hides polarisation).
+
+Every option on every ballot is mapped in `source.yaml`, and an option the file
+has that the mapping lacks fails the build. The NFP's single candidates sit at
+the mean of its four parties, Ciotti's UXD between LR and RN; the Ministry's
+catch-all nuances (divers gauche, divers droite …) at the nearest rated party;
+regionalists, miscellaneous lists and Lassalle, whom CHES never rated, are
+reported as unplaced. A short `overrides:` list moves a legislative candidate
+whose nuance contradicts the alliance they stood for (one so far: Falorni, filed
+DVG but backed by Ensemble).
+
+Why three: the exact positions hardly matter — swapping survey waves or using a
+crude left −1 / centre 0 / right +1 coding ranks communes with a correlation of
+0.99 — but each ballot has its own distortion. The presidential vote follows
+candidates, the European vote is the purest party vote on a low turnout, and
+the legislative one depends on who stood where. The presidential and European
+indexes agree at r = 0.94; the legislative agrees with each at 0.88, the gap
+being two-way NFP–RN races with no centrist on the ballot and strong divers
+droite incumbents, exactly the effects averaging is meant to absorb. The 2017
+presidential first round would be the next election to add. A second axis
+would also be honest: on CHES's economic scale the RN sits near Renaissance
+(6.4), on the cultural GAL–TAN scale at 8.2.
 
 ## The correlator
 
@@ -197,6 +247,12 @@ Create `sources/<id>/` with four files:
 | `transform.py` | `def transform(ctx)` — reads raw, writes `ctx.out_path` |
 | `layer.json` | how to draw it: type, colour scale, breaks, legend note, declared fields |
 
+`"panel": false` on a layer keeps it out of the layer list without removing
+anything: its fields still show in the inspect panel, its stats still feed the
+correlator and optimiser, and a shared link naming it still turns it on. It is
+set on layers that repeat another — the DRIAS-2014 heat runs superseded by the
+TRACC ones, class cuts of a count, the km² air grids, line speed.
+
 `kind` picks one of four patterns:
 
 - **`commune_table`** → a CSV with a `code_insee` column and one or more value
@@ -207,7 +263,10 @@ Create `sources/<id>/` with four files:
   emits a commune table like everything else.
 - **`polygon`** / **`point`** / **`line`** → GeoJSON in EPSG:4326. Worked
   examples: `parcs_naturels` (WFS in Lambert-93, reprojected), `hubeau_piezo`
-  (REST API), `rivieres` (a paged WFS pull of 250k line segments),
+  (REST API), `rivieres` (a paged WFS pull of 250k line segments, plus 94k lake and
+  reservoir polygons from a second table — a line layer's `paint.areas` fills a
+  source's polygons beneath its lines under the same switch, and
+  `also_geometry` in source.yaml lets validation accept them),
   `voies_ferrees` (three SNCF exports joined on the line code),
   `projets_ferroviaires` (OpenStreetMap via Overpass, clipped to France against
   the commune geometry).
@@ -309,7 +368,8 @@ survey, the second is somebody's drawing of a published scheme.
 `site/layers.json` and does eight things: initialise the map, build the layer
 panel, keep the active layers stacked in the order the user chose, generate the
 legend from each layer's `paint` block, answer a click with every loaded value
-at that point grouped by source and attribution, run the correlator and the
+at that point grouped by source and attribution (the chosen commune outlined on
+the map, and a commune search pinned with its name above the values), run the correlator and the
 optimiser, open a commune's climate table (laid out like Wikipedia's, fetched per
 department from `site/files/climate/`), and encode
 `#lat/lon/zoom/layers/correlation/optimiser` in the URL.
@@ -330,8 +390,13 @@ re-parses the style. The optimiser's `__optimiser` layer works the same way on t
 same source, under its own feature-state key, so the two can be on the map
 together without either clearing the other.
 
+Basemaps and the overlay chips are declared in `pipeline/basemaps.json` and
+`pipeline/overlays.json`, not in code: IGN Plan, grayscale, IGN satellite,
+OpenTopoMap (topographic, to zoom 17), OpenStreetMap and "No map"; the cadastre
+from zoom 14 and IGN contour lines from zoom 11 stack over any of them.
+
 Libraries are vendored and version-pinned in `site/lib/`: MapLibre GL JS 5.6.0
-and pmtiles 4.3.0. `app.js` is ~2,250 lines of plain JavaScript,
+and pmtiles 4.3.0. `app.js` is ~2,700 lines of plain JavaScript,
 `correlate.js` ~250 and `optimise.js` ~150; there is no build step for the frontend and nothing is
 minified, so dev tools show you the real source.
 

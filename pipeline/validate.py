@@ -170,8 +170,11 @@ def validate_geojson(source: Source, report: Report) -> dict | None:
     if crs and "4326" not in json.dumps(crs) and "CRS84" not in json.dumps(crs):
         report.error(source.id, f"output declares a non-4326 CRS: {crs}")
 
-    # Substring match, so Multi* variants of each satisfy their own kind.
+    # Substring match, so Multi* variants of each satisfy their own kind. A
+    # source may declare more in `also_geometry` — rivieres carries its lakes as
+    # polygons alongside the line network, drawn beneath it by the page.
     expected_geom = {"point": "Point", "line": "LineString"}.get(source.kind, "Polygon")
+    allowed_geom = [expected_geom, *source.meta.get("also_geometry", [])]
     minx, miny, maxx, maxy = float("inf"), float("inf"), float("-inf"), float("-inf")
     invalid_geom = 0
     wrong_type = 0
@@ -189,7 +192,7 @@ def validate_geojson(source: Source, report: Report) -> dict | None:
         if not geom:
             invalid_geom += 1
             continue
-        if expected_geom not in geom.get("type", ""):
+        if not any(g in geom.get("type", "") for g in allowed_geom):
             wrong_type += 1
         for x, y in _iter_coords(geom.get("coordinates")):
             minx, miny = min(minx, x), min(miny, y)
@@ -203,7 +206,7 @@ def validate_geojson(source: Source, report: Report) -> dict | None:
 
     Log.info(f"{len(feats):,} features · bbox [{minx:.2f}, {miny:.2f}, {maxx:.2f}, {maxy:.2f}]")
     if wrong_type:
-        report.error(source.id, f"{wrong_type} feature(s) are not {expected_geom} geometries")
+        report.error(source.id, f"{wrong_type} feature(s) are not {' or '.join(allowed_geom)} geometries")
     if invalid_geom:
         report.error(source.id, f"{invalid_geom} invalid geometr(ies) — apply .make_valid() in transform.py")
 
@@ -224,6 +227,13 @@ def validate_geojson(source: Source, report: Report) -> dict | None:
     present = set()
     for feat in feats[:2000]:
         present.update((feat.get("properties") or {}).keys())
+    # A field only one geometry carries (a lake's area, after 230k river segments)
+    # is looked for in the rest of the file before it counts as absent.
+    if set(fields) - present:
+        for feat in feats[2000:]:
+            present.update((feat.get("properties") or {}).keys())
+            if not set(fields) - present:
+                break
     for name, spec in fields.items():
         if name not in present:
             report.error(source.id, f"layer.json declares field '{name}' absent from the features")

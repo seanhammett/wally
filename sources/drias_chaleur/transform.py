@@ -1,4 +1,4 @@
-"""DRIAS TRACC-2023 heat and dry-soil indicators per commune → data/processed/drias_chaleur.csv.
+"""DRIAS TRACC-2023 heat, dry-soil and fire-weather indicators per commune → data/processed/drias_chaleur.csv.
 
 The archives are read in place (they are plain tar, so members are read
 directly). Each indicator file is a grid of 19,162 SAFRAN points in lat/lon; the
@@ -86,11 +86,12 @@ def transform(ctx) -> None:
         if not match:
             raise BuildError(f"{path.name}: no warming level in the file name")
         by_level[match.group(1)] = path
-    ref, high = levels["reference"], levels["high"]
+    ref, high, present = levels["reference"], levels["high"], levels["present"]
+    present_indicators = set(ctx.meta["present_indicators"])
 
     grid = None          # point, lat, lon of the reference file
     columns: dict[str, np.ndarray] = {}
-    for level in (ref, high):
+    for level in (ref, high, present):
         with tarfile.open(by_level[level]) as tar:
             names = tar.getnames()
             if grid is None:
@@ -111,11 +112,17 @@ def transform(ctx) -> None:
                 return frame["value"].to_numpy()
 
             for code, stem in indicators.items():
+                if level == present and code not in present_indicators:
+                    continue
                 median = get(code, "q50")
                 if np.nanmin(median) < 0 or np.nanmax(median) > DAYS_IN_YEAR:
                     raise BuildError(f"{code} RWL-{level}: medians outside 0–{DAYS_IN_YEAR} days")
                 if level == high:
                     columns[f"{stem}_4"] = median
+                    continue
+                if level == present:
+                    columns[f"{stem}_20"] = median
+                    Log.info(f"{code} +2.0 °C: grid median {np.nanmedian(median):.1f} days")
                     continue
                 top = get(code, "max")
                 if (median[land] > top[land] + 1e-6).any():
@@ -161,7 +168,8 @@ def transform(ctx) -> None:
         result[name] = by_pop.reindex(result.index).fillna(pd.Series(at_rep[name], index=result.index)).round(1)
 
     order = [c for stem in indicators.values()
-             for c in (f"{stem}_2050", f"{stem}_2050_min", f"{stem}_2050_max", f"{stem}_ecart", f"{stem}_4")
+             for c in (f"{stem}_2050", f"{stem}_2050_min", f"{stem}_2050_max", f"{stem}_ecart", f"{stem}_4",
+                       f"{stem}_20")
              if c in result.columns]
     result = result[order]
     if result.isna().any().any():

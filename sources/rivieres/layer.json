@@ -1,7 +1,7 @@
 [
   {
     "id": "rivieres",
-    "label": "Rivers and canals",
+    "label": "Rivers, canals and lakes",
     "group": "Water",
     "type": "line",
     "paint": {
@@ -11,8 +11,11 @@
         ["riviere", "#2563eb", "River or stream"],
         ["canal", "#0f766e", "Canal"],
         ["estuaire", "#0ea5e9", "Estuary or lagoon"],
-        ["plan_deau", "#7c3aed", "Through standing water"]
+        ["plan_deau", "#7c3aed", "Through standing water"],
+        ["lac", "#a9cdf7", "Lake, pond or lagoon"],
+        ["retenue", "#a6dbd3", "Reservoir, gravel pit or basin"]
       ],
+      "areas": { "outline_color": "#5b8fd6" },
       "no_data_color": "#2563eb",
       "width": [
         "interpolate",
@@ -27,14 +30,15 @@
     },
     "fields": [
       { "name": "nom", "type": "categorical", "unit": "", "label": "Name" },
-      { "name": "nature", "type": "categorical", "unit": "", "label": "Type", "value_labels": { "riviere": "River or stream", "canal": "Canal", "estuaire": "Estuary or lagoon", "plan_deau": "Reservoir, lake or marsh the network runs through" } },
+      { "name": "nature", "type": "categorical", "unit": "", "label": "Type", "value_labels": { "riviere": "River or stream", "canal": "Canal", "estuaire": "Estuary or lagoon", "plan_deau": "Reservoir, lake or marsh the network runs through", "lac": "Lake, pond or lagoon", "retenue": "Reservoir, gravel pit or basin" } },
       { "name": "largeur", "type": "ordinal", "unit": "", "label": "Width class", "value_labels": { "moyen": "5–15 m", "grand": "15–50 m", "majeur": "Over 50 m" } },
       { "name": "persistance", "type": "ordinal", "unit": "", "label": "Flow", "value_labels": { "permanent": "Permanent", "intermittent": "Intermittent — dry part of the year" } },
       { "name": "navigable", "type": "categorical", "unit": "", "label": "Navigable", "value_labels": { "true": "Yes", "false": "No" } },
-      { "name": "longueur_km", "type": "numeric", "unit": "km", "label": "Length of this segment" }
+      { "name": "longueur_km", "type": "numeric", "unit": "km", "label": "Length of this segment" },
+      { "name": "surface_km2", "type": "numeric", "unit": "km²", "label": "Water area" }
     ],
     "default_visible": true,
     "default_opacity": 1,
-    "legend_note": "BD CARTO® V5, everything 5 m wide and over — 250,653 segments. Line weight is the width class, not a measurement: BD CARTO records width in four buckets. Blue is natural watercourse, teal is canal, violet marks where the network is traced through a reservoir, lake or marsh rather than flowing. Every width class is drawn at every zoom, so the whole network shows with all of France in view."
+    "legend_note": "BD CARTO® V5, everything 5 m wide and over — 250,653 segments. Line weight is the width class, not a measurement: BD CARTO records width in four buckets. Blue is natural watercourse, teal is canal, violet marks where the network is traced through a reservoir, lake or marsh rather than flowing. Every width class is drawn at every zoom, so the whole network shows with all of France in view. Lakes are filled areas beneath the lines — blue for natural lakes, ponds and lagoons, teal for reservoirs, gravel pits and basins, which are built and can be drawn down. Lakes over 1 km² show from the national view; smaller ones appear as you zoom in, down to the farm pond."
   }
 ]

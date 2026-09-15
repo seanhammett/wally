@@ -32,6 +32,8 @@ find "$tmp" -name .DS_Store -delete
 touch "$tmp/.nojekyll"   # serve files as-is; skip the Jekyll build
 
 rev="$(git -C "$root" rev-parse --short HEAD)"
+# site/ is deployed as it is on disk, so say when that is not what HEAD holds.
+git -C "$root" diff --quiet HEAD -- . || rev="$rev+uncommitted"
 git -C "$tmp" init -q -b gh-pages
 git -C "$tmp" add -A
 git -C "$tmp" commit -q -m "Deploy site from $rev"

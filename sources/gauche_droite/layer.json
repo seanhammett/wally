@@ -1,0 +1,31 @@
+[
+  {
+    "id": "left_right_index",
+    "label": "Left–right index (2022–2024 elections)",
+    "group": "Elections",
+    "type": "choropleth",
+    "paint": {
+      "property": "gd_indice",
+      "scale": "numeric",
+      "breaks": [5, 5.6, 5.9, 6.3, 6.8, 7.3],
+      "colors": ["#b2182b", "#d6604d", "#f4a582", "#f7f7f7", "#92c5de", "#4393c3", "#2166ac"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "gd_indice", "type": "numeric", "unit": "/ 10", "label": "Left–right index, 0 far left – 10 far right, mean of three elections (small communes shrunk toward their department)" },
+      { "name": "gd_indice_brut", "type": "numeric", "unit": "/ 10", "label": "Left–right index, three elections, the commune's own votes only" },
+      { "name": "gd_pres22", "type": "numeric", "unit": "/ 10", "label": "Presidential 2022, first round, on its own" },
+      { "name": "gd_euro24", "type": "numeric", "unit": "/ 10", "label": "European 2024, on its own" },
+      { "name": "gd_legi24", "type": "numeric", "unit": "/ 10", "label": "Legislative 2024, first round, on its own" },
+      { "name": "gd_dispersion", "type": "numeric", "unit": "points", "label": "Spread of voters' positions, mean of three elections (high = polarised)" },
+      { "name": "gd_gauche_pct", "type": "numeric", "unit": "% of votes cast", "label": "Left (LFI, PS, Ecologists, PCF, NFP, far left), mean share over three elections" },
+      { "name": "gd_centre_pct", "type": "numeric", "unit": "% of votes cast", "label": "Centre (Macron / Ensemble, Horizons, MoDem, divers centre), mean share" },
+      { "name": "gd_droite_pct", "type": "numeric", "unit": "% of votes cast", "label": "Right (LR, divers droite), mean share" },
+      { "name": "gd_droite_radicale_pct", "type": "numeric", "unit": "% of votes cast", "label": "Radical right (RN, Reconquête, Ciotti's UXD, DLF), mean share" },
+      { "name": "gd_non_classe_pct", "type": "numeric", "unit": "% of votes cast", "label": "Not placed (Lassalle, regionalists, miscellaneous lists), mean share" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Where a commune's voters sit on average, from 0 (far left) to 10 (far right), over three first-round national elections: presidential 2022, European 2024 and legislative 2024. On each ballot every candidate or list is placed at their party's position in the Chapel Hill Expert Survey and weighted by their votes; the three results count equally. The white class holds the national figure, about 6.1, not the middle of the scale: the median commune is 6.7 because small rural communes lean right and the big cities left. Villages with few voters are pulled toward their department so a single family cannot paint one. The popup has each election on its own — where they disagree, a local candidate or a missing party is usually why — the unshrunk figure, average bloc shares and the spread of positions, since a mean hides a commune split between LFI and the RN."
+  }
+]

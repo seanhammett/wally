@@ -84,7 +84,8 @@
       { "name": "feux_meteo_2050_min", "type": "numeric", "unit": "days/year", "label": "Lowest of the model ensemble" },
       { "name": "feux_meteo_2050_max", "type": "numeric", "unit": "days/year", "label": "Highest of the model ensemble" },
       { "name": "feux_meteo_ecart", "type": "numeric", "unit": "days/year", "label": "Change against 1976–2005 (median)" },
-      { "name": "feux_meteo_4", "type": "numeric", "unit": "days/year", "label": "At +4 °C (median)" }
+      { "name": "feux_meteo_4", "type": "numeric", "unit": "days/year", "label": "At +4 °C (median)" },
+      { "name": "feux_meteo_20", "type": "numeric", "unit": "days/year", "label": "At +2.0 °C (median), the fire model's present-day weather", "correlate": false }
     ],
     "default_visible": false,
     "default_opacity": 0.72,

@@ -24,6 +24,7 @@
   },
   {
     "id": "services_desert",
+    "panel": false,
     "label": "Service provision class",
     "group": "Population & access",
     "type": "choropleth",

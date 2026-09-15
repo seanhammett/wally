@@ -115,6 +115,84 @@
         "type": "categorical",
         "unit": "",
         "label": "Led the first round"
+      },
+      {
+        "name": "pres22_exprimes_t1",
+        "type": "numeric",
+        "unit": "votes",
+        "label": "Valid votes cast, first round"
+      },
+      {
+        "name": "pres22_t1_arthaud_pct",
+        "type": "numeric",
+        "unit": "% of votes cast",
+        "label": "Arthaud (Lutte ouvrière), first round"
+      },
+      {
+        "name": "pres22_t1_poutou_pct",
+        "type": "numeric",
+        "unit": "% of votes cast",
+        "label": "Poutou (NPA), first round"
+      },
+      {
+        "name": "pres22_t1_roussel_pct",
+        "type": "numeric",
+        "unit": "% of votes cast",
+        "label": "Roussel (PCF), first round"
+      },
+      {
+        "name": "pres22_t1_melenchon_pct",
+        "type": "numeric",
+        "unit": "% of votes cast",
+        "label": "Mélenchon (LFI), first round"
+      },
+      {
+        "name": "pres22_t1_hidalgo_pct",
+        "type": "numeric",
+        "unit": "% of votes cast",
+        "label": "Hidalgo (PS), first round"
+      },
+      {
+        "name": "pres22_t1_jadot_pct",
+        "type": "numeric",
+        "unit": "% of votes cast",
+        "label": "Jadot (EELV), first round"
+      },
+      {
+        "name": "pres22_t1_macron_pct",
+        "type": "numeric",
+        "unit": "% of votes cast",
+        "label": "Macron (LREM), first round"
+      },
+      {
+        "name": "pres22_t1_lassalle_pct",
+        "type": "numeric",
+        "unit": "% of votes cast",
+        "label": "Lassalle (Résistons !), first round"
+      },
+      {
+        "name": "pres22_t1_pecresse_pct",
+        "type": "numeric",
+        "unit": "% of votes cast",
+        "label": "Pécresse (LR), first round"
+      },
+      {
+        "name": "pres22_t1_dupont_aignan_pct",
+        "type": "numeric",
+        "unit": "% of votes cast",
+        "label": "Dupont-Aignan (DLF), first round"
+      },
+      {
+        "name": "pres22_t1_lepen_pct",
+        "type": "numeric",
+        "unit": "% of votes cast",
+        "label": "Le Pen (RN), first round"
+      },
+      {
+        "name": "pres22_t1_zemmour_pct",
+        "type": "numeric",
+        "unit": "% of votes cast",
+        "label": "Zemmour (Reconquête), first round"
       }
     ],
     "default_visible": false,

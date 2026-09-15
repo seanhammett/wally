@@ -1,10 +1,11 @@
 id: rivieres
-name: "Rivières, fleuves et canaux (BD CARTO® V5)"
+name: "Rivières, canaux et plans d'eau (BD CARTO® V5)"
 attribution: "IGN — BD CARTO® V5, réseau hydrographique (Géoplateforme WFS) — Licence Ouverte 2.0"
 url: "https://geoservices.ign.fr/bdcarto"
 fetched: 2026-09-12
 source_crs: "EPSG:2154"      # requested from the WFS in Lambert-93, reprojected in transform.py
 kind: line
+also_geometry: [Polygon]     # the lake surfaces, filled beneath the lines
 fetch: auto
 order: 32
 
@@ -24,6 +25,41 @@ wfs:
     - persistance
     - cpx_toponyme_de_cours_d_eau
     - geometrie
+
+# Lakes, reservoirs and lagoons, drawn as areas under the lines. BD CARTO's
+# surface table also holds the wide rivers as polygons; those are left out so a
+# river stays a line at every zoom.
+surfaces:
+  typename: "BDCARTO_V5:surface_hydrographique"
+  page_size: 5000
+  sort_by: "cleabs"
+  properties:
+    - cleabs
+    - nature
+    - persistance
+    - cpx_toponyme_de_plan_d_eau
+    - geometrie
+  # Standing open water. Not taken: flowing water and canals (already lines),
+  # estuaries, marshes (wetland, not open water), glaciers, harbour basins (sea
+  # water behind a quay) and storm basins (dry most of the time).
+  natures:
+    lac: ["Lac", "Mare", "Lagune"]
+    retenue:
+      - "Retenue"
+      - "Retenue-barrage"
+      - "Retenue-digue"
+      - "Plan d'eau de gravière"
+      - "Réservoir-bassin"
+      - "Réservoir-bassin piscicole"
+
+# Feature-level minzoom per lake area (km²), largest first. A 1 km² lake is
+# under a pixel with all of France in view, so the small ones wait for zoom;
+# tippecanoe would otherwise smear 80,000 farm ponds into speckle.
+surface_tiers:
+  - [1.0, 4]
+  - [0.1, 7]
+  - [0.01, 9]
+  - [0, 11]
 
 # BD CARTO holds 1,635,073 hydrographic segments. 1,222,391 of them are under
 # 5 m wide — ditches, headwater streams and drains that are invisible at any
@@ -68,3 +104,10 @@ notes: |
   roughly from Bordeaux to Lyon a meaningful share of the mapped network is
   intermittent, and a map that draws those the same as the Rhône overstates how
   much water the south actually has. They are drawn dashed.
+
+  **Lakes are areas, rivers stay lines.** Lakes, ponds and coastal lagoons are
+  filled blue; reservoirs, gravel pits and fish or water-supply basins are
+  filled teal, the canal colour, because they are built and managed — a
+  reservoir can be drawn down in a drought in a way a natural lake cannot. The
+  violet "through standing water" segments still run across them: that is the
+  network's own centreline, and it shows which river a lake belongs to.

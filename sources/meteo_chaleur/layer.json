@@ -1,6 +1,7 @@
 [
   {
     "id": "tropical_nights",
+    "panel": false,
     "label": "Tropical nights by 2041–2070",
     "group": "Hazards",
     "type": "choropleth",
@@ -57,6 +58,7 @@
   },
   {
     "id": "summer_days",
+    "panel": false,
     "label": "Summer days by 2041–2070",
     "group": "Hazards",
     "type": "choropleth",

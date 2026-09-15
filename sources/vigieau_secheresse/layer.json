@@ -59,6 +59,7 @@
   },
   {
     "id": "drought_max_level",
+    "panel": false,
     "label": "Worst restriction level reached",
     "group": "Hazards",
     "type": "choropleth",

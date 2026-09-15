@@ -1,0 +1,132 @@
+id: feux_modele
+name: "Risque d'incendie 2050 : modèle calibré sur les feux observés (BDIFF × DRIAS, d'après Projet Celsius)"
+attribution: "Modèle Wally d'après la méthode publiée par Projet Celsius · BDIFF — Ministère de l'Agriculture · DRIAS / Météo-France TRACC-2023 · Météo-France SIM2 · INSEE · IGN ADMIN EXPRESS — Licence Ouverte / Etalab 2.0"
+url: "https://projetcelsius.com/documents/ou-vivre-en-2050-note-methodologique.pdf"
+fetched: 2026-09-15
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: auto
+order: 90
+min_join_rate: 0.99
+
+# Processed tables this source reads; the build re-runs it whenever --only names
+# one of them. It also reads raw files of bdiff_incendies (every fire record
+# since archive_start) and meteo_climat (the SIM2 daily grid, for wind).
+inputs:
+  - bdiff_incendies
+  - drias_chaleur
+  - commune_reference
+
+# Merged communes → the commune that absorbed them, so a fire recorded under a
+# pre-2026 code lands on a 2026 commune.
+merged_communes:
+  url: "https://geo.api.gouv.fr/communes_associees_deleguees?fields=code,nom,chefLieu,type"
+  filename: "communes_associees_deleguees.json"
+# Share of metropolitan fire records that must land on a 2026 commune.
+min_fire_match: 0.995
+
+# What the model predicts: fires of at least this size, per commune, per year.
+min_hectares: 10
+# Fit on train, check on each test year, then publish a refit on final.
+train_years: [2006, 2021]
+test_years: [2022, 2025]
+final_years: [2006, 2025]
+
+# Neighbours: communes whose representative point is within this distance,
+# the commune itself excluded, so a commune's own record never predicts itself.
+neighbour_radius_km: 20
+# Also fitted and logged on every build, to show the radius is not doing the work.
+neighbour_radius_candidates_km: [10, 20, 40]
+
+# Fire regimes by department. Mediterranean: the 15 Prométhée departments.
+# South-Atlantic: the Gascony pine massif (33, 40, 47) and its fringes. North: the
+# rest, the reference level. The Pyrenean winter pastoral fires (09, 65) stay in
+# north; their neighbours' record carries them.
+regimes:
+  mediterraneen: ["04", "05", "06", "07", "11", "13", "26", "30", "34", "48", "66", "83", "84", "2A", "2B"]
+  sud_atlantique: ["16", "17", "24", "33", "40", "47", "64"]
+
+# Strong winds: fire-season days with SIM2's daily mean 10 m wind (FF) at or
+# above the threshold, averaged over the years meteo_climat fetched. 5 m/s as a
+# daily mean is a windy day: the median grid point has about one a season.
+wind:
+  months: [6, 7, 8, 9]
+  min_ms: 5.0
+
+# Ridge penalty on the standardised coefficients (not the intercept), for a
+# stable fit with ~1,700 events among 34,746 communes.
+ridge: 1.0
+
+# 2050: the present-day rate × (IFM40D at +2.7 °C + k) / (IFM40D at +2.0 °C + k).
+# An external factor, as Celsius does, not a model output; k keeps near-zero
+# northern values from exploding.
+factor_2050:
+  smoothing_days: 1.0
+
+# The build fails unless, on the first test year, the model's rate ranks the
+# communes hit by a ≥ 10 ha fire better than fire-weather days alone by this
+# much AUC.
+min_auc_gain: 0.02
+
+# Projet Celsius's published figures (methodology note, sections 3–4), logged
+# beside Wally's on every build. Not a gate: the window, the regimes and the
+# wind measure are Wally's own.
+check:
+  code_insee: "40192"
+  name: Mont-de-Marsan
+  celsius_rate_2050: 2.21          # 0.0221 per 100 km² per year in their note = 2.21 per 1,000 km² per decade
+  celsius_position: 81.7
+  departments:                      # Celsius's department positions
+    "40": 79.7
+    "33": 84.5
+    "75": 57.3
+    "59": 2.7
+
+notes: |
+  How many forest fires of at least 10 hectares to expect per 1,000 km² per
+  decade in a commune at +2.7 °C, following the method Projet Celsius adopted
+  in September 2026. The unit is Celsius's (per 100 km² per year) × 100, so the
+  popup's two decimals are enough. No Celsius data is used.
+
+  **The model.** A Poisson regression on commune counts of ≥ 10 ha forest fires
+  in BDIFF, with the commune's area × years as exposure. It sees five things:
+  - the rate of large fires, and of fires of any size, among communes within
+    20 km, excluding the commune itself;
+  - days a year with the Fire Weather Index at 40 or more, at +2.0 °C (DRIAS
+    TRACC-2023, ensemble median);
+  - the fire regime (Mediterranean, south-Atlantic, north), by department;
+  - strong-wind days in the fire season, from Météo-France's SIM2 grid;
+  - population density, with a squared term, since fires start most at the
+    edge between housing and forest.
+
+  **Tested before it is used.** The model is first fitted on 2006–2021, then
+  asked to rank communes for each season from 2022 to 2025, which it never saw.
+  The build fails unless it beats fire-weather days alone on 2022. Once it
+  passes, the published version is refitted on 2006–2025.
+
+  **2050 is an extrapolation.** The present-day rate is multiplied by the ratio
+  of fire-weather days at +2.7 °C to those at +2.0 °C. This is a transparent
+  factor, not something the data can estimate. The relationship between fires
+  and conditions is assumed stable, and neither firefighting nor vegetation
+  change is modelled.
+
+  **No fuel.** Forest cover is not an input, as in Celsius's model: IGN's
+  detailed land cover covers only part of the country. The neighbours' record
+  is what carries the Landes pine forest.
+
+  **What the build log shows.** With every input fitted, the neighbours' record
+  of large fires carries almost all the weight; fire weather, wind, density and
+  regime add little once it is known, because they mostly describe where that
+  record already is. On 2022 the model's rate ranks the communes hit with an
+  AUC of 0.72 against 0.67 for fire weather alone, and 0.80 against 0.68 in 2025.
+  The radius hardly matters (10, 20 and 40 km all give 0.72). Against Celsius's
+  figures, the Landes move from the 18th percentile under fire weather to the
+  68th (Celsius: 80), the Gironde to the 76th (85), the Nord to the 13th (3).
+  Mont-de-Marsan reaches 61 against Celsius's 82, because few large fires have
+  started within 20 km of it. Paris ranks last, where Celsius has 57.
+
+  A fire counts against the commune where it started. Fires recorded under a
+  commune that has since merged are moved to the commune that absorbed it;
+  "unknown commune" records (0.2%) are dropped. BDIFF's count is incomplete in
+  Paris and the inner suburbs (75, 92, 93, 94), which the model reads as no
+  large fires, and that is very nearly true.

@@ -2,7 +2,7 @@
 
 `site/` is the whole deployable artefact. It needs a static host that answers
 **HTTP range requests** — PMTiles reads slices of `communes.pmtiles` rather than
-downloading the whole ~98 MB file. GitHub Pages does, and is what this project
+downloading the whole ~121 MB file. GitHub Pages does, and is what this project
 uses:
 
 ```bash
@@ -16,19 +16,20 @@ replaced wholesale on each deploy so the repository does not grow. First-time
 setup is one switch: Settings → Pages → Deploy from a branch → `gh-pages` /
 `(root)`.
 
-**File size limit.** GitHub rejects any file of 100 MiB or more, and
-`communes.pmtiles` is ~98 MiB. `deploy.sh` refuses to push if a file crosses
-99 MiB. If it does, lower the commune tileset's max zoom from 11 to 10
-(`pipeline/tile.py`), or host that one file elsewhere (e.g. Cloudflare R2 with
-a CORS rule) and point its URL in `layers.json` there. Cloudflare Pages is not
-an option for it: its per-file limit is 25 MiB. Git LFS is not either — Pages
-does not serve LFS objects.
+**File size limit.** GitHub rejects any file of 100 MiB or more (and warns past
+50 MB). `communes.pmtiles` is larger than that, so the build cuts any tileset
+over 48 MiB into consecutive byte slices — `communes.pmtiles.000`, `.001`, … —
+and lists them as `source_parts` in `layers.json`. `app.js` (`PartsSource`)
+hands pmtiles those slices as the one archive, so the map sees a single
+tileset and nothing is lost; a bigger build just means another part.
+`deploy.sh` still refuses to push if any file crosses 99 MiB. Git LFS is not an
+alternative: Pages does not serve LFS objects.
 
 Nothing in `site/` is generated at runtime, and there is no backend, no API key
 and no database — the correlator included, which computes in the browser from
 the plain columns in `site/stats/`. The only network calls the page makes are
-for the IGN basemap tiles, its own files, and the one remote PMTiles archive
-that Géorisques hosts.
+for the basemap tiles (IGN Géoplateforme, OpenStreetMap, OpenTopoMap), its own
+files, and the one remote PMTiles archive that Géorisques hosts.
 
 ## Local preview
 
@@ -57,7 +58,7 @@ size.
 
 | File | Size |
 |---|---|
-| `tiles/communes.pmtiles` | ~98 MB (34,746 communes, z4–11, all commune tables joined in) |
+| `tiles/communes.pmtiles.*` | ~121 MB in 48 MB parts (34,746 communes, z4–11, all commune tables joined in) |
 | `tiles/parcs_naturels.geojson` | ~1.7 MB |
 | `tiles/hubeau_piezo.geojson` | ~1.5 MB |
 | `stats/` (correlator columns) | ~6.7 MB total; the page fetches `index.json` (1.4 MB) plus two ~150 KB columns |
