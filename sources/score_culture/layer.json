@@ -1,0 +1,90 @@
+[
+  {
+    "id": "culture_scene",
+    "label": "Culture: performing arts and music",
+    "group": "Culture",
+    "type": "choropleth",
+    "paint": {
+      "property": "cult_scene",
+      "scale": "numeric",
+      "breaks": [10, 25, 50, 75, 90],
+      "colors": ["#f5f3f7", "#f9d4e6", "#f0a3c8", "#dd6aa4", "#b8367f", "#7a0f55"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "cult_scene", "type": "numeric", "unit": "/ 100", "label": "Performing arts and music reach (higher is more)" },
+      { "name": "cult_scene_km", "type": "numeric", "unit": "km", "label": "Distance to the nearest scène nationale, CDN, national opera, orchestra or theatre" },
+      { "name": "cult_scene_acces", "type": "numeric", "unit": "", "label": "Raw reach (sum of weights × distance falloff)", "correlate": false }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.75,
+    "legend_note": "How much labelled performing arts and music a commune can reach: operas, orchestras, scènes nationales, national drama, dance and circus centres, SMAC music venues, Zéniths, city theatres and conservatoires. Each venue counts fully on the spot, half at 15 km, a quarter at 30 km, nothing beyond 45 km, weighted by its label. 0–100 is the share of communes with less within reach. Straight-line distance; labels follow public subsidy, so private halls and clubs are missing."
+  },
+  {
+    "id": "culture_musee",
+    "label": "Culture: museums and contemporary art",
+    "group": "Culture",
+    "type": "choropleth",
+    "paint": {
+      "property": "cult_musee",
+      "scale": "numeric",
+      "breaks": [10, 25, 50, 75, 90],
+      "colors": ["#f3f6f5", "#ccebe5", "#94d3c7", "#55b2a2", "#23857a", "#0b5049"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "cult_musee", "type": "numeric", "unit": "/ 100", "label": "Museums and contemporary art reach (higher is more)" },
+      { "name": "cult_musee_km", "type": "numeric", "unit": "km", "label": "Distance to the nearest FRAC, national art centre or museum with 100,000+ visitors" },
+      { "name": "cult_musee_acces", "type": "numeric", "unit": "", "label": "Raw reach (sum of weights × distance falloff)", "correlate": false }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.75,
+    "legend_note": "How much museum and contemporary art a commune can reach: every Musée de France weighted by its attendance, plus FRACs and national contemporary art centres. Each counts fully on the spot, half at 15 km, a quarter at 30 km, nothing beyond 45 km. 0–100 is the share of communes with less within reach. Straight-line distance; private galleries are not included."
+  },
+  {
+    "id": "culture_festival",
+    "label": "Culture: festivals",
+    "group": "Culture",
+    "type": "choropleth",
+    "paint": {
+      "property": "cult_festival",
+      "scale": "numeric",
+      "breaks": [10, 25, 50, 75, 90],
+      "colors": ["#f5f4f8", "#e1d7f3", "#c1aee6", "#9a7fd3", "#7152b5", "#44267f"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "cult_festival", "type": "numeric", "unit": "/ 100", "label": "Festival reach (higher is more)" },
+      { "name": "cult_festival_km", "type": "numeric", "unit": "km", "label": "Distance to the nearest festival of declared regional, national or international reach" },
+      { "name": "cult_festival_acces", "type": "numeric", "unit": "", "label": "Raw reach (sum of weights × distance falloff)", "correlate": false }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.75,
+    "legend_note": "How many festivals a commune can reach, from the Ministry of Culture's 2019 national map. Each counts fully on the spot, half at 15 km, a quarter at 30 km, nothing beyond 45 km, weighted by the reach it declares and how long it has run; there is no attendance to go on. 0–100 is the share of communes with less within reach."
+  },
+  {
+    "id": "culture_score",
+    "label": "Culture: combined score",
+    "group": "Culture",
+    "type": "choropleth",
+    "paint": {
+      "property": "culture_score",
+      "scale": "numeric",
+      "breaks": [10, 25, 50, 75, 90],
+      "colors": ["#f7f5f0", "#efe0c4", "#dfbd86", "#c58f4a", "#9a5f22", "#5e330b"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "culture_score", "type": "numeric", "unit": "/ 100", "label": "Combined culture score (mean of the three)" },
+      { "name": "cult_scene", "type": "numeric", "unit": "/ 100", "label": "Performing arts and music reach (higher is more)" },
+      { "name": "cult_musee", "type": "numeric", "unit": "/ 100", "label": "Museums and contemporary art reach (higher is more)" },
+      { "name": "cult_festival", "type": "numeric", "unit": "/ 100", "label": "Festival reach (higher is more)" },
+      { "name": "cult_scene_km", "type": "numeric", "unit": "km", "label": "Distance to the nearest scène nationale, CDN, national opera, orchestra or theatre" },
+      { "name": "cult_musee_km", "type": "numeric", "unit": "km", "label": "Distance to the nearest FRAC, national art centre or museum with 100,000+ visitors" },
+      { "name": "cult_festival_km", "type": "numeric", "unit": "km", "label": "Distance to the nearest festival of declared regional, national or international reach" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.75,
+    "legend_note": "The mean of the three culture scores: performing arts and music, museums and contemporary art, festivals. Convenient, but the three apart say more, since a festival town and a museum city are different places to live; click a commune for each score and the distance to the nearest major venue of each kind."
+  }
+]

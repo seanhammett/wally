@@ -1,0 +1,35 @@
+[
+  {
+    "id": "culture_lieux",
+    "label": "Labelled stages, orchestras and museums",
+    "group": "Culture",
+    "type": "point",
+    "paint": {
+      "property": "categorie",
+      "scale": "categorical",
+      "stops": [
+        ["scene", "#be185d", "Performing arts and music"],
+        ["musee", "#0f766e", "Museum or contemporary art"]
+      ],
+      "no_data_color": "#78716c",
+      "radius": [
+        "interpolate", ["linear"], ["zoom"],
+        5, ["interpolate", ["linear"], ["get", "poids"], 0.5, 1.0, 3, 2.0, 10, 4.5],
+        9, ["interpolate", ["linear"], ["get", "poids"], 0.5, 2.0, 3, 4.0, 10, 9.0],
+        12, ["interpolate", ["linear"], ["get", "poids"], 0.5, 3.5, 3, 7.0, 10, 16.0]
+      ]
+    },
+    "fields": [
+      { "name": "nom", "type": "categorical", "unit": "", "label": "Name" },
+      { "name": "commune", "type": "categorical", "unit": "", "label": "Commune" },
+      { "name": "label", "type": "categorical", "unit": "", "label": "Ministry of Culture label" },
+      { "name": "categorie", "type": "categorical", "unit": "", "label": "Counts towards", "value_labels": { "scene": "Performing arts and music", "musee": "Museums and contemporary art" } },
+      { "name": "poids", "type": "numeric", "unit": "", "label": "Weight in the culture score" },
+      { "name": "visiteurs", "type": "numeric", "unit": "visitors/yr", "label": "Museum visitors (median of 2018–19 and 2022–24)" },
+      { "name": "jauge", "type": "numeric", "unit": "seats", "label": "Theatre capacity" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.9,
+    "legend_note": "Venues holding one of the Ministry of Culture's labels: national and regional operas, orchestras, scènes nationales, national drama and dance centres, SMAC music venues, Zéniths and city theatres in pink; Musées de France, FRACs and national contemporary art centres in green. Circles are sized by the weight each carries in the culture scores; a museum's weight comes from its attendance. The labels follow public subsidy, so private concert halls, clubs and galleries are mostly missing."
+  }
+]

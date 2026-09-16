@@ -1,0 +1,95 @@
+id: tourisme_saison
+name: "Saisonnalité touristique : la saison du département, la capacité saisonnière de la commune"
+attribution: "INSEE — Enquête mensuelle de fréquentation dans les hébergements collectifs de tourisme · Capacité des communes en hébergement touristique — Licence Ouverte / Etalab 2.0"
+url: "https://www.data.gouv.fr/datasets/frequentation-des-hebergements-touristiques"
+fetched: 2026-09-16
+kind: commune_table
+fetch: auto
+order: 100
+min_join_rate: 0.99
+
+# The commune's bed mix comes from tourisme_capacite; the demand curve is
+# departmental and comes from the file below. The two are published side by
+# side and never multiplied together — see notes.
+inputs:
+  - tourisme_capacite
+
+resource:
+  url: "https://api.insee.fr/melodi/file/DS_TOUR_FREQ/DS_TOUR_FREQ_CSV_FR"
+  filename: "DS_TOUR_FREQ.zip"
+  member: "DS_TOUR_FREQ_data.csv"
+
+# INSEE publishes a full monthly series of nights for HOTELS ONLY, and only per
+# department. Campings are published as an annual April–September total, other
+# collective accommodation only per region. So the hotel curve is the one real
+# monthly shape in French open data, and it is what this source reads — as a
+# departmental figure, labelled as one.
+serie:
+  activite: I551                  # hotels — the only activity with a monthly series
+  mesure: NIGHT_SPENT
+  geo: DEP
+  # Averaged over these years to smooth a wet August or a bad snow season.
+  # 2020 and 2021 are left out: lockdowns and closed ski lifts are not seasonality.
+  annees: [2022, 2023, 2024, 2025]
+
+saisons:
+  ete: [7, 8]                     # July–August
+  hiver: [12, 1, 2, 3]            # December–March
+
+# Which kinds of BOOKABLE bed are open only in season. Campsites shut out of
+# season almost everywhere in France; hotels and tourism residences can trade all
+# year even where they choose not to. This is a statement about the building
+# stock, not about demand, which is why it can be made per commune at all.
+# Second homes and pitches let by the year are not in the denominator at all —
+# `_seasonal_share` in transform.py says why.
+lits_saisonniers:
+  camping: true                   # I553, passing trade only
+  hotel: false                    # I551
+  collectif: false                # I552 — residences, villages vacances, hostels
+
+reference_communes:
+  - { code_insee: "85035", name: Bretignolles-sur-Mer }
+  - { code_insee: "74056", name: Chamonix-Mont-Blanc }
+  - { code_insee: "73257", name: Val-d'Isère }
+  - { code_insee: "06029", name: Cannes }
+  - { code_insee: "75056", name: Paris }
+  - { code_insee: "23096", name: Guéret }
+
+notes: |
+  When tourists come, in two separate readings that are deliberately never
+  combined into one number.
+
+  **The season is departmental and measured.** `saison_hotel_*` is the share of
+  the department's hotel nights falling in July–August and in December–March,
+  from INSEE's monthly survey, averaged over 2022–2025. It is real data and it
+  is genuinely informative: Savoie takes 17% of its year in February alone,
+  Vendée 17% in August, Paris sits within a point or two of flat all year. Every
+  commune in a department carries its department's figure, so a year-round town
+  in a ski department reads as winter — the column says "the department this
+  commune is in", not "this commune".
+
+  **The seasonal capacity is local and measured.** `part_lits_saisonniers` is the
+  share of a commune's *bookable* beds that are campsite pitches, which in France
+  means beds that physically shut out of season. That is a fact about the
+  building stock rather than about demand, which is exactly why it can be stated
+  per commune when nights cannot. Second homes are left out of the denominator on
+  purpose: they outnumber commercial beds several to one in the communes this is
+  about, so counting them would bury the answer under "how many second homes are
+  there", and a second home is usable in any season anyway — its owner simply
+  chooses. Read it beside `part_lits_marchands` from tourisme_capacite, which is
+  where the second homes are.
+
+  **Why they are not multiplied.** An earlier version of this source blended the
+  two into one commune-level monthly curve. The result was circular: campsite
+  beds have no published monthly series, so their shape had to be assumed, and
+  for the 42% of communes whose beds are mostly campsites the output was
+  determined entirely by that assumption — every one of them came out
+  "Summer". A number that restates its own input while looking like a
+  measurement is worse than two honest columns, so the blend was removed.
+
+  **Reading the two together.** Brétignolles-sur-Mer is a summer commune in a
+  summer department: almost everything bookable there is a campsite pitch, and
+  the Vendée hotel curve peaks in August. Chamonix is the interesting case — its
+  department is genuinely twin-peaked, February and August, and most of what it
+  lets is hotels and residences that trade all year. That is a stronger statement
+  than either column alone, and it is the reader who makes it.

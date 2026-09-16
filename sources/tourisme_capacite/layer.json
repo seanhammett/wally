@@ -1,0 +1,88 @@
+[
+  {
+    "id": "lits_par_habitant",
+    "label": "Tourist beds per resident",
+    "group": "Tourism",
+    "type": "choropleth",
+    "paint": {
+      "property": "lits_par_habitant",
+      "scale": "numeric",
+      "breaks": [0.1, 0.3, 1, 2, 5, 10],
+      "colors": ["#f7f4f9", "#e7e1ef", "#d4b9da", "#c994c7", "#df65b0", "#dd1c77", "#980043"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "lits_par_habitant", "type": "numeric", "unit": "beds/resident", "label": "Tourist beds per resident" },
+      { "name": "lits_touristiques", "type": "numeric", "unit": "beds", "label": "Tourist beds, total" },
+      { "name": "part_lits_marchands", "type": "numeric", "unit": "%", "label": "Of which commercial" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.75,
+    "legend_note": "Beds ÷ resident population. Above 1 the commune has more tourist beds than residents. Beds are estimated from rooms, pitches and second homes using the coefficients in source.yaml, not counted directly."
+  },
+  {
+    "id": "lits_touristiques",
+    "label": "Tourist beds, total",
+    "group": "Tourism",
+    "type": "choropleth",
+    "paint": {
+      "property": "lits_touristiques",
+      "scale": "numeric",
+      "breaks": [100, 500, 2000, 8000, 25000, 80000],
+      "colors": ["#fff7fb", "#ece2f0", "#d0d1e6", "#a6bddb", "#67a9cf", "#1c9099", "#016450"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "lits_touristiques", "type": "numeric", "unit": "beds", "label": "Tourist beds, total" },
+      { "name": "lits_marchands", "type": "numeric", "unit": "beds", "label": "Commercial beds" },
+      { "name": "lits_residences_secondaires", "type": "numeric", "unit": "beds", "label": "Second-home beds" },
+      { "name": "chambres_hotel", "type": "numeric", "unit": "rooms", "label": "Hotel rooms" },
+      { "name": "emplacements_camping", "type": "numeric", "unit": "pitches", "label": "Camping pitches" },
+      { "name": "emplacements_camping_annuels", "type": "numeric", "unit": "pitches", "label": "Of which let by the year" },
+      { "name": "lits_hebergement_collectif", "type": "numeric", "unit": "beds", "label": "Tourism residences, villages vacances, hostels" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.75,
+    "legend_note": "Absolute capacity, so it mostly draws the big cities and the major resorts. Beds per resident is the better read of tourist pressure."
+  },
+  {
+    "id": "part_residences_secondaires",
+    "label": "Second homes",
+    "group": "Tourism",
+    "type": "choropleth",
+    "paint": {
+      "property": "part_residences_secondaires",
+      "scale": "numeric",
+      "breaks": [5, 10, 20, 35, 50, 65],
+      "colors": ["#fff7ec", "#fee8c8", "#fdd49e", "#fdbb84", "#fc8d59", "#e34a33", "#b30000"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "part_residences_secondaires", "type": "numeric", "unit": "%", "label": "Second homes, share of dwellings" },
+      { "name": "residences_secondaires", "type": "numeric", "unit": "dwellings", "label": "Second homes" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.75,
+    "legend_note": "Share of all dwellings that are second or occasional homes, 2023 census. Above half, the commune is empty out of season. Worth stacking against price per m²: where both are high, local incomes are competing with visitors for housing."
+  },
+  {
+    "id": "part_lits_marchands",
+    "label": "Commercial share of beds",
+    "group": "Tourism",
+    "type": "choropleth",
+    "panel": false,
+    "paint": {
+      "property": "part_lits_marchands",
+      "scale": "numeric",
+      "breaks": [10, 25, 40, 60, 80],
+      "colors": ["#f7f7f7", "#d9d9d9", "#bdbdbd", "#969696", "#636363", "#252525"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "part_lits_marchands", "type": "numeric", "unit": "%", "label": "Commercial share of beds" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.7,
+    "legend_note": "How much of the capacity is hotels, campsites and tourism residences rather than second homes. High means visitors who pay a local business; low means owners returning to their own walls."
+  }
+]

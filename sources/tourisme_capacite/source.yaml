@@ -1,0 +1,93 @@
+id: tourisme_capacite
+name: "Capacité touristique : lits marchands, résidences secondaires et pression par habitant"
+attribution: "INSEE — Capacité des communes en hébergement touristique 2026 · Recensement de la population, catégories de logements — Licence Ouverte / Etalab 2.0"
+url: "https://www.data.gouv.fr/datasets/capacites-dhebergements-touristiques"
+fetched: 2026-09-16
+kind: commune_table
+fetch: auto
+order: 99
+min_join_rate: 0.99
+
+# Resident population, to turn beds into beds per head.
+inputs:
+  - commune_reference
+
+resources:
+  capacite:
+    url: "https://api.insee.fr/melodi/file/DS_TOUR_CAP/DS_TOUR_CAP_2026_CSV_FR"
+    filename: "DS_TOUR_CAP_2026.zip"
+    member: "DS_TOUR_CAP_2026_data.csv"
+  logements:
+    url: "https://api.insee.fr/melodi/file/DS_RP_LOGEMENT_PRINC/DS_RP_LOGEMENT_PRINC_2023_CSV_FR"
+    filename: "DS_RP_LOGEMENT_PRINC_2023.zip"
+    member: "DS_RP_LOGEMENT_PRINC_2023_data.csv"
+
+# INSEE counts rooms, pitches and dwellings, not beds. Turning them into beds is
+# what every tourism observatory does to get one comparable number, and the
+# coefficients below are the conventional ones — a judgement, written here so
+# they can be argued with. Change a number and the whole layer changes with it.
+#
+# `I552` (villages vacances, résidences de tourisme, auberges) already reports
+# BEDPLACE, so it needs no coefficient and none is listed.
+lits_par:
+  chambre_hotel: 2          # a double room, the usual assumption
+  emplacement_camping: 3    # a pitch or mobile home sleeps 3 on average
+  residence_secondaire: 5   # the coefficient the observatories use for a second home
+
+# Which INSEE activity code is which, and how to read its capacity.
+# PLACE means rooms for hotels and pitches for campings; BEDPLACE means beds.
+activites:
+  hotel:     { code: I551, mesure: PLACE,    lits_par: chambre_hotel }
+  collectif: { code: I552, mesure: BEDPLACE }
+  camping:   { code: I553, mesure: PLACE,    lits_par: emplacement_camping }
+
+# Camping pitches split by how they are let. A pitch rented by the year carries a
+# static caravan or mobile home that its owner returns to — closer to a second
+# home than to a hotel bed, so it is counted as non-commercial capacity.
+# INSEE's L_STAY dimension: LONG = let by the year, SHORT = passing trade.
+camping_longue_duree_est_residentiel: true
+
+# Census millésime to read for second homes. The file carries several; taking the
+# newest silently would change the layer under you when INSEE adds one.
+recensement:
+  annee: "2023"
+  categorie_residence_secondaire: DW_SEC_DW_OCC   # secondary + occasional dwellings
+  categorie_residence_principale: DW_MAIN
+  categorie_total: _T
+
+# Logged on every build to read the numbers against places you know. Not a gate.
+reference_communes:
+  - { code_insee: "85035", name: Bretignolles-sur-Mer }
+  - { code_insee: "74056", name: Chamonix-Mont-Blanc }
+  - { code_insee: "75056", name: Paris }
+  - { code_insee: "06029", name: Cannes }
+  - { code_insee: "23096", name: Guéret }
+
+notes: |
+  How many tourist beds each commune holds, and how many that is per resident.
+
+  **This is capacity, not visits.** France publishes no commune-level count of
+  how many people actually stay. INSEE's frequentation survey — nights and
+  arrivals — is a sample of establishments and stops at the department, because
+  commune figures would expose individual hotels. So the honest commune-level
+  measure is how many beds exist, which is a census of establishments rather
+  than a survey, and is published for all 34,858 communes with nothing
+  suppressed. `tourisme_saison` carries the departmental demand curve separately.
+
+  **Beds per resident is the pressure number.** A commune with more tourist beds
+  than residents is one whose water, roads, waste and shops are sized for a
+  population it only has for part of the year. Brétignolles-sur-Mer and Chamonix
+  both run well above 3; most of France sits near zero.
+
+  **Second homes are most of it, and they are the shakiest part.** In the places
+  this layer is about, second homes are roughly two-thirds of the capacity, so
+  leaving them out would miss the point — but the census counts dwellings, not
+  beds, and the 5-beds-per-second-home coefficient is a convention, not a
+  measurement. A second home that is lived in three weekends a year and one let
+  out all summer count the same here. The commercial columns (`lits_marchands`)
+  are the firmer half if you want to avoid that assumption.
+
+  **What is missing.** Airbnb and other unclassified furnished lets are not in
+  either source unless they happen to be registered as tourism residences: a
+  commune whose visitors mostly arrive through a platform is under-counted. The
+  capacity is the 2026 millésime; the census is 2023.

@@ -1,0 +1,92 @@
+id: culture_lieux
+name: "Lieux culturels labellisés : scènes, musiques, musées et art contemporain (Basilic)"
+attribution: "Ministère de la Culture — DEPS, Base des lieux et équipements culturels (Basilic) · Fréquentation des Musées de France — Licence Ouverte / Etalab 2.0"
+url: "https://www.data.gouv.fr/datasets/base-des-lieux-et-equipements-culturels-basilic"
+fetched: 2026-09-15
+source_crs: "EPSG:4326"
+kind: point
+fetch: auto
+order: 96
+
+resources:
+  basilic:
+    url: "https://static.data.gouv.fr/resources/base-des-lieux-et-equipements-culturels-basilic/20260218-084338/base-des-lieux-et-des-equipements-culturels.csv"
+    filename: "base-des-lieux-et-des-equipements-culturels.csv"
+  frequentation:
+    url: "https://ministere-culture.s3.sbg.io.cloud.ovh.net/FREQ_MUSEES/ENTREES_ET_CATEGORIES_DE_PUBLIC.csv"
+    filename: "frequentation-musees-de-france.csv"
+
+# The Ministry's own labels are the seed list. Each Basilic `Ident` code maps to
+# a category and a weight: how much one such venue adds to the reach of the
+# communes around it. The weights are a judgement, written here so they can be
+# argued with — change a number and the culture scores change with it.
+#
+# Deliberately left out: listed monuments, heritage areas, Unesco sites and
+# gardens (47,000 monuments would swamp everything), libraries, cinemas and
+# bookshops, archives, and theatre companies without their own venue.
+labels:
+  scene:
+    EPNA: 10      # établissement public national (Opéra de Paris, Comédie-Française…)
+    OPNA: 10      # opéra national
+    THNA: 10      # théâtre national
+    OPNR: 8       # opéra national en région
+    ORNR: 8       # orchestre national en région
+    TLIN: 6       # théâtre lyrique d'intérêt national
+    SCNA: 6       # scène nationale
+    CDRN: 6       # centre dramatique national
+    CCNA: 5       # centre chorégraphique national
+    SMAC: 4       # scène de musiques actuelles
+    ZENI: 4       # Zénith
+    SCIN: 3       # scène conventionnée d'intérêt national
+    CDCN: 3       # centre de développement chorégraphique national
+    PNAC: 3       # pôle national du cirque
+    CNAR: 3       # centre national des arts de la rue
+    CNAM: 3       # centre national de la marionnette
+    CNCM: 3       # centre national de création musicale
+    THVI: 1.5     # théâtre de ville
+    THPR: 1       # théâtre privé
+    THHL: 1       # théâtre hors label
+    CONS: 1       # conservatoire (a concert programme as well as a school)
+  musee:
+    MUFR: attendance   # Musée de France, weighted by its visitors (below)
+    FRAC: 4            # fonds régional d'art contemporain
+    CACO: 4            # centre d'art contemporain d'intérêt national
+
+# A Musée de France weighs 1 + log10(visitors / reference), clamped. A museum
+# with 10,000 visitors a year weighs 1, the Louvre's 9 million hit the ceiling.
+# Visitors are the median of the positive totals over `years`; the Covid years are
+# skipped, and a zero in this file means "not reported" rather than "empty".
+museum_weight:
+  years: [2018, 2019, 2022, 2023, 2024]
+  reference_visitors: 10000
+  min: 0.5
+  max: 6
+  unreported: 1
+# Share of Musées de France whose Muséofile id the attendance file lists (with or
+# without a figure); below this the ids have stopped lining up.
+min_attendance_match: 0.9
+
+tiling:
+  tiles: never          # ~2,900 points; a plain GeoJSON beats a tileset
+
+notes: |
+  Every venue in metropolitan France that holds one of the Ministry of Culture's
+  performing-arts or museum labels, from the DEPS's Basilic database, which also
+  feeds INSEE's facility base.
+
+  **The labels are the curation.** A scène nationale, a centre dramatique
+  national or a SMAC is a venue the state has judged, funds and reviews against
+  a programming brief, which makes the label a far better signal than "a building
+  with a stage". The weight each label carries is set in source.yaml.
+
+  **What labels miss.** They follow public subsidy. Private concert halls, jazz
+  clubs, commercial venues, non-labelled music venues and galleries are largely
+  absent, so a city with a strong private scene is under-counted and a mid-sized
+  prefecture with a well-funded scène nationale can look strong. Museums are the
+  exception that includes size: each Musée de France is weighted by its
+  attendance, so a village museum of local history and the Louvre do not count
+  the same.
+
+  Where one site holds two labels in the same category (a scène nationale that is
+  also a SMAC), the stronger one is kept. A few museum sites report a combined
+  attendance for several museums; each then carries the combined figure.

@@ -1,0 +1,79 @@
+id: score_culture
+name: "Accès à la culture : scènes et musiques, musées et art contemporain, festivals"
+attribution: "Scores Wally · Ministère de la Culture — Basilic, Fréquentation des Musées de France, cartographie nationale des festivals · IGN ADMIN EXPRESS — Licence Ouverte / Etalab 2.0"
+url: "https://www.data.gouv.fr/datasets/base-des-lieux-et-equipements-culturels-basilic"
+fetched: 2026-09-15
+source_crs: "EPSG:4326"
+kind: commune_table
+fetch: none
+order: 98
+min_join_rate: 0.99
+
+# Built from the two point sources' data/processed outputs. The build re-runs
+# this source whenever --only names one of them.
+inputs:
+  - culture_lieux
+  - festivals
+
+# Three scores, kept apart on purpose: a festival summer, a scène nationale's
+# season and a good museum add different things to a place.
+# `nearest_min_poids`: the weight a venue needs to count for the
+# "distance to the nearest" column — the number a person can picture.
+categories:
+  - id: scene
+    label: Performing arts and music
+    source: culture_lieux
+    filter: { categorie: scene }
+    nearest_min_poids: 6       # a scène nationale, CDN, national opera, orchestra or theatre
+  - id: musee
+    label: Museums and contemporary art
+    source: culture_lieux
+    filter: { categorie: musee }
+    nearest_min_poids: 2       # a FRAC, a national art centre, or a museum with 100,000+ visitors
+  - id: festival
+    label: Festivals
+    source: festivals
+    nearest_min_poids: 2       # declared regional reach or wider (most festivals leave it blank)
+
+# Reach: every venue within max_km of a commune's representative point adds its
+# weight × 0.5 ** (distance / half_km). A venue in the commune counts fully, one
+# 15 km away counts half, one 30 km away a quarter, and beyond 45 km nothing.
+# Straight-line distance in Lambert-93, not drive time.
+falloff:
+  half_km: 15
+  max_km: 45
+
+# Logged on every build to read the scores against places you know. Not a gate.
+reference_communes:
+  - { code_insee: "75056", name: Paris }
+  - { code_insee: "69123", name: Lyon }
+  - { code_insee: "84007", name: Avignon }
+  - { code_insee: "13004", name: Arles }
+  - { code_insee: "13001", name: Aix-en-Provence }
+  - { code_insee: "40192", name: Mont-de-Marsan }
+  - { code_insee: "23096", name: Guéret }
+
+notes: |
+  How much labelled culture a commune can reach, in three separate scores:
+  performing arts and music, museums and contemporary art, and festivals. Each is
+  0–100, the share of French communes with less within reach, so 80 means more
+  than 80% of communes. A combined score, the mean of the three, is there for
+  convenience; the three apart say more.
+
+  **Reach, not the commune's own venues.** Almost no commune has an opera, and a
+  village 20 minutes from a scène nationale is well served. Every venue counts
+  for the communes around it, fully on the spot, half at 15 km, a quarter at
+  30 km and not at all beyond 45 km, weighted by what it is (a national opera
+  counts more than a city theatre, a museum by its visitors). The weights are in
+  culture_lieux and festivals. Distances are straight lines, so a valley commune
+  behind a pass is flattered, and nothing knows about trains.
+
+  **It measures what is there, not whether it is good.** The venues are those the
+  Ministry of Culture labels, which follow public subsidy: private concert halls,
+  clubs, galleries and non-labelled music venues are largely missing. Festivals
+  are weighted by the reach they declare and their age, as the list has no
+  attendance, and date from 2019.
+
+  Each score is a position, so it says where, not how much: most of the
+  difference between the top and a middling commune is a big city's pull, and
+  communes deep in the countryside tie near zero.

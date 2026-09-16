@@ -1,0 +1,40 @@
+[
+  {
+    "id": "festivals",
+    "label": "Festivals, by discipline",
+    "group": "Culture",
+    "type": "point",
+    "paint": {
+      "property": "discipline",
+      "scale": "categorical",
+      "stops": [
+        ["Musique", "#7c3aed", "Music"],
+        ["Spectacle vivant", "#db2777", "Theatre, dance, circus, street arts"],
+        ["Cinéma, audiovisuel", "#2563eb", "Film"],
+        ["Livre, littérature", "#b45309", "Books and literature"],
+        ["Arts visuels, arts numériques", "#059669", "Visual and digital arts"],
+        ["Pluridisciplinaire", "#475569", "Multidisciplinary"]
+      ],
+      "no_data_color": "#94a3b8",
+      "radius": [
+        "interpolate", ["linear"], ["zoom"],
+        5, ["interpolate", ["linear"], ["get", "poids"], 1, 1.0, 4.5, 3.0],
+        9, ["interpolate", ["linear"], ["get", "poids"], 1, 2.0, 4.5, 6.0],
+        12, ["interpolate", ["linear"], ["get", "poids"], 1, 3.5, 4.5, 10.0]
+      ]
+    },
+    "fields": [
+      { "name": "nom", "type": "categorical", "unit": "", "label": "Festival" },
+      { "name": "commune", "type": "categorical", "unit": "", "label": "Commune" },
+      { "name": "discipline", "type": "categorical", "unit": "", "label": "Main discipline" },
+      { "name": "periode", "type": "categorical", "unit": "", "label": "When" },
+      { "name": "annee_creation", "type": "numeric", "unit": "", "label": "Founded", "correlate": false },
+      { "name": "envergure", "type": "categorical", "unit": "", "label": "Declared reach" },
+      { "name": "poids", "type": "numeric", "unit": "", "label": "Weight in the festival score" },
+      { "name": "site_web", "type": "categorical", "unit": "", "label": "Website" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.85,
+    "legend_note": "Every festival in the Ministry of Culture's 2019 national map: at least two editions, more than one day, five or more shows. Coloured by main discipline and sized by weight, which rises with the reach the festival declares and with its age; there is no attendance to go on. Festivals without an address sit on their commune's centre."
+  }
+]

@@ -1,0 +1,49 @@
+id: festivals
+name: "Festivals en France (cartographie nationale 2019)"
+attribution: "Ministère de la Culture — DEPS-doc / France Festivals / CEPEL, cartographie nationale des festivals — Licence Ouverte / Etalab 2.0"
+url: "https://www.data.gouv.fr/datasets/liste-des-festivals-en-france"
+fetched: 2026-09-15
+source_crs: "EPSG:4326"
+kind: point
+fetch: auto
+order: 97
+
+resource:
+  url: "https://static.data.gouv.fr/resources/liste-des-festivals-en-france/20250827-132958/festivals-global-festivals-pl.csv"
+  filename: "festivals-global-festivals-pl.csv"
+
+# The list gives no audience or budget, so a festival's weight comes from the two
+# things it does record: the reach its organisers declare, and how long it has
+# lasted. A weight of 1 is a local festival founded after 2010; an international
+# festival running since the 1980s weighs 3 × 1.5 = 4.5.
+# `Envergure territoriale` is free text ("Inernationale", "Régional", "Nationale
+# voir internationale"…), so it is read by the first pattern that matches, in
+# order, case-insensitively. Anything unmatched, or blank, weighs 1.
+envergure:
+  - { match: "internation|inernation|mondial", weight: 3 }
+  - { match: "national", weight: 3 }
+  - { match: "r[ée]gion|transfronti", weight: 2 }
+  - { match: "d[ée]partement", weight: 1.3 }
+longevite:            # by founding year; a festival with no year weighs 1
+  - { before: 1990, factor: 1.5 }
+  - { before: 2010, factor: 1.2 }
+
+tiling:
+  tiles: never          # ~7,000 points
+
+notes: |
+  The national map of festivals the Ministry of Culture compiled with France
+  Festivals and CEPEL: every event in 2019 that had held at least two editions,
+  ran over more than one day and staged at least five performances, concerts or
+  screenings. 2019 was chosen as the last year before the pandemic; festivals
+  founded or folded since are not in it.
+
+  **How much a festival counts is a proxy.** The list has no attendance, so the
+  weight in the culture score uses the reach the festival declares (three in four
+  leave it blank, and weigh 1) and how long it has run. The reach is
+  self-declared: a major lyric festival and a three-day village weekend that both
+  wrote "international" weigh the same, and nothing here can tell them apart.
+
+  Festivals without a street address are placed on their commune's centre, which
+  is close enough for a score measured over tens of kilometres but not for
+  finding the venue.

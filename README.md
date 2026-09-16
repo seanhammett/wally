@@ -15,11 +15,11 @@ What a full build produces today:
 
 | | |
 |---|---|
-| Sources | 31 built (one from a manual DRIAS order, three derived from the others), 2 fetch-only inputs (population grid, terrain) |
-| Layers | 62, across all four patterns |
+| Sources | 36 built (one from a manual DRIAS order, six derived from the others), 2 fetch-only inputs (population grid, terrain) |
+| Layers | 76, across all four patterns |
 | Communes | 34,746 (metropolitan France, ADMIN EXPRESS millésime 2026) |
-| `site/tiles/` | 231 MB — a 161 MB commune tileset, a 38 MB river and lake tileset, a 23 MB air quality grid, rail tilesets, small GeoJSONs |
-| `site/stats/` | 20 MB — 132 correlatable commune columns plus a centroid index |
+| `site/tiles/` | 255 MB — a 183 MB commune tileset, a 38 MB river and lake tileset, a 23 MB air quality grid, rail tilesets, small GeoJSONs |
+| `site/stats/` | 22 MB — 154 correlatable commune columns plus a centroid index |
 | `site/files/` | 25 MB — the monthly climate tables, one JSON per department, fetched on demand |
 | Full rebuild from `data/raw` | ~35 min (139 s of it is join + tiling) |
 | First fetch of everything | ~2 h, ~4.5 GB into `data/raw`, plus the DRIAS order (~215 MB) |
@@ -45,7 +45,12 @@ second round, first-round leader with every candidate's share, presidential
 turnout; 2026 municipal turnout, lists standing, winning nuance), **Transport** (railway lines by type and by speed, stations by annual passengers,
 rail under construction and proposed, airports, aircraft noise zoning),
 **Protected areas**, **Water** (rivers and canals as lines with lakes and reservoirs filled beneath them, piezometers), **Reference**,
-**Habitability 2050** (Wally's 2050 habitability score, below).
+**Habitability 2050** (Wally's 2050 habitability score, below), **Culture**
+(reach of labelled performing arts and music, of museums and contemporary art
+and of festivals, a combined score, and the venues and festivals as points,
+below), **Tourism** (tourist beds per resident, total beds, second homes, the
+commercial share, how much of what is bookable shuts out of season, and the
+department's measured hotel season, below).
 
 Several layers are deliberately paired so they can be stacked and compared: the
 projected low flow at +2.7 °C against the same indicator at +4 °C, the flood
@@ -59,6 +64,15 @@ completely differently — one from tax records of residents, one from the tax
 authority's record of what changed hands — so where they diverge, something is
 happening: second-home coasts where prices outrun local incomes, and former
 industrial towns where the reverse holds.
+
+Tourist beds per resident against price per m² is the third. Nationally the two
+correlate *negatively*, which is Simpson's paradox and not a finding: the
+tourism-heavy communes are overwhelmingly tiny rural and mountain ones, and the
+rural–urban gradient swamps everything. Hold density constant and the expected
+relationship appears sharply — among communes of similar density, median price
+runs from about 1,540 €/m² where second homes are under a tenth of the housing
+to about 3,740 €/m² where they are over half. It is a good illustration of why
+the correlator needs a third variable held still before a pair means anything.
 
 ## The 2050 habitability score
 
@@ -127,6 +141,93 @@ droite incumbents, exactly the effects averaging is meant to absorb. The 2017
 presidential first round would be the next election to add. A second axis
 would also be honest: on CHES's economic scale the RN sits near Renaissance
 (6.4), on the cultural GAL–TAN scale at 8.2.
+
+## The culture scores
+
+`sources/score_culture/` scores how much labelled culture each commune can
+reach, in three scores kept apart because they add different things to a place:
+performing arts and music, museums and contemporary art, and festivals. The
+venues come from the Ministry of Culture's Basilic database
+(`sources/culture_lieux/`) and the festivals from its 2019 national map
+(`sources/festivals/`); both are also layers of their own.
+
+The Ministry's labels are the curation. Each label carries a weight in
+`culture_lieux/source.yaml`: 10 for a national opera or theatre, 6 for a scène
+nationale or centre dramatique national, 4 for a SMAC or a Zénith, 1.5 for a
+city theatre. A Musée de France weighs 1 + log10(visitors / 10,000), so the
+Louvre and a village museum do not count the same. Festivals have no attendance,
+so their weight comes from the reach they declare and how long they have run.
+Heritage, cinemas, libraries and bookshops are left out for now.
+
+Every venue counts for the communes around it: fully on the spot, half at
+15 km, a quarter at 30 km, nothing beyond 45 km, in straight lines. Each score is
+the share of communes with less within reach; beside it is the distance to the
+nearest major venue of that kind. The build logs a few reference towns: Avignon
+and Aix sit at 97–99 on festivals, Arles at 81 on the stage and 93 on festivals,
+Mont-de-Marsan at 54, 15 and 15. The labels follow public subsidy, so private
+halls, clubs and galleries are missing, and a well-funded scène nationale in a
+mid-sized town counts for more than a lively private scene.
+
+## Tourism, and the one thing it cannot tell you
+
+`sources/tourisme_capacite/` counts tourist beds per commune;
+`sources/tourisme_saison/` says when the season is. Together they answer "how
+much tourism is here, and when" — but not, anywhere, "how many people came".
+
+**No commune-level visit count exists in French open data, and none is
+estimated here.** INSEE's frequentation survey is the only source of nights and
+arrivals, and it is a sample of establishments, so publishing it per commune
+would expose individual hotels. It stops at the department: 134,485 department
+rows, 0 commune rows. Taxe de séjour looks like the obvious way round it, but
+DGFiP's DELTA dataset publishes only the tariffs communes *set*, never the
+receipts they collect. It would be easy to multiply beds by a departmental
+occupancy rate and call the result "annual visits"; that number would add
+nothing to the bed count while laundering a department figure into something
+that looks commune-level, so it is deliberately not built.
+
+What is commune-level is **capacity**, which is a census of establishments
+rather than a survey and is published for all 34,746 communes with nothing
+suppressed. INSEE counts rooms, pitches and dwellings, not beds, so the
+conventional observatory coefficients turn them into one comparable number — a
+hotel room is 2 beds, a camping pitch 3, a second home 5 — declared in
+`tourisme_capacite/source.yaml` so they can be argued with. Beds per resident is
+the number worth reading: above 1 the commune's water, roads, waste and shops
+are sized for a population it only has for part of the year. The median commune
+is at 0.21; about 17% are above 1. The extremes are all real and recognisable —
+Germ in the Pyrenees at 179 beds per resident, Le Mont-Saint-Michel at 46 with
+91% of it commercial, Bonnal at 42 because one of France's largest campsites is
+there.
+
+**Second homes are most of the capacity and the shakiest part of it.** In
+Brétignolles-sur-Mer and Chamonix they are about two-thirds of the beds, so
+omitting them would miss the point, but the census counts dwellings and the
+5-beds-each coefficient is a convention rather than a measurement. It is also
+clearly too generous in cities: a Paris pied-à-terre is not five beds, which is
+why Paris reads 891,000 beds. `lits_marchands` is the firmer half if you want to
+avoid the assumption entirely.
+
+**Seasonality is two columns, on purpose.** The measured part is departmental:
+INSEE publishes a full monthly series of nights for *hotels only*, so
+`saison_hotel_*` carries the department's curve, averaged over 2022–2025 and
+labelled as departmental. It is genuinely informative — Savoie takes 60% of its
+hotel year in December–March and peaks in February, Vendée peaks in August,
+Paris sits within a point or two of flat all year, and Haute-Savoie is honestly
+twin-peaked. The local part is structural: `part_lits_saisonniers` is the share
+of a commune's *bookable* beds that are campsite pitches, which in France means
+beds that physically shut out of season. That is a fact about the building
+stock, which is exactly why it can be stated per commune when nights cannot.
+
+The two are never multiplied together. An earlier version of this source blended
+them into a single commune-level monthly curve, and it was circular: campsites
+have no published monthly series anywhere, so their shape had to be assumed, and
+for the 42% of communes whose beds are mostly campsites the output was
+determined entirely by that assumption — all 14,219 of them came out "Summer",
+with a standard deviation of 4.7 points. A column that restates its own input
+while looking like a measurement is worse than two honest columns, so the blend
+was removed. Read them together and the answer is still there:
+Brétignolles-sur-Mer is 95% seasonal beds in an August-peaking department;
+Chamonix is 28% seasonal in a twin-peaked one, which is to say it trades all
+year.
 
 ## The correlator
 
@@ -356,6 +457,16 @@ same in both cases: the data is not published as open vector geometry.
   modelled from real approach and departure tracks — which makes the PEB the
   thing worth chasing rather than the tracks.
 
+A third gap is not about geometry: **how many tourists actually visit a
+commune** is not published by anyone, because INSEE's frequentation survey is a
+sample of establishments and commune figures would expose individual hotels. It
+stops at the department, and taxe de séjour receipts are not published either.
+`tourisme_capacite` maps beds instead and says so; the reasoning is under
+"Tourism, and the one thing it cannot tell you" above. Airbnb and other
+unclassified furnished lets are missing from the bed count for a related reason
+— they appear in no open register — so a commune whose visitors mostly arrive
+through a platform is under-counted.
+
 `projets_ferroviaires` is the only source here that is not official. SNCF Réseau
 publishes no open geodata for its project pipeline, so planned and
 under-construction lines come from OpenStreetMap. The layer separates
@@ -435,6 +546,24 @@ Four more that the election and equipment sources ran into:
 - **Absence that does not mean zero.** BDIFF reports an unknown fire count for
   Paris and the inner suburbs, so those communes stay blank instead of being
   drawn as "no fires". Same-looking hole in the data, opposite correct treatment.
+
+Three from the tourism sources:
+
+- **A cube whose totals are a dimension, not a row.** INSEE's Melodi cubes carry
+  every breakdown and the total in the same column, so filtering for communes
+  and summing is wrong twice over: the sub-breakdowns double-count, and the
+  "total" must be selected as `_T` on *every* dimension at once. The census
+  file has eight such dimensions beside the one being read, so
+  `tourisme_capacite` derives them from the header rather than naming them, and
+  keeps working when INSEE adds a ninth.
+- **Nights split by visitor origin.** The frequentation cube publishes resident
+  and non-resident nights alongside the total, all in the same measure. Adding
+  the rows up gives double the year.
+- **A large download that the server cuts.** INSEE's Melodi file endpoint drops
+  the 98 MB census transfer roughly every 30 MB. `download` resumes with a
+  ranged request and gets there, but note that its resume only works *within*
+  one call: a `.part` left by a killed run is deleted on the next attempt, by
+  design, so an interrupted fetch of that file restarts from zero.
 
 Four more from the hazard and services sources:
 
