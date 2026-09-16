@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Où est Charlie&nbsp;?</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231d4ed8'/%3E%3Cpath d='M9 7h14M9 16h14M9 25h14' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="lib/maplibre-gl.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="map"></div>
+
+  <aside id="panel">
+    <header>
+      <h1>Où est Charlie&nbsp;?</h1>
+    </header>
+
+    <section class="block" id="base-block">
+      <div class="base-row">
+        <label for="basemap-select">Basemap</label>
+        <select id="basemap-select"></select>
+      </div>
+      <div id="overlays" class="chips"></div>
+    </section>
+
+    <section class="block" id="active-block">
+      <h2>Active layers <span id="active-count" class="count">0</span></h2>
+      <div id="active"></div>
+    </section>
+
+    <section class="block" id="corr-block">
+      <h2>
+        <button id="corr-toggle" class="block-toggle" type="button" aria-expanded="true" aria-controls="corr-body">
+          <span class="chev" aria-hidden="true"></span>Correlate two stats <span id="corr-badge" class="count" hidden></span>
+        </button>
+      </h2>
+      <div id="corr-body">
+        <div class="corr-picks">
+          <div class="corr-pick"><span class="corr-ab">A</span><select id="corr-x" aria-label="Statistic A"></select></div>
+          <button id="corr-swap" type="button" title="Swap A and B" aria-label="Swap the two statistics">⇅</button>
+          <div class="corr-pick"><span class="corr-ab">B</span><select id="corr-y" aria-label="Statistic B"></select></div>
+        </div>
+
+        <div id="corr-out" hidden>
+          <div id="corr-head"></div>
+          <svg id="corr-scatter" viewBox="0 0 300 182" role="img" aria-label="Scatter plot"></svg>
+          <div class="corr-row">
+            <span class="corr-lbl">Map</span>
+            <div class="chips" id="corr-mode"></div>
+          </div>
+          <div class="corr-row">
+            <span class="corr-lbl">Highlight</span>
+            <div class="chips" id="corr-side"></div>
+          </div>
+          <div class="corr-row" id="corr-radius-row">
+            <span class="corr-lbl">Radius</span>
+            <input id="corr-radius" type="range" min="10" max="80" step="5" value="25" aria-label="Neighbourhood radius in kilometres">
+            <span id="corr-radius-val" class="act-pct"></span>
+          </div>
+          <p class="corr-note" id="corr-note"></p>
+        </div>
+        <p class="muted" id="corr-hint">Pick two commune statistics. The map then shows where they move together and where they don&rsquo;t.</p>
+      </div>
+    </section>
+
+    <section class="block" id="opt-block">
+      <h2>
+        <button id="opt-toggle" class="block-toggle" type="button" aria-expanded="true" aria-controls="opt-body">
+          <span class="chev" aria-hidden="true"></span>Find matching areas <span id="opt-badge" class="count" hidden></span>
+        </button>
+      </h2>
+      <div id="opt-body">
+        <div class="opt-add-row">
+          <select id="opt-add" aria-label="Add a statistic to the optimiser"></select>
+          <button id="opt-clear" type="button" title="Remove every criterion">Clear</button>
+        </div>
+        <div class="corr-row opt-scoring-row">
+          <span class="corr-lbl" title="How a statistic without a ramp is scored">Scoring</span>
+          <div class="chips" id="opt-scoring"></div>
+        </div>
+        <div id="opt-criteria"></div>
+        <p class="corr-note" id="opt-summary" hidden></p>
+        <ol id="opt-top" hidden></ol>
+        <p class="muted" id="opt-hint"></p>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>All layers</h2>
+      <div id="layers"></div>
+    </section>
+
+    <section class="block">
+      <h2>Legend</h2>
+      <div id="legend"><p class="muted">No layers visible.</p></div>
+    </section>
+
+    <footer>
+      <details class="fold" id="attribution-fold">
+        <summary>Show sources</summary>
+        <div id="attribution" class="muted"></div>
+      </details>
+      <p class="muted built">Built <span id="built"></span> · <a href="https://github.com/" id="repo">source &amp; pipeline</a></p>
+    </footer>
+  </aside>
+
+  <button id="panel-toggle" title="Show/hide the layer panel" aria-label="Toggle layer panel">☰</button>
+
+  <button id="search-open" title="Search communes" aria-label="Search communes">
+    <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><circle cx="6.8" cy="6.8" r="4.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10.3 10.3 14.2 14.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </button>
+
+  <aside id="inspect" hidden>
+    <header id="inspect-head">
+      <div class="insp-titlebar">
+        <h2 id="inspect-title">Inspect</h2>
+        <button id="inspect-close" aria-label="Close">×</button>
+      </div>
+      <div class="commune-search">
+        <input id="commune-search" type="search" placeholder="Search communes by name or INSEE code"
+               role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="commune-results"
+               autocomplete="off" spellcheck="false">
+        <ul id="commune-results" role="listbox" aria-label="Matching communes" hidden></ul>
+      </div>
+    </header>
+    <div id="inspect-body"></div>
+  </aside>
+
+  <div id="climate" class="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="climate-title">
+      <header>
+        <div>
+          <h2 id="climate-title">Climate</h2>
+          <p id="climate-sub" class="muted"></p>
+        </div>
+        <button id="climate-close" class="modal-close" type="button" aria-label="Close">×</button>
+      </header>
+      <div id="climate-body"></div>
+    </div>
+  </div>
+
+  <div id="boot" class="boot">Loading…</div>
+
+  <script src="lib/maplibre-gl.js"></script>
+  <script src="lib/pmtiles.js"></script>
+  <script src="correlate.js"></script>
+  <script src="optimise.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
