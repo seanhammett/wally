@@ -3,6 +3,7 @@
     "id": "festivals",
     "label": "Festivals, by discipline",
     "group": "Culture",
+    "detail": true,
     "type": "point",
     "paint": {
       "property": "discipline",

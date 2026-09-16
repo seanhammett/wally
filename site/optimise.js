@@ -13,6 +13,15 @@
 //   • a ramp set — a straight line from the "unacceptable" value (0) to the
 //     "ideal" value (1), clamped at both ends, in the units of the statistic.
 //
+// Percentiles spread every column evenly from 0 to 1, so some commune always
+// looks excellent even when nothing fits. The absolute mode, the default,
+// replaces them with a straight line in the statistic's own units instead: the
+// field's declared natural range when it has one (0–100 for a score), else the
+// column's 1st to 99th percentile values — on a log scale when the column is
+// heavily skewed (density, prices, population), where a straight line would
+// put nearly every commune at the cheap or sparse end. How far apart communes
+// are survives, and so does a best match that is not very good.
+//
 // Columns arrive as Float64Array with NaN for "no value", as for the correlator.
 
 const Optimise = (() => {
@@ -22,6 +31,21 @@ const Optimise = (() => {
   // pass, the next 4%, and so on. The last class is every passing commune below
   // the median. Excluded communes — a zero on any count — get no class at all.
   const CLASS_CUTS = [0.01, 0.05, 0.10, 0.25, 0.50, 1];
+
+  // Where the absolute mode's colour ramp and the panel's summary draw lines.
+  const SUMMARY_CUTS = [0.5, 0.8];
+
+  // A column is scored on a log scale when it has no negative values and its
+  // upper tail is this many times longer than its lower one:
+  // (p99 − p50) / (p50 − p1). Sunshine is about 1, density about 60.
+  const SKEW_FOR_LOG = 3;
+
+  // Without a typed ramp, the worst end of a scale is heavily penalised but
+  // never zero: only a ramp the user typed can rule a commune out, as with
+  // percentiles. Otherwise the least sunny 1% of France would be excluded by a
+  // criterion that asked for nothing more than "sunnier is better".
+  const ABS_FLOOR = 0.001;
+  const floored = (values) => values.map((v) => (Number.isFinite(v) ? Math.max(v, ABS_FLOOR) : v));
 
   function range(col) {
     let min = Infinity, max = -Infinity, n = 0;
@@ -100,6 +124,54 @@ const Optimise = (() => {
     };
   }
 
+  // Linear interpolation between the order statistics of a sorted array.
+  function quantile(sorted, q) {
+    if (!sorted.length) return NaN;
+    const at = (sorted.length - 1) * q;
+    const lo = Math.floor(at), hi = Math.ceil(at);
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (at - lo);
+  }
+
+  const declaredRange = (field) => {
+    const abs = field && field.abs;
+    if (!Array.isArray(abs) || abs.length !== 2) return null;
+    const [a, b] = abs.map(Number);
+    return Number.isFinite(a) && Number.isFinite(b) && a !== b ? [Math.min(a, b), Math.max(a, b)] : null;
+  };
+
+  // The absolute mode's counterpart to `desirability`. A typed ramp still wins;
+  // otherwise the ramp runs across the field's declared range, or failing that
+  // across the column's p1–p99, in the chosen direction. `basis` says which.
+  function absoluteDesirability(col, crit, field) {
+    const r = range(col);
+    if (!r.n) return { values: new Float64Array(col.length).fill(NaN), ramp: null, range: r, basis: 'empty' };
+    const typed = resolveRamp(crit, r);
+    if (typed) return { values: ramp(col, typed), ramp: typed, range: r, basis: 'ramp' };
+
+    const dir = crit.dir === 'down' ? 'down' : 'up';
+    let lo, hi, basis;
+    const declared = declaredRange(field);
+    if (declared) {
+      [lo, hi] = declared;
+      basis = 'declared';
+    } else {
+      const sorted = [];
+      for (let i = 0; i < col.length; i++) if (Number.isFinite(col[i])) sorted.push(col[i]);
+      sorted.sort((a, b) => a - b);
+      [lo, hi] = [quantile(sorted, 0.01), quantile(sorted, 0.99)];
+      if (lo === hi) [lo, hi] = [r.min, r.max];     // a column that is nearly all one value
+      const mid = quantile(sorted, 0.5);
+      basis = r.min >= 0 && mid > lo && (hi - mid) / (mid - lo) > SKEW_FOR_LOG ? 'log' : 'stretch';
+    }
+    const resolved = dir === 'up' ? { bad: lo, ideal: hi, dir } : { bad: hi, ideal: lo, dir };
+    if (basis !== 'log') return { values: floored(ramp(col, resolved)), ramp: resolved, range: r, basis };
+    // The same ramp, drawn through log(1 + v); the ends are reported in the
+    // statistic's own units.
+    const logged = col.map(Math.log1p);
+    const inLogs = { ...resolved, bad: Math.log1p(resolved.bad), ideal: Math.log1p(resolved.ideal) };
+    return { values: floored(ramp(logged, inLogs)), ramp: resolved, range: r, basis };
+  }
+
   // Weighted geometric mean over the criteria, then rank classes over the
   // communes that pass. `ds` are desirability columns, `weights` their weights.
   function combine(ds, weights, n) {
@@ -148,7 +220,23 @@ const Optimise = (() => {
     return { score, cls, rank, order: Int32Array.from(order), passing, missing, excluded };
   }
 
-  return { CLASS_CUTS, range, percentile, resolveRamp, ramp, desirability, combine };
+  // The headline of an absolute run: the best score, and how many communes
+  // clear each of SUMMARY_CUTS. Excluded (0) and unscored (NaN) communes count
+  // for nothing.
+  function summarise(score) {
+    let best = 0;
+    const above = SUMMARY_CUTS.map(() => 0);
+    for (let i = 0; i < score.length; i++) {
+      const s = score[i];
+      if (!(s > 0)) continue;
+      if (s > best) best = s;
+      SUMMARY_CUTS.forEach((cut, k) => { if (s >= cut) above[k]++; });
+    }
+    return { best, above: SUMMARY_CUTS.map((cut, k) => ({ cut, count: above[k] })) };
+  }
+
+  return { CLASS_CUTS, SUMMARY_CUTS, SKEW_FOR_LOG, ABS_FLOOR, range, percentile, resolveRamp, ramp, desirability,
+           quantile, absoluteDesirability, combine, summarise };
 })();
 
 if (typeof module !== 'undefined') module.exports = Optimise;

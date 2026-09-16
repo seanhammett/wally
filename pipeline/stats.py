@@ -119,6 +119,9 @@ def correlatable_fields(sources: Iterable[Source]) -> list[dict[str, Any]]:
                     "layer": layer["id"],
                     "source_name": src.name,
                     "attribution": src.attribution,
+                    # The optimiser's absolute mode: the field's natural 0 and 1,
+                    # or another column that holds the same thing on such a scale.
+                    **{k: f[k] for k in ("abs", "abs_column") if k in f},
                 })
     return out
 

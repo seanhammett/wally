@@ -2,7 +2,8 @@
   {
     "id": "tropical_nights_2050",
     "label": "Tropical nights at +2.7 °C (TRACC 2050)",
-    "group": "Hazards",
+    "group": "Habitability 2050",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "nuits_tropicales_2050",
@@ -25,7 +26,8 @@
   {
     "id": "hot_days_35_2050",
     "label": "Days reaching 35 °C at +2.7 °C (TRACC 2050)",
-    "group": "Hazards",
+    "group": "Habitability 2050",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "jours_35c_2050",
@@ -48,7 +50,8 @@
   {
     "id": "dry_soil_2050",
     "label": "Dry-soil days at +2.7 °C (TRACC 2050)",
-    "group": "Hazards",
+    "group": "Habitability 2050",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "sol_sec_2050",
@@ -71,6 +74,7 @@
     "id": "fire_weather_2050",
     "label": "Fire-weather days at +2.7 °C (TRACC 2050)",
     "group": "Hazards",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "feux_meteo_2050",

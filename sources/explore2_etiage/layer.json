@@ -2,7 +2,8 @@
   {
     "id": "lowflow_2050",
     "label": "Summer low flow at +2.7 °C (TRACC 2050)",
-    "group": "Hazards",
+    "group": "Habitability 2050",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "etiage_27_pct",
@@ -25,7 +26,8 @@
   {
     "id": "lowflow_duration_2050",
     "label": "Longer summer low water at +2.7 °C (TRACC 2050)",
-    "group": "Hazards",
+    "group": "Habitability 2050",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "etiage_duree_27",
@@ -48,6 +50,7 @@
     "id": "lowflow_4c",
     "label": "Summer low flow at +4 °C (TRACC 2100)",
     "group": "Hazards",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "etiage_4_pct",

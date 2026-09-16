@@ -2,7 +2,8 @@
   {
     "id": "floodpeak_2050",
     "label": "River flood peaks at +2.7 °C (TRACC 2050)",
-    "group": "Hazards",
+    "group": "Habitability 2050",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "crues_27_pct",

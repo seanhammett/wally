@@ -54,6 +54,7 @@
     "id": "air_no2",
     "label": "Nitrogen dioxide (NO₂), 2021–2024",
     "group": "Air quality",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "air_no2",
@@ -99,6 +100,7 @@
     "id": "air_o3_somo35",
     "label": "Ozone exposure (SOMO35), 2021–2024",
     "group": "Air quality",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "air_o3_somo35",

@@ -2,6 +2,7 @@
   "id": "piezometers",
   "label": "Groundwater monitoring stations",
   "group": "Water",
+  "detail": true,
   "type": "point",
   "paint": {
     "property": "profondeur_m",

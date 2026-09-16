@@ -19,21 +19,28 @@ inputs:
 # season and a good museum add different things to a place.
 # `nearest_min_poids`: the weight a venue needs to count for the
 # "distance to the nearest" column — the number a person can picture.
+#
+# `anchor`: the reach that scores 95, roughly what a regional capital reaches
+# (Lyon: 88 · 26 · 154). The score is 100 × (1 − exp(−reach / (anchor / 3))):
+# a third of the anchor scores 63, two thirds 86, and it approaches 100 beyond.
 categories:
   - id: scene
     label: Performing arts and music
     source: culture_lieux
     filter: { categorie: scene }
     nearest_min_poids: 6       # a scène nationale, CDN, national opera, orchestra or theatre
+    anchor: 60
   - id: musee
     label: Museums and contemporary art
     source: culture_lieux
     filter: { categorie: musee }
     nearest_min_poids: 2       # a FRAC, a national art centre, or a museum with 100,000+ visitors
+    anchor: 20
   - id: festival
     label: Festivals
     source: festivals
     nearest_min_poids: 2       # declared regional reach or wider (most festivals leave it blank)
+    anchor: 100
 
 # Reach: every venue within max_km of a commune's representative point adds its
 # weight × 0.5 ** (distance / half_km). A venue in the commune counts fully, one
@@ -56,9 +63,10 @@ reference_communes:
 notes: |
   How much labelled culture a commune can reach, in three separate scores:
   performing arts and music, museums and contemporary art, and festivals. Each is
-  0–100, the share of French communes with less within reach, so 80 means more
-  than 80% of communes. A combined score, the mean of the three, is there for
-  convenience; the three apart say more.
+  0–100 on a fixed scale: 95 is roughly what a regional capital reaches, and the
+  score rises quickly at first and then flattens, so 50 means a good deal within
+  reach and the difference between Lyon and Paris is small. A combined score, the
+  mean of the three, is there for convenience; the three apart say more.
 
   **Reach, not the commune's own venues.** Almost no commune has an opera, and a
   village 20 minutes from a scène nationale is well served. Every venue counts
@@ -74,6 +82,7 @@ notes: |
   are weighted by the reach they declare and their age, as the list has no
   attendance, and date from 2019.
 
-  Each score is a position, so it says where, not how much: most of the
-  difference between the top and a middling commune is a big city's pull, and
-  communes deep in the countryside tie near zero.
+  **Why not positions.** A position among communes hid how much: Paris and Lyon
+  both scored 99 although Paris reaches five times as much, and a commune with
+  the median reach scored 50 whatever that reach was. On this scale a commune's
+  score does not depend on the others, so a low score means little within reach.

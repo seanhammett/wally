@@ -46,6 +46,7 @@
     "id": "pres22_t1_lead",
     "label": "Presidential 2022 — first-round leader",
     "group": "Elections",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "pres22_tete_t1",
@@ -203,6 +204,7 @@
     "id": "pres22_turnout",
     "label": "Presidential 2022 — turnout",
     "group": "Elections",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "pres22_participation_t2_pct",

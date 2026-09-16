@@ -6,23 +6,48 @@
     "type": "choropleth",
     "paint": {
       "property": "habitabilite_2050",
+      "scale": "continuous",
+      "stops": [[30, "#8c2d04"], [45, "#e6550d"], [55, "#fdae6b"], [63, "#f7f4e9"], [70, "#c7e9c0"], [78, "#41ab5d"], [90, "#00441b"]],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "habitabilite_2050", "type": "numeric", "unit": "/ 100", "abs": [0, 100], "label": "Habitability score at +2.7 °C (higher is more habitable)" },
+      { "name": "hab_chaleur", "type": "numeric", "unit": "/ 100", "abs": [0, 100], "label": "Heat exposure (half at 20 tropical nights, 5 days ≥ 35 °C)" },
+      { "name": "hab_feux", "type": "numeric", "unit": "/ 100", "abs": [0, 100], "label": "Wildfire exposure (half at 2 large fires / 1,000 km² / decade)" },
+      { "name": "hab_secheresse", "type": "numeric", "unit": "/ 100", "abs": [0, 100], "label": "Drought and clay exposure (dry soil, low flow, low-water duration, clay)" },
+      { "name": "hab_inondations", "type": "numeric", "unit": "/ 100", "abs": [0, 100], "label": "Flood exposure (flood-prone ground in registers, rising flood peaks)" },
+      { "name": "hab_littoral", "type": "numeric", "unit": "/ 100", "abs": [0, 100], "label": "Coastal exposure (submersion, retreating shoreline, coastal plan)" },
+      { "name": "hab_services", "type": "numeric", "unit": "/ 100", "abs": [0, 100], "label": "Lack of everyday services (0 with all 20, 100 with none)" },
+      { "name": "hab_alertes", "type": "categorical", "unit": "", "label": "Categories with an indicator among the 10% most exposed communes" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.75,
+    "legend_note": "Higher is more habitable in 2050 (+2.7 °C). Eleven indicators in six equal categories — heat, wildfire, drought and clay, floods, coast, lack of services — each scored 0–100 on its own scale, and the score is 100 minus their average. Open-ended indicators rise on a curve that is half exposed at a declared value (20 tropical nights, 5 days at 35 °C, 2 large fires per 1,000 km² per decade), so a commune's score does not depend on the rest of France. Median commune 63; the Aude and Roussillon coast is lowest, inland Normandy, Picardy and Artois highest. Method after Projet Celsius, which scores positions instead (see the positional layer); wildfire is a model calibrated on observed fires. Click a commune for the six categories."
+  },
+  {
+    "id": "habitability_2050_pos",
+    "label": "Habitability 2050, positional (Celsius method)",
+    "group": "Habitability 2050",
+    "detail": true,
+    "type": "choropleth",
+    "paint": {
+      "property": "habitabilite_2050_pos",
       "scale": "numeric",
       "breaks": [45, 52, 58, 62, 68, 75],
       "colors": ["#8c2d04", "#e6550d", "#fdae6b", "#f7f4e9", "#c7e9c0", "#41ab5d", "#00441b"],
       "no_data_color": "#e5e7eb"
     },
     "fields": [
-      { "name": "habitabilite_2050", "type": "numeric", "unit": "/ 100", "label": "Habitability score at +2.7 °C (higher is more habitable)" },
-      { "name": "hab_chaleur", "type": "numeric", "unit": "/ 100", "label": "Heat exposure (tropical nights, days ≥ 35 °C)" },
-      { "name": "hab_feux", "type": "numeric", "unit": "/ 100", "label": "Wildfire exposure (model of large fires calibrated on observed fires)" },
-      { "name": "hab_secheresse", "type": "numeric", "unit": "/ 100", "label": "Drought and clay exposure (dry soil, low flow, low-water duration, clay)" },
-      { "name": "hab_inondations", "type": "numeric", "unit": "/ 100", "label": "Flood exposure (flood-prone ground in registers, rising flood peaks)" },
-      { "name": "hab_littoral", "type": "numeric", "unit": "/ 100", "label": "Coastal exposure (submersion, retreating shoreline, coastal plan)" },
-      { "name": "hab_services", "type": "numeric", "unit": "/ 100", "label": "Lack of everyday services" },
-      { "name": "hab_alertes", "type": "categorical", "unit": "", "label": "Categories with an indicator at 90/100 or more" }
+      { "name": "habitabilite_2050_pos", "type": "numeric", "unit": "/ 100", "label": "Habitability score at +2.7 °C, indicators as positions among communes" },
+      { "name": "hab_chaleur_pos", "type": "numeric", "unit": "/ 100", "label": "Heat exposure, as a position" },
+      { "name": "hab_feux_pos", "type": "numeric", "unit": "/ 100", "label": "Wildfire exposure, as a position" },
+      { "name": "hab_secheresse_pos", "type": "numeric", "unit": "/ 100", "label": "Drought and clay exposure, as a position" },
+      { "name": "hab_inondations_pos", "type": "numeric", "unit": "/ 100", "label": "Flood exposure, as a position" },
+      { "name": "hab_littoral_pos", "type": "numeric", "unit": "/ 100", "label": "Coastal exposure (register count)" },
+      { "name": "hab_services_pos", "type": "numeric", "unit": "/ 100", "label": "Lack of everyday services, as a position" }
     ],
     "default_visible": false,
     "default_opacity": 0.75,
-    "legend_note": "Higher is more habitable in 2050 (+2.7 °C). Eleven indicators in six equal categories — heat, wildfire, drought and clay, floods, coast, lack of services — each scored 0–100, mostly as a position among French communes, and the score is 100 minus their average. Median commune 59; the Aude and Roussillon coast is lowest, inland Normandy, Artois and western Brittany highest. It says where, not how much: a green commune is less exposed than most, not safe. Method after Projet Celsius; wildfire is a model calibrated on observed fires (see its own layer). Click a commune for the six categories."
+    "legend_note": "The habitability score as Projet Celsius computes it: most indicators scored as a position among French communes (90 = more exposed than 90% of them). Kept for comparison with Celsius's own map and worked example. It says where, not how much: a green commune is less exposed than most, not safe. Median commune 59."
   }
 ]

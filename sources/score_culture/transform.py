@@ -2,8 +2,9 @@
 
 Every venue and festival (from culture_lieux and festivals) adds its weight to
 each commune within `max_km`, halving every `half_km`. The sums are published
-raw and as positions among communes, one per category, with the distance to the
-nearest major venue beside each.
+raw and on a saturating 0–100 scale anchored per category, one per category,
+with the distance to the nearest major venue beside each. Positions among
+communes are only logged, for comparison.
 """
 from __future__ import annotations
 
@@ -24,6 +25,11 @@ def reach(communes: np.ndarray, venues: np.ndarray, weights: np.ndarray, half_km
     i, j = shapely.STRtree(venues).query(communes, predicate="dwithin", distance=max_km * 1000)
     km = shapely.distance(communes[i], venues[j]) / 1000
     return np.bincount(i, weights=weights[j] * 0.5 ** (km / half_km), minlength=len(communes))
+
+
+def saturating(acces: pd.Series, anchor: float) -> pd.Series:
+    """Reach on a 0–100 scale that does not depend on the other communes: 95 at the anchor."""
+    return 100 * (1 - np.exp(-acces / (anchor / 3)))
 
 
 def nearest_km(communes: np.ndarray, venues: np.ndarray) -> np.ndarray:
@@ -49,7 +55,7 @@ def transform(ctx) -> None:
 
     layers: dict[str, gpd.GeoDataFrame] = {}
     out = pd.DataFrame(index=index)
-    positions = []
+    scores, positions = [], []
     for cat in meta["categories"]:
         cid = cat["id"]
         if cat["source"] not in layers:
@@ -65,11 +71,13 @@ def transform(ctx) -> None:
         major = weights >= float(cat["nearest_min_poids"])
 
         acces = pd.Series(reach(points, geoms, weights, half_km, max_km), index=index, name=f"cult_{cid}_acces")
-        position = rank_exposure(acces)
-        out[f"cult_{cid}"] = position.round(1)
+        anchor = float(cat["anchor"])
+        score = saturating(acces, anchor)
+        out[f"cult_{cid}"] = score.round(1)
         out[f"cult_{cid}_acces"] = acces.round(2)
         out[f"cult_{cid}_km"] = np.round(nearest_km(points, geoms[major]), 1)
-        positions.append(position)
+        scores.append(score)
+        positions.append(rank_exposure(acces))
 
         zero = (acces == 0).mean()
         q = acces.quantile([0.5, 0.9, 0.99])
@@ -81,8 +89,12 @@ def transform(ctx) -> None:
         top = acces.sort_values(ascending=False).head(12)
         Log.info("  most reach: " + " · ".join(f"{nom[c]} {v:.0f}" for c, v in top.items()))
 
-    out["culture_score"] = pd.concat(positions, axis=1).mean(axis=1).round(1)
-    corr = pd.concat(positions, axis=1).corr(method="spearman").round(2)
+        Log.info(f"  score, 95 at {anchor:g}: p10 {score.quantile(0.1):.0f} · median {score.median():.0f} · "
+                 f"p90 {score.quantile(0.9):.0f} · {(score >= 90).mean():.1%} at 90+ · {(score < 10).mean():.1%} under 10")
+
+    out["culture_score"] = pd.concat(scores, axis=1).mean(axis=1).round(1)
+    position_score = pd.concat(positions, axis=1).mean(axis=1)
+    corr = pd.concat(scores, axis=1).corr(method="spearman").round(2)
     ids = [c["id"] for c in meta["categories"]]
     Log.info("rank correlation between the three: " + " · ".join(
         f"{a}/{b} {corr.iloc[x, y]:.2f}" for x, a in enumerate(ids) for y, b in enumerate(ids) if x < y))
@@ -94,7 +106,9 @@ def transform(ctx) -> None:
             continue
         row = out.loc[code]
         Log.info(f"  {ref['name']:<16} " + " · ".join(
-            f"{cid} {row[f'cult_{cid}']:.0f} ({row[f'cult_{cid}_km']:.0f} km)" for cid in ids)
-            + f" · combined {row['culture_score']:.0f}")
+            f"{cid} {row[f'cult_{cid}']:.0f}/{positions[k][code]:.0f} ({row[f'cult_{cid}_km']:.0f} km)"
+            for k, cid in enumerate(ids))
+            + f" · combined {row['culture_score']:.0f}/{position_score[code]:.0f}")
+    Log.info("  (reference scores read score/position among communes)")
 
     out.reset_index().to_csv(ctx.out_path, index=False)

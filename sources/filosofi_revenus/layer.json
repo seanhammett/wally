@@ -58,6 +58,7 @@
     "id": "income_inequality",
     "label": "Income inequality (D9/D1 ratio)",
     "group": "Income & property",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "revenu_interdecile",
@@ -101,6 +102,7 @@
     "id": "poverty_rate",
     "label": "Poverty rate",
     "group": "Income & property",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "taux_pauvrete",

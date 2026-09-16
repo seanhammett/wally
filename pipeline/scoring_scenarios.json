@@ -1,0 +1,73 @@
+{
+  "note": "Criteria sets the scoring report runs through rank and absolute scoring. Same shape as the optimiser's criteria. `expect` is what a good scoring method should show, read by a person, not checked.",
+  "reference_communes": [
+    { "code_insee": "75056", "name": "Paris" },
+    { "code_insee": "69123", "name": "Lyon" },
+    { "code_insee": "35238", "name": "Rennes" },
+    { "code_insee": "84007", "name": "Avignon" },
+    { "code_insee": "13004", "name": "Arles" },
+    { "code_insee": "13001", "name": "Aix-en-Provence" },
+    { "code_insee": "40192", "name": "Mont-de-Marsan" },
+    { "code_insee": "23096", "name": "Guéret" },
+    { "code_insee": "62041", "name": "Arras" },
+    { "code_insee": "11266", "name": "Port-la-Nouvelle" }
+  ],
+  "scenarios": [
+    {
+      "id": "start",
+      "label": "Start view: habitable, sunny, leaning left",
+      "expect": "Moderate. The criteria pull in different directions (the sunny south is the least habitable).",
+      "criteria": [
+        { "name": "habitabilite_2050", "dir": "up", "weight": 4 },
+        { "name": "climat_soleil_kwh", "dir": "up", "weight": 1 },
+        { "name": "gd_indice", "dir": "down", "weight": 3 }
+      ]
+    },
+    {
+      "id": "sunny",
+      "label": "Sunshine alone",
+      "expect": "Easy. The sunniest communes should score close to 1 under either method.",
+      "criteria": [
+        { "name": "climat_soleil_kwh", "dir": "up", "weight": 3 }
+      ]
+    },
+    {
+      "id": "culture",
+      "label": "Culture alone",
+      "expect": "Easy for big cities. Under rank, countryside communes still reach the middle; under absolute scoring they should score low.",
+      "criteria": [
+        { "name": "culture_score", "dir": "up", "weight": 3 }
+      ]
+    },
+    {
+      "id": "hab_culture",
+      "label": "Habitable and cultured",
+      "expect": "Achievable: northern cities with good reach. Absolute scoring should agree on who is on top.",
+      "criteria": [
+        { "name": "habitabilite_2050", "dir": "up", "weight": 3 },
+        { "name": "cult_scene", "dir": "up", "weight": 3 },
+        { "name": "cult_musee", "dir": "up", "weight": 2 }
+      ]
+    },
+    {
+      "id": "hab_culture_cheap",
+      "label": "Habitable, cultured and cheap",
+      "expect": "Conflicting: culture comes with high prices. The best score should fall clearly under absolute scoring.",
+      "criteria": [
+        { "name": "habitabilite_2050", "dir": "up", "weight": 3 },
+        { "name": "cult_scene", "dir": "up", "weight": 3 },
+        { "name": "prix_m2", "dir": "down", "weight": 3 }
+      ]
+    },
+    {
+      "id": "culture_quiet",
+      "label": "Lots of culture, low density",
+      "expect": "Nearly contradictory. Rank scoring will still find someone near the top; absolute scoring should not.",
+      "criteria": [
+        { "name": "cult_scene", "dir": "up", "weight": 3 },
+        { "name": "cult_festival", "dir": "up", "weight": 2 },
+        { "name": "densite_hab_km2", "dir": "down", "weight": 3 }
+      ]
+    }
+  ]
+}

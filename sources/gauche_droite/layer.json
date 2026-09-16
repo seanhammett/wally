@@ -12,7 +12,7 @@
       "no_data_color": "#e5e7eb"
     },
     "fields": [
-      { "name": "gd_indice", "type": "numeric", "unit": "/ 10", "label": "Left–right index, 0 far left – 10 far right, mean of three elections (small communes shrunk toward their department)" },
+      { "name": "gd_indice", "type": "numeric", "unit": "/ 10", "abs": [0, 10], "label": "Left–right index, 0 far left – 10 far right, mean of three elections (small communes shrunk toward their department)" },
       { "name": "gd_indice_brut", "type": "numeric", "unit": "/ 10", "label": "Left–right index, three elections, the commune's own votes only" },
       { "name": "gd_pres22", "type": "numeric", "unit": "/ 10", "label": "Presidential 2022, first round, on its own" },
       { "name": "gd_euro24", "type": "numeric", "unit": "/ 10", "label": "European 2024, on its own" },

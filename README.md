@@ -81,12 +81,24 @@ other sources' outputs, following the method Projet Celsius published for its
 own map (their note, not their data): 11 indicators in six equally weighted
 categories — heat, fire, drought and clay, floods, coast, lack of services —
 each turned into a 0–100 exposure, and the score is 100 minus the average of
-the six. Continuous indicators are positions among communes ("more exposed than
-X% of them"); register counts and the clay class are scaled linearly. Every
-indicator, scale and direction is declared in its `source.yaml`.
+the six. Every indicator, scale and direction is declared in its `source.yaml`.
 
-Every build prints Celsius's worked example next to Wally's: for Mont-de-Marsan
-the heat, drought and flood indicators land within a point or two of theirs.
+Celsius scores its continuous indicators as positions among communes ("more
+exposed than X% of them"). Wally's published score, `habitabilite_2050`, scores
+each on its own scale instead, so a commune's score does not depend on the rest
+of France. Open-ended indicators rise on a saturating curve that is half
+exposed at a declared value — 20 tropical nights, 5 days at 35 °C, 2 large fires
+per 1,000 km² per decade — and approaches full exposure beyond; the services
+basket, register counts and the clay class are scaled linearly. The median
+commune scores 63, the Aude and Roussillon coast about 25, inland Normandy,
+Picardy and Artois about 91. The positional score is kept, for comparison with
+Celsius, as `habitabilite_2050_pos` (a folded layer); the two rank communes
+almost alike (rank correlation 0.95), and Mont-de-Marsan scores 73 on the
+published score against 63 on the positional one.
+
+Every build prints Celsius's worked example next to Wally's positional
+indicators: for Mont-de-Marsan the heat, drought and flood indicators land
+within a point or two of theirs.
 Fire follows the model Celsius adopted in September 2026, rebuilt in
 `sources/feux_modele/`: a Poisson regression that predicts fires of 10 ha or
 more per commune. Its inputs are the large-fire record of communes within 20 km
@@ -104,8 +116,9 @@ from the 35th to the 13th, the same direction as Celsius's own revision.
 Mont-de-Marsan rises from 26 to 61, still short of Celsius's 82: few large fires
 have started within 20 km of it. Services are the other deliberate difference:
 they use Wally's everyday-services basket rather than facilities per 1,000
-residents. Read the score as where, not how much, and note that a quarter of it
-rests on administrative flood and coastal registers.
+residents. The curves' half-exposure values are a judgement, tuned by eye
+against the data, and a quarter of the score rests on administrative flood and
+coastal registers.
 
 ## The left–right index
 
@@ -161,12 +174,20 @@ Heritage, cinemas, libraries and bookshops are left out for now.
 
 Every venue counts for the communes around it: fully on the spot, half at
 15 km, a quarter at 30 km, nothing beyond 45 km, in straight lines. Each score is
-the share of communes with less within reach; beside it is the distance to the
-nearest major venue of that kind. The build logs a few reference towns: Avignon
-and Aix sit at 97–99 on festivals, Arles at 81 on the stage and 93 on festivals,
-Mont-de-Marsan at 54, 15 and 15. The labels follow public subsidy, so private
-halls, clubs and galleries are missing, and a well-funded scène nationale in a
-mid-sized town counts for more than a lively private scene.
+0–100 on a fixed, saturating scale: `100 × (1 − e^(−reach / (anchor / 3)))`,
+which reaches 95 at a per-category `anchor` in `source.yaml`, roughly a regional
+capital's reach, and flattens beyond it. Beside each score is the distance to
+the nearest major venue of that kind. The build logs a few reference towns:
+Avignon and Aix score 98–99 on festivals, Arles 53 on the stage and 84 on
+festivals, Mont-de-Marsan 31, 25 and 27. The labels follow public subsidy, so
+private halls, clubs and galleries are missing, and a well-funded scène
+nationale in a mid-sized town counts for more than a lively private scene.
+
+The scores used to be positions among communes, which hid how much: Paris and
+Lyon both scored about 99, although Paris reaches five times as much, and
+Mont-de-Marsan scored 54 on the stage with almost exactly the median commune's
+reach. A log scale was tried as well; it left the countryside around 50 and tied
+2–3% of communes at 100, so the saturating one was kept.
 
 ## Tourism, and the one thing it cannot tell you
 
@@ -286,17 +307,46 @@ so a correlation is a link someone else can open.
 "Find matching areas" turns the same columns into a shortlist. Add the
 statistics that matter; for each, say whether more or less is better, give it a
 weight from 1 to 5, and optionally a ramp — the value that is unacceptable and
-the value that is ideal. With no ramp a commune scores its percentile rank in the
-chosen direction; with one it scores 0 at the unacceptable end, 1 at the ideal
-end, and a straight line between.
+the value that is ideal. With a ramp a statistic scores 0 at the unacceptable
+end, 1 at the ideal end, and a straight line between. With no ramp it scores on
+its own scale (below).
 
 The scores are combined as a weighted geometric mean — multiplied, not averaged
 — so a commune at the unacceptable end of any one ramp is ruled out however well
-it does on the rest, and a commune missing any of the chosen statistics is left
-unscored rather than guessed at. The map shades the communes that pass by rank
-(top 1%, 5%, 10%, 25%, 50%, the rest), the panel lists the top ten (click to fly
-there), and clicking a commune shows each value, the score it earned, and its
-overall rank. The criteria live in the URL like the correlation does.
+it does on the rest, each criterion added makes a high score harder to reach,
+and a commune missing any of the chosen statistics is left unscored rather than
+guessed at. The map shades each commune by its score on a fixed 0–1 ramp, with
+the legend cut off at the best score reached and a summary that says when
+nothing reaches 0.5, so a pale map means there is no good match. The panel lists
+the top ten (click to fly there), and clicking a commune shows each value, the
+score it earned, and its rank. The criteria live in the URL like the
+correlation does.
+
+### Absolute and rank scoring
+
+**Absolute**, the default, scores a statistic without a ramp on its own scale:
+the natural range a field declares with `"abs": [lo, hi]` in its `layer.json`
+(0–100 for a score, 0–10 for the left–right index, 0–20 for the services
+basket), or, where it declares none, a line between its 1st and 99th
+percentile values. That line is drawn on a log scale when the column is heavily
+skewed (upper tail more than three times the lower, no negatives: density,
+prices, population, fire rates), since a straight one would put nearly every
+commune at the cheap or sparse end. A field published as a position can point at
+the same thing on an absolute scale with `"abs_column"`; none needs to now,
+since the habitability and culture scores are published on absolute scales.
+
+**Rank**, the original method, scores a statistic without a ramp by its
+percentile among communes instead, and shades the map by rank class (top 1%,
+5%, 10%, 25%, 50%, the rest). Percentiles spread every statistic evenly from 0
+to 1, so some commune always scores near 1 even when nothing fits well. A link
+ending in `/rank` opens in Rank; any other opens in Absolute.
+
+`make scoring-report` runs the criteria sets in `pipeline/scoring_scenarios.json`
+through both methods, using `site/optimise.js` itself. For each method it prints
+the best and typical scores, the top ten, how far the top 100 overlap, and
+reference towns. It also sets the culture scores beside the positions they
+replaced, and the published habitability score beside the positional one.
+`make test` runs the optimiser's unit tests.
 
 ## How it fits together
 
@@ -347,6 +397,12 @@ Create `sources/<id>/` with four files:
 | `fetch.py` | `def fetch(ctx, force=False)` — downloads into `data/raw/<id>/`, or prints instructions for a manual source |
 | `transform.py` | `def transform(ctx)` — reads raw, writes `ctx.out_path` |
 | `layer.json` | how to draw it: type, colour scale, breaks, legend note, declared fields |
+
+`"detail": true` on a layer folds it away under its group's **Show N more**
+link: still listed, just not by default. It is set on the indicators behind the
+habitability score (grouped under it), secondary cuts of a statistic and the
+point layers behind a score. A detail layer that is switched on, from the
+list or a link, stays in view.
 
 `"panel": false` on a layer keeps it out of the layer list without removing
 anything: its fields still show in the inspect panel, its stats still feed the

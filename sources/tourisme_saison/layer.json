@@ -3,6 +3,7 @@
     "id": "part_lits_saisonniers",
     "label": "Bookable beds that shut out of season",
     "group": "Tourism",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "part_lits_saisonniers",
@@ -22,6 +23,7 @@
     "id": "saison_hotel_ete",
     "label": "Summer season (department)",
     "group": "Tourism",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "saison_hotel_ete",
@@ -42,6 +44,7 @@
     "id": "saison_hotel_hiver",
     "label": "Winter season (department)",
     "group": "Tourism",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "saison_hotel_hiver",

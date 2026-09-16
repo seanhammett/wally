@@ -2,7 +2,8 @@
   {
     "id": "fire_risk_2050",
     "label": "Wildfire risk at +2.7 °C (model of large fires)",
-    "group": "Hazards",
+    "group": "Habitability 2050",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "feux_risque_2050",

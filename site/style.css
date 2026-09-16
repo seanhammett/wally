@@ -111,6 +111,18 @@ body.reordering { cursor: grabbing; user-select: none; }
   position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap;
   font-size: 9px; color: var(--muted); font-variant-numeric: tabular-nums;
 }
+/* A continuous scale: one gradient, washed out past the best value reached. */
+.act-gradient { position: relative; display: block; }
+.act-past {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(45deg, rgba(255, 255, 255, .82) 0 3px, rgba(255, 255, 255, .6) 3px 6px);
+  border-left: 2px solid var(--fg);
+}
+.act-maxrow { position: relative; height: 12px; margin-bottom: 1px; }
+.act-max {
+  position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap;
+  font-size: 9px; font-weight: 600; color: var(--fg); font-variant-numeric: tabular-nums;
+}
 .act-more { font-size: 9.5px; color: var(--muted); margin-top: 3px; }
 .act-keys { display: flex; flex-direction: column; gap: 2px; margin: 5px 0 3px; }
 .act-key { display: flex; align-items: center; gap: 5px; font-size: 10px; min-width: 0; }
@@ -215,6 +227,7 @@ body.reordering { cursor: grabbing; user-select: none; }
 }
 .opt-num:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
 .opt-arrow { color: var(--muted); font-size: 11px; flex: none; }
+.opt-scoring-row { margin-bottom: 8px; }
 .opt-note { font-size: 10px; color: var(--muted); line-height: 1.4; margin: 2px 0 0; }
 
 #opt-top { list-style: none; margin: 6px 0 0; padding: 0; }
@@ -241,6 +254,13 @@ body.reordering { cursor: grabbing; user-select: none; }
 .group > h3 { font-size: 12px; margin: 0 0 6px; font-weight: 600; }
 .layer { padding: 6px 0 8px; border-bottom: 1px dotted var(--line); }
 .layer:last-child { border-bottom: none; }
+/* Detail layers fold away until their group is opened; one switched on stays. */
+.group:not(.open) .layer.detail:not(.on) { display: none; }
+.more-toggle {
+  margin-top: 4px; padding: 2px 0; border: 0; background: none; cursor: pointer;
+  font-size: 11px; color: var(--accent);
+}
+.more-toggle:hover, .more-toggle:focus-visible { text-decoration: underline; }
 .layer .row { display: flex; align-items: center; gap: 8px; }
 .layer label { font-size: 12.5px; cursor: pointer; flex: 1; line-height: 1.3; }
 .layer input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; }
@@ -248,8 +268,18 @@ body.reordering { cursor: grabbing; user-select: none; }
   font-size: 9px; text-transform: uppercase; letter-spacing: .05em;
   color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 1px 4px;
 }
-.layer .note { font-size: 10.5px; color: var(--muted); margin: 4px 0 0; line-height: 1.45; display: none; }
+.layer .note { font-size: 10.5px; color: var(--muted); margin: 3px 0 0 21px; line-height: 1.45; display: none; }
+.layer .note p { margin: 3px 0 0; }
 .layer.on .note { display: block; }
+
+/* A one-line "Show …" link over notes and sources. */
+.fold > summary {
+  list-style: none; cursor: pointer; width: max-content;
+  font-size: 10.5px; color: var(--accent);
+}
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary:hover, .fold > summary:focus-visible { text-decoration: underline; outline: none; }
+#attribution-fold #attribution { margin-top: 3px; }
 .layer.on label { font-weight: 600; }
 
 /* -------------------------------------------------------------- legend */
@@ -259,7 +289,6 @@ body.reordering { cursor: grabbing; user-select: none; }
 .sw { display: flex; align-items: center; gap: 7px; font-size: 11px; }
 .sw i { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,.18); flex: none; }
 .sw.dot i { border-radius: 50%; width: 11px; height: 11px; }
-.legend-src { font-size: 10px; color: var(--muted); margin-top: 4px; }
 
 /* ------------------------------------------------------------- inspect */
 #inspect {

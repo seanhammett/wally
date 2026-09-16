@@ -3,6 +3,7 @@
     "id": "rail_projets",
     "label": "Rail under construction & proposed",
     "group": "Transport",
+    "detail": true,
     "type": "line",
     "paint": {
       "property": "statut",

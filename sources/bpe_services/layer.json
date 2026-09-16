@@ -12,10 +12,10 @@
       "no_data_color": "#e5e7eb"
     },
     "fields": [
-      { "name": "serv_panier", "type": "numeric", "unit": "of 20", "label": "Everyday services present" },
-      { "name": "serv_sante", "type": "numeric", "unit": "of 5", "label": "Health services (GP, pharmacy, nurse, dentist, physio)" },
-      { "name": "serv_ecole", "type": "numeric", "unit": "of 3", "label": "Schools (nursery, primary, lower secondary)" },
-      { "name": "serv_public", "type": "numeric", "unit": "of 4", "label": "Public services (post, bank, town hall, France Services)" },
+      { "name": "serv_panier", "type": "numeric", "unit": "of 20", "abs": [0, 20], "label": "Everyday services present" },
+      { "name": "serv_sante", "type": "numeric", "unit": "of 5", "abs": [0, 5], "label": "Health services (GP, pharmacy, nurse, dentist, physio)" },
+      { "name": "serv_ecole", "type": "numeric", "unit": "of 3", "abs": [0, 3], "label": "Schools (nursery, primary, lower secondary)" },
+      { "name": "serv_public", "type": "numeric", "unit": "of 4", "abs": [0, 4], "label": "Public services (post, bank, town hall, France Services)" },
       { "name": "serv_generalistes", "type": "numeric", "unit": "GPs", "label": "General practitioners" }
     ],
     "default_visible": false,
@@ -51,6 +51,7 @@
     "id": "health_access",
     "label": "Health services present (0–5)",
     "group": "Population & access",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "serv_sante",
@@ -60,7 +61,7 @@
       "no_data_color": "#e5e7eb"
     },
     "fields": [
-      { "name": "serv_sante", "type": "numeric", "unit": "of 5", "label": "Health services present" },
+      { "name": "serv_sante", "type": "numeric", "unit": "of 5", "abs": [0, 5], "label": "Health services present" },
       { "name": "serv_generalistes", "type": "numeric", "unit": "GPs", "label": "General practitioners" }
     ],
     "default_visible": false,

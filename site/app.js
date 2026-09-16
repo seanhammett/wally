@@ -48,6 +48,7 @@ const state = {
   },
   opt: {
     criteria: [],        // { name, dir: 'up'|'down', weight: 1–5, bad, ideal }, in panel order
+    scoring: 'abs',      // 'abs' (each statistic on its natural scale) | 'rank' (percentile when no ramp)
     result: null,        // Optimise.combine output plus the per-criterion desirabilities
     busy: false,
     error: null,
@@ -82,6 +83,11 @@ function colorExpression(paint) {
     paint.breaks.forEach((b, i) => step.push(b, paint.colors[i + 1]));
     return ['case', ['==', ['typeof', value], 'number'], step, noData];
   }
+  if (paint.scale === 'continuous') {
+    const ramp = ['interpolate', ['linear'], ['to-number', value]];
+    paint.stops.forEach(([at, color]) => ramp.push(at, color));
+    return ['case', ['==', ['typeof', value], 'number'], ramp, noData];
+  }
   // ordinal and categorical are both a match on the raw value
   const match = ['match', ['to-string', value]];
   paint.stops.forEach(([value_, color]) => match.push(String(value_), color));
@@ -89,7 +95,16 @@ function colorExpression(paint) {
   return match;
 }
 
+// A paint block with a `no_data_label` names its no-data colour as one more
+// entry — for a layer that paints the communes it has no value for rather than
+// leaving them see-through.
 function legendEntries(paint) {
+  const entries = scaleEntries(paint);
+  if (paint.no_data_label) entries.push({ color: paint.no_data_color, label: paint.no_data_label });
+  return entries;
+}
+
+function scaleEntries(paint) {
   if (paint.scale === 'numeric') {
     const fmt = (n) => (n >= 10000 ? n.toLocaleString('en') : String(n));
     return paint.colors.map((color, i) => {
@@ -98,6 +113,17 @@ function legendEntries(paint) {
       const label = lo === null ? `< ${fmt(hi)}` : hi === null ? `≥ ${fmt(lo)}` : `${fmt(lo)} – ${fmt(hi)}`;
       return { color, label };
     });
+  }
+  if (paint.scale === 'continuous') {
+    // The stops past the best value reached are not on the map, so they are not
+    // in the legend either; the best value itself closes it.
+    const max = Number.isFinite(paint.max) ? paint.max : Infinity;
+    const shown = paint.stops.filter(([at]) => at < max)
+      .map(([at, color]) => ({ color, label: shortNumber(at, decimalsIn(paint.stops.map(([v]) => v))) }));
+    if (Number.isFinite(paint.max)) {
+      shown.push({ color: continuousColor(paint.stops, paint.max), label: `${shortNumber(paint.max, 2)} — best reached` });
+    }
+    return shown;
   }
   if (paint.stops) return paint.stops.map(([value, color, label]) => ({ color, label: label || String(value) }));
   return [{ color: paint.color || '#3b82f6', label: paint.legend_label || 'shown' }];
@@ -562,7 +588,7 @@ function numericScale(paint, unit) {
 // labelled swatches; a long list (the municipal nuances run past twenty) is
 // shown as the bare colour bar with a pointer to the legend.
 function classScale(entries) {
-  if (entries.length > 6) {
+  if (entries.length > 7) {
     const wrap = el('div', 'act-scale');
     wrap.append(colorBar(entries.map((e) => e.color)),
                 el('div', 'act-more', `${entries.length} categories — see legend`));
@@ -580,8 +606,57 @@ function classScale(entries) {
   return list;
 }
 
+// The colour a continuous scale gives one value, for the legend's closing
+// swatch: the same linear interpolation MapLibre does, in sRGB.
+function continuousColor(stops, v) {
+  const hex = (c) => [1, 3, 5].map((k) => parseInt(c.slice(k, k + 2), 16));
+  let k = 0;
+  while (k < stops.length - 2 && v > stops[k + 1][0]) k++;
+  const [a, ca] = stops[k], [b, cb] = stops[k + 1];
+  const t = Math.min(1, Math.max(0, (v - a) / (b - a)));
+  const [x, y] = [hex(ca), hex(cb)];
+  return `#${x.map((c, i) => Math.round(c + (y[i] - c) * t).toString(16).padStart(2, '0')).join('')}`;
+}
+
+// A continuous scale is one gradient bar over the whole range. Past the best
+// value reached, the bar is washed out and a marker names the best, so a run
+// whose best is 0.45 visibly never gets near the dark end.
+function continuousScale(paint, unit) {
+  const wrap = el('div', 'act-scale');
+  if (unit) wrap.appendChild(el('div', 'act-unit', unit));
+  const [lo, hi] = [paint.stops[0][0], paint.stops[paint.stops.length - 1][0]];
+  const at = (v) => ((v - lo) / (hi - lo)) * 100;
+  const bar = el('div', 'act-bar act-gradient');
+  bar.style.background = `linear-gradient(to right, ${paint.stops.map(([v, c]) => `${c} ${at(v)}%`).join(', ')})`;
+  const ticks = el('div', 'act-ticks');
+  const decimals = decimalsIn(paint.stops.map(([v]) => v));
+  for (const [v] of paint.stops) {
+    const tick = el('span', 'tick', shortNumber(v, decimals));
+    tick.style.left = `${at(v)}%`;
+    ticks.appendChild(tick);
+  }
+  if (Number.isFinite(paint.max)) {
+    const past = el('i', 'act-past');
+    past.style.left = `${at(paint.max)}%`;
+    bar.appendChild(past);
+    const mark = el('span', 'act-max', `best ${shortNumber(paint.max, 2)}`);
+    mark.style.left = `${at(paint.max)}%`;
+    const head = el('div', 'act-maxrow');
+    head.appendChild(mark);
+    wrap.appendChild(head);
+  }
+  wrap.append(bar, ticks);
+  if (paint.no_data_label) {
+    const key = el('span', 'act-key');
+    key.append(swatch(paint.no_data_color), el('span', 'act-key-label', paint.no_data_label));
+    wrap.appendChild(key);
+  }
+  return wrap;
+}
+
 function scaleBlock(layer) {
   const paint = layer.paint || {};
+  if (paint.scale === 'continuous' && paint.stops) return continuousScale(paint, unitOf(layer));
   if (paint.scale === 'numeric' && paint.breaks && paint.colors) return numericScale(paint, unitOf(layer));
   return classScale(legendEntries(paint));
 }
@@ -744,16 +819,21 @@ function buildPanel(map) {
     groups.get(layer.group).push(layer);
   }
 
-  for (const [name, layers] of groups) {
-    if (layers.every((l) => l.panel === false)) continue;
+  for (const [name, all] of groups) {
+    // Not listed: the computed layers, whose tools own their switch, and data
+    // layers retired from the list. A hidden data layer still reports in the
+    // inspect panel, feeds the stat tools, and turns on from a shared link.
+    const listed = all.filter((l) => l.panel !== false);
+    if (!listed.length) continue;
+    // `detail` layers are listed after the rest and folded away until the group
+    // is opened; one that is switched on shows either way.
+    const isTop = name === top.label;
+    const detail = isTop ? [] : listed.filter((l) => l.detail);
+    const layers = isTop ? listed : listed.filter((l) => !l.detail).concat(detail);
     const block = el('div', 'group');
     block.appendChild(el('h3', null, name));
     for (const layer of layers) {
-      // Not listed: the computed layers, whose tools own their switch, and data
-      // layers retired from the list. A hidden data layer still reports in the
-      // inspect panel, feeds the stat tools, and turns on from a shared link.
-      if (layer.panel === false) continue;
-      const item = el('div', 'layer');
+      const item = el('div', layer.detail && !isTop ? 'layer detail' : 'layer');
       item.dataset.id = layer.id;
 
       const row = el('div', 'row');
@@ -767,14 +847,47 @@ function buildPanel(map) {
       label.htmlFor = box.id;
       row.append(box, label, el('span', 'badge', layer.type === 'choropleth' ? 'commune' : layer.type));
 
-      const note = el('p', 'note');
-      note.textContent = layer.legend_note || '';
-      item.append(row, note);
+      const about = [layer.legend_note, layer.attribution && `Source: ${layer.attribution}`].filter(Boolean);
+      item.appendChild(row);
+      if (about.length) item.appendChild(fold('notes & sources', about, 'note'));
       block.appendChild(item);
     }
+    if (detail.length) block.appendChild(moreToggle(block, name, detail.length));
     host.appendChild(block);
   }
   syncPanel();
+}
+
+// A one-line "Show …" link over text most people do not need every time. The
+// text is in the page either way; only its display is folded.
+function fold(what, paragraphs, cls) {
+  const details = el('details', `fold ${cls || ''}`.trim());
+  const summary = el('summary', null, `Show ${what}`);
+  details.appendChild(summary);
+  for (const text of paragraphs) details.appendChild(el('p', null, text));
+  details.addEventListener('toggle', () => {
+    summary.textContent = `${details.open ? 'Hide' : 'Show'} ${what}`;
+  });
+  return details;
+}
+
+// The fold at the foot of a group with detail layers. Whether it is open is a
+// preference of this browser, like the tool panels', not part of the link.
+function moreToggle(block, name, count) {
+  const key = `layers-more:${name}`;
+  const button = el('button', 'more-toggle');
+  button.type = 'button';
+  const setOpen = (open) => {
+    block.classList.toggle('open', open);
+    button.setAttribute('aria-expanded', String(open));
+    button.textContent = open ? 'Show fewer' : `Show ${count} more`;
+    try { localStorage.setItem(key, open ? '1' : '0'); } catch (err) { /* storage blocked */ }
+  };
+  let open = false;
+  try { open = localStorage.getItem(key) === '1'; } catch (err) { /* storage blocked */ }
+  setOpen(open);
+  button.addEventListener('click', () => setOpen(!block.classList.contains('open')));
+  return button;
 }
 
 function syncPanel() {
@@ -809,6 +922,7 @@ function renderLegend() {
   if (!shown.length) {
     host.appendChild(el('p', 'muted', 'No layers visible.'));
     $('#attribution').textContent = '';
+    $('#attribution-fold').hidden = true;
     return;
   }
   for (const layer of shown) {
@@ -823,11 +937,11 @@ function renderLegend() {
       sw.appendChild(row);
     }
     block.appendChild(sw);
-    block.appendChild(el('div', 'legend-src', layer.attribution));
     host.appendChild(block);
   }
   // Licence attribution for every visible layer, as Licence Ouverte requires.
-  $('#attribution').textContent = [...new Set(shown.map((l) => l.attribution))].join(' · ');
+  $('#attribution').textContent = [...new Set(shown.map((l) => l.attribution).filter(Boolean))].join(' · ');
+  $('#attribution-fold').hidden = !$('#attribution').textContent;
 }
 
 // --------------------------------------------------------------- inspect
@@ -2132,7 +2246,7 @@ const OPT_TOP_N = 10;
 
 // Plasma, best first. Used by no published layer, so a match map cannot be
 // mistaken for a data map; the lowest passing class is a pale wash, distinct
-// from the blank of a commune that is ruled out.
+// from the grey of a commune that is ruled out.
 const OPT_CLASSES = [
   { color: '#0d0887', label: 'Top 1%' },
   { color: '#7e03a8', label: 'Top 5%' },
@@ -2142,33 +2256,86 @@ const OPT_CLASSES = [
   { color: '#d8d0e6', label: 'Passes, lower half' },
 ];
 
+// The absolute mode's ramp, on the match score itself: one hue, light to dark,
+// ending on the rank classes' best colour. The pale end is meant to sink into
+// the basemap — a near-zero match should barely show.
+const OPT_RAMP = [
+  [0, '#eceaf8'],
+  [0.2, '#c3bdec'],
+  [0.4, '#978fdc'],
+  [0.6, '#6a5fc8'],
+  [0.8, '#4131a8'],
+  [1, '#0d0887'],
+];
+
+const OPT_SCORING = [
+  { id: 'abs', label: 'Absolute', title: 'Without a ramp, each statistic scores on its natural scale (0–100 for a score) or between its 1st and 99th percentile values, on a log scale when the column is heavily skewed. The map shades the score itself, so weak matches look weak.' },
+  { id: 'rank', label: 'Rank', title: 'Without a ramp, each statistic scores its percentile among communes, so some commune always looks excellent. The map shades by rank class.' },
+];
+const optAbs = () => state.opt.scoring === 'abs';
+
 const OPT_DIRS = [
   { id: 'up', label: 'More is better', title: 'Higher values score better' },
   { id: 'down', label: 'Less is better', title: 'Lower values score better' },
 ];
 
-const optimiserLayer = () => computedLayer({ id: OPT_ID, label: 'Best match', z: 13, paint: optPaintBlock() });
+const optimiserLayer = () => ({
+  ...computedLayer({ id: OPT_ID, label: 'Best match', z: 13, paint: optPaintBlock() }),
+  default_opacity: 1,                      // opaque, so no layer beneath shows through
+});
+
+// Communes the optimiser does not score — ruled out by a ramp, or missing a
+// statistic — are painted rather than left clear, so the layers beneath never
+// show through the match map. Grey, darker than the ramp's pale end, so a
+// ruled-out commune is not read as a weak match.
+const OPT_OUT_COLOR = '#b8b8b8';
+const OPT_OUT_LABEL = 'Ruled out or no data';
 
 function optPaintBlock() {
+  if (optAbs()) {
+    const r = state.opt.result;
+    return {
+      source: 'feature-state',
+      property: OPT_KEY,
+      scale: 'continuous',
+      stops: OPT_RAMP,
+      max: r && r.summary ? r.summary.best : NaN,
+      no_data_color: OPT_OUT_COLOR,
+      no_data_label: OPT_OUT_LABEL,
+      unit: 'match score',
+    };
+  }
   return {
     source: 'feature-state',
     property: OPT_KEY,
     scale: 'ordinal',
     stops: OPT_CLASSES.map((c, i) => [i, c.color, c.label]),
-    no_data_color: BLANK,
+    no_data_color: OPT_OUT_COLOR,
+    no_data_label: OPT_OUT_LABEL,
   };
 }
 
 const fmtNum = (n) => (Number.isFinite(n) ? Number(n.toPrecision(4)).toLocaleString('en') : '—');
 const fmtPct = (d) => `${Math.round(d * 100)}%`;
+const fmtScore = (d) => d.toFixed(2);
 const optNumber = (text) => (text === '' || text == null || !Number.isFinite(Number(text)) ? null : Number(text));
 
 function computeOptimiser() {
   const o = state.opt;
   const n = state.stats.index.codes.length;
   const parts = o.criteria.map((crit) => {
-    const col = state.stats.columns.get(crit.name);
-    const d = Optimise.desirability(col, crit);
+    let col = state.stats.columns.get(crit.name);
+    let d;
+    if (optAbs()) {
+      // A field published as a position points at the same thing on a natural
+      // scale; absolute mode reads that instead.
+      const via = optAbsColumn(crit.name);
+      const scored = via ? state.stats.columns.get(via) : col;
+      d = { ...Optimise.absoluteDesirability(scored, crit, statField(via || crit.name)), via };
+      col = scored;
+    } else {
+      d = Optimise.desirability(col, crit);
+    }
     // A ramp typed with both ends decides the direction; the chips follow it.
     if (d.ramp) crit.dir = d.ramp.dir;
     let present = 0;
@@ -2177,13 +2344,20 @@ function computeOptimiser() {
     return { ...d, present, p5: Correlate.quantile(sorted, 0.05), p95: Correlate.quantile(sorted, 0.95) };
   });
   const combined = Optimise.combine(parts.map((p) => p.values), o.criteria.map((c) => c.weight), n);
-  o.result = { ...combined, parts, names: optNames() };
+  o.result = { ...combined, parts, names: optNames(), scoring: o.scoring,
+               summary: Optimise.summarise(combined.score) };
+}
+
+// The column absolute mode reads for a criterion, when it is not the criterion's own.
+function optAbsColumn(name) {
+  const via = (statField(name) || {}).abs_column;
+  return via && statField(via) ? via : null;
 }
 
 // Which criteria a result was computed for. The cards redraw the moment one is
 // added or removed, before the recompute lands, and a result for a different
 // list must not be read against them.
-const optNames = () => state.opt.criteria.map((c) => c.name).join(',');
+const optNames = () => `${state.opt.scoring}:${state.opt.criteria.map((c) => c.name).join(',')}`;
 
 function optPaint() {
   const o = state.opt;
@@ -2194,14 +2368,22 @@ function optPaint() {
   layer.label = names.length > 2
     ? `Best match: ${names.slice(0, 2).join(' · ')} +${names.length - 2}`
     : `Best match: ${names.join(' · ')}`;
-  layer.legend_note = 'Communes ranked by a weighted geometric mean of how well each meets every criterion. '
-    + 'A commune at the unacceptable end of any ramp is ruled out and left blank, as is one missing any of the statistics.';
+  layer.legend_note = (optAbs()
+    ? 'Communes shaded by their match score, a weighted geometric mean of how well each meets every criterion on '
+      + 'its natural scale. The colours are fixed from 0 to 1, so a pale map means no commune fits well. '
+    : 'Communes ranked by a weighted geometric mean of how well each meets every criterion. ')
+    + 'A commune at the unacceptable end of any ramp is ruled out and shown grey, as is one missing any of the statistics.';
   layer.attribution = [...new Set(fields.map((f) => f.attribution).filter(Boolean))].join(' · ');
 }
 
 function paintOptimiser(map) {
   const r = state.opt.result;
-  paintFeatureState(map, OPT_ID, OPT_KEY, r ? Float64Array.from(r.cls, (c) => (c < 0 ? NaN : c)) : null);
+  // Switching between rank classes and the continuous ramp changes the colour
+  // expression itself, not just the values behind it.
+  if (map.getLayer(OPT_ID)) map.setPaintProperty(OPT_ID, 'fill-color', colorExpression(state.byId.get(OPT_ID).paint));
+  if (!r) paintFeatureState(map, OPT_ID, OPT_KEY, null);
+  else if (r.scoring === 'abs') paintFeatureState(map, OPT_ID, OPT_KEY, Float64Array.from(r.score, (s) => (s > 0 ? s : NaN)));
+  else paintFeatureState(map, OPT_ID, OPT_KEY, Float64Array.from(r.cls, (c) => (c < 0 ? NaN : c)));
 }
 
 async function runOptimiser(map, { show = true } = {}) {
@@ -2225,7 +2407,9 @@ async function runOptimiser(map, { show = true } = {}) {
   renderOptimiserResult(map);
   try {
     await loadStatIndex();
-    await Promise.all(o.criteria.map((c) => loadColumn(c.name)));
+    const names = o.criteria.map((c) => c.name);
+    if (optAbs()) names.push(...names.map(optAbsColumn).filter(Boolean));
+    await Promise.all(names.map((name) => loadColumn(name)));
   } catch (err) {
     if (token !== o.run) return;
     o.busy = false;
@@ -2262,6 +2446,14 @@ function renderOptimiser(map) {
     renderOptimiser(map);
     runOptimiser(map);
   }, { blank: '+ Add a statistic…', exclude: new Set(o.criteria.map((c) => c.name)) });
+
+  const scoring = $('#opt-scoring');
+  chipRow(scoring, OPT_SCORING, o.scoring, (id) => {
+    if (id === o.scoring) return;
+    o.scoring = id;
+    renderOptimiser(map);
+    runOptimiser(map);
+  });
 
   const host = $('#opt-criteria');
   host.innerHTML = '';
@@ -2370,17 +2562,35 @@ function renderOptimiserResult(map) {
     const part = r.parts[k];
     if (!card || !part) return;
     card.drawDir();
-    const note = part.ramp
-      ? `0 at ${fmtNum(part.ramp.bad)} → 1 at ${fmtNum(part.ramp.ideal)}${unit(crit)}.`
-      : 'No ramp: scored by percentile rank.';
+    const scale = part.via ? statField(part.via) : statField(crit.name);
+    const scaleUnit = scale.unit ? ` ${scale.unit}` : '';
+    const via = part.via ? `Read as ${shortLabel(scale.label)}: ` : '';
+    const ends = part.ramp ? `0 at ${fmtNum(part.ramp.bad)} → 1 at ${fmtNum(part.ramp.ideal)}${scaleUnit}` : '';
+    const note = {
+      ramp: `${ends}.`,
+      declared: `${via}${via ? 'its' : 'Its'} natural scale, ${ends}.`,
+      stretch: `No natural scale: ${ends}, the 1st to 99th percentile values.`,
+      log: `No natural scale, and heavily skewed: ${ends} on a log scale, the 1st to 99th percentile values.`,
+    }[part.basis] || (part.ramp ? `${ends}.` : 'No ramp: scored by percentile rank.');
     card.querySelector('.opt-note').textContent =
-      `${note} Most communes: ${fmtNum(part.p5)}–${fmtNum(part.p95)}${unit(crit)}.`;
+      `${note} Most communes: ${fmtNum(part.p5)}–${fmtNum(part.p95)}${scaleUnit}.`;
   });
 
   hint.hidden = true;
   summary.hidden = false;
   const total = state.stats.index.codes.length;
-  const lines = [`${r.passing.toLocaleString('en')} communes pass (${fmtPct(r.passing / total)}).`];
+  const lines = [];
+  if (r.scoring === 'abs') {
+    const [half, strong] = r.summary.above;
+    const count = (a) => `${a.count.toLocaleString('en')} ${a.count === 1 ? 'commune' : 'communes'}`;
+    if (r.summary.best < half.cut) {
+      lines.push(`No commune scores above ${half.cut}: the best match is ${fmtScore(r.summary.best)}.`);
+    } else {
+      lines.push(`Best match ${fmtScore(r.summary.best)}. ${count(strong)} at ${strong.cut} or more, `
+                 + `${count(half)} at ${half.cut} or more.`);
+    }
+  }
+  lines.push(`${r.passing.toLocaleString('en')} communes pass (${fmtPct(r.passing / total)}).`);
   if (r.excluded) lines.push(`${r.excluded.toLocaleString('en')} ruled out by a ramp.`);
   if (r.missing) {
     // Name the thinnest column: it is nearly always the one doing the excluding.
@@ -2407,7 +2617,7 @@ function renderOptimiserResult(map) {
     go.title = 'Zoom to this commune';
     go.append(el('span', 'opt-top-rank', `${r.rank[i] + 1}`),
               el('span', 'opt-top-name', `${index.names[i]} (${index.dep[i]})`),
-              el('span', 'opt-top-score', fmtPct(r.score[i])));
+              el('span', 'opt-top-score', r.scoring === 'abs' ? fmtScore(r.score[i]) : fmtPct(r.score[i])));
     go.addEventListener('click', () => {
       map.flyTo({ center: [index.lon[i], index.lat[i]], zoom: 10,
                   padding: { left: $('#panel').classList.contains('hidden') ? 0 : PANEL_W } });
@@ -2429,13 +2639,17 @@ function optInspectRows(code) {
     const f = statField(crit.name);
     const v = state.stats.columns.get(crit.name)[i];
     const d = r.parts[k].values[i];
-    return { k: shortLabel(f.label), v: Number.isFinite(v) ? `${formatValue(v, f)} → ${fmtPct(d)}` : 'no data' };
+    const via = r.parts[k].via;
+    const shown = via && Number.isFinite(v)
+      ? `${formatValue(v, f)} (${formatValue(state.stats.columns.get(via)[i], statField(via))} absolute)`
+      : formatValue(v, f);
+    return { k: shortLabel(f.label), v: Number.isFinite(v) ? `${shown} → ${fmtPct(d)}` : 'no data' };
   });
   const score = r.score[i];
   if (!Number.isFinite(score)) rows.push({ k: 'Match', v: 'Not scored — missing data' });
   else if (score <= 0) rows.push({ k: 'Match', v: 'Ruled out by a ramp' });
   else {
-    rows.push({ k: 'Match score', v: fmtPct(score) });
+    rows.push({ k: 'Match score', v: r.scoring === 'abs' ? `${fmtScore(score)} (best ${fmtScore(r.summary.best)})` : fmtPct(score) });
     rows.push({ k: 'Rank', v: `${(r.rank[i] + 1).toLocaleString('en')} of ${r.passing.toLocaleString('en')}` });
   }
   return rows;
@@ -2458,13 +2672,13 @@ function buildOptimiser(map) {
 }
 
 // ------------------------------------------------------------------ hash
-// #lat/lon/zoom/layer1,layer2/corr/opt — shareable and bookmarkable, and the only map
+// #lat/lon/zoom/layer1,layer2/corr/opt/scoring — shareable and bookmarkable, and the only map
 // state this app persists (the correlator's folded/unfolded panel is kept in
 // localStorage, as a preference of this browser rather than of the link).
 function readHash() {
   const raw = location.hash.replace(/^#/, '');
   if (!raw) return null;
-  const [lat, lon, zoom, layers, corr, opt] = raw.split('/');
+  const [lat, lon, zoom, layers, corr, opt, scoring] = raw.split('/');
   const view = (lat && lon && zoom)
     ? { center: [Number(lon), Number(lat)], zoom: Number(zoom) }
     : null;
@@ -2477,6 +2691,7 @@ function readHash() {
       const [name, dir, weight, bad, ideal] = part.split(':');
       return { name, dir, weight: Number(weight), bad: optNumber(bad), ideal: optNumber(ideal) };
     }),
+    scoring: scoring === 'rank' ? 'rank' : 'abs',  // absolute unless the link says rank
   };
 }
 
@@ -2493,6 +2708,7 @@ function startView(start) {
     layers: start.layers || null,
     corr: null,
     opt: (start.optimiser || []).map((c) => ({ bad: null, ideal: null, ...c })),
+    scoring: start.scoring === 'rank' ? 'rank' : 'abs',
   };
 }
 
@@ -2523,6 +2739,7 @@ function writeHash(map) {
     // Positional, so an optimiser with no correlation still leaves corr's slot.
     if (corr || opt) parts.push(corr);
     if (opt) parts.push(opt);
+    if (opt && state.opt.scoring === 'rank') parts.push('rank');
     history.replaceState(null, '', `#${parts.join('/')}`);
   }, 200);
 }
@@ -2625,6 +2842,7 @@ async function main() {
     }
   }
   if (hash && hash.opt.length && state.byId.has(OPT_ID)) {
+    state.opt.scoring = hash.scoring;
     const seen = new Set();
     state.opt.criteria = hash.opt.filter((c) => {
       if (!state.stats.byName.has(c.name) || seen.has(c.name)) return false;

@@ -75,6 +75,10 @@
           <select id="opt-add" aria-label="Add a statistic to the optimiser"></select>
           <button id="opt-clear" type="button" title="Remove every criterion">Clear</button>
         </div>
+        <div class="corr-row opt-scoring-row">
+          <span class="corr-lbl" title="How a statistic without a ramp is scored">Scoring</span>
+          <div class="chips" id="opt-scoring"></div>
+        </div>
         <div id="opt-criteria"></div>
         <p class="corr-note" id="opt-summary" hidden></p>
         <ol id="opt-top" hidden></ol>
@@ -93,7 +97,10 @@
     </section>
 
     <footer>
-      <div id="attribution" class="muted"></div>
+      <details class="fold" id="attribution-fold">
+        <summary>Show sources</summary>
+        <div id="attribution" class="muted"></div>
+      </details>
       <p class="muted built">Built <span id="built"></span> · <a href="https://github.com/" id="repo">source &amp; pipeline</a></p>
     </footer>
   </aside>

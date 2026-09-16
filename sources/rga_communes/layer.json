@@ -2,7 +2,8 @@
   {
     "id": "clay_residents",
     "label": "Residents on shrink–swell clay",
-    "group": "Hazards",
+    "group": "Habitability 2050",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "rga_part_moyen_fort",

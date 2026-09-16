@@ -38,6 +38,7 @@
     "id": "aerodromes_bruit",
     "label": "Aircraft noise zoning (PEB)",
     "group": "Transport",
+    "detail": true,
     "type": "point",
     "paint": {
       "property": "peb",

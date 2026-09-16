@@ -28,29 +28,39 @@ inputs:
 #   linear  value / max × 100, for ordinal and register-count indicators.
 # worse: lower flips the direction (a larger fall in low flow, fewer services).
 # derived: columns built in transform.py from GASPAR registers, each 0–3.
+#
+# For the published score, habitabilite_2050, every rank indicator also
+# declares a scale in its own units, used instead of its position (the
+# positional, Celsius-method score is kept as habitabilite_2050_pos):
+#   sat: [from, half]  saturating: 0 at `from`, 50 at `from + half`, 75 at
+#                      `from + 2 × half`, approaching 100 — for open-ended
+#                      indicators with no natural worst value. A negative half
+#                      is for `worse: lower`.
+#   abs: [lo, hi]      linear, clamped: 0 at lo, 100 at hi — for bounded ones.
+# Linear indicators already are absolute and are used as they are.
 categories:
   - id: chaleur
     label: Heat
     indicators:
-      - { source: drias_chaleur, column: nuits_tropicales_2050, scale: rank }
-      - { source: drias_chaleur, column: jours_35c_2050, scale: rank }
+      - { source: drias_chaleur, column: nuits_tropicales_2050, scale: rank, sat: [0, 20] }     # half exposed at 20 nights above 20 °C
+      - { source: drias_chaleur, column: jours_35c_2050, scale: rank, sat: [0, 5] }             # half exposed at 5 days; national p99 is 14
   - id: feux
     label: Wildfire
     # Expected ≥ 10 ha fires at +2.7 °C from the model calibrated on BDIFF fires.
     indicators:
-      - { source: feux_modele, column: feux_risque_2050, scale: rank }
+      - { source: feux_modele, column: feux_risque_2050, scale: rank, sat: [0.5, 1.5] }       # fires / 1,000 km² / decade; below 0.5 is background
   - id: secheresse
     label: Drought and clay
     indicators:
-      - { source: drias_chaleur, column: sol_sec_2050, scale: rank }
-      - { source: explore2_etiage, column: etiage_27_pct, scale: rank, worse: lower }
-      - { source: explore2_etiage, column: etiage_duree_27, scale: rank }
+      - { source: drias_chaleur, column: sol_sec_2050, scale: rank, sat: [60, 60] }            # dry-soil days beyond two months
+      - { source: explore2_etiage, column: etiage_27_pct, scale: rank, worse: lower, sat: [0, -15] }   # % fall in summer low flow
+      - { source: explore2_etiage, column: etiage_duree_27, scale: rank, sat: [0, 10] }        # days longer
       - { source: rga_communes, column: rga_indice, scale: linear, max: 3 }
   - id: inondations
     label: Floods
     indicators:
       - { derived: inond_terrain, scale: linear, max: 3 }
-      - { source: explore2_crues, column: crues_27_pct, scale: rank }
+      - { source: explore2_crues, column: crues_27_pct, scale: rank, sat: [0, 15] }            # % rise in the yearly flood peak
   - id: littoral
     label: Coast
     indicators:
@@ -58,12 +68,13 @@ categories:
   - id: services
     label: Few services
     indicators:
-      - { source: bpe_services, column: serv_panier, scale: rank, worse: lower }
+      - { source: bpe_services, column: serv_panier, scale: rank, worse: lower, abs: [20, 0] }   # services of 20, bounded: linear
 
 # Heat is the category every commune with climate data has. Without it there is
 # no score: a score from the remaining registers alone would say very little.
 required_category: chaleur
-# A category is flagged in hab_alertes when any of its indicators reaches this.
+# A category is flagged in hab_alertes when any of its indicators reaches this
+# position, i.e. is among the 10% most exposed communes.
 alert_at: 90
 
 # Projet Celsius's worked example (methodology note, section 4), logged next to

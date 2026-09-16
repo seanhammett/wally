@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -31,7 +32,7 @@ from pipeline.common import (
 
 COMMUNE_GEOMETRY_SOURCE = "communes"
 VALUE_TYPES = {"numeric", "ordinal", "categorical"}
-SCALE_TYPES = {"numeric", "ordinal", "categorical", "none"}
+SCALE_TYPES = {"numeric", "continuous", "ordinal", "categorical", "none"}
 
 
 class Report:
@@ -284,6 +285,17 @@ def validate_layers(source: Source, report: Report) -> None:
                     f"layer '{layer.get('id')}' has {len(paint['breaks'])} breaks but "
                     f"{len(paint['colors'])} colors; expected {len(paint['breaks']) + 1}",
                 )
+        if scale == "continuous":
+            # [value, "#rrggbb"] pairs in rising order, interpolated between.
+            stops = paint.get("stops") or []
+            values = [st[0] for st in stops if isinstance(st, list) and len(st) >= 2]
+            colors = [st[1] for st in stops if isinstance(st, list) and len(st) >= 2]
+            if len(stops) < 2 or len(values) != len(stops):
+                report.error(source.id, f"layer '{layer.get('id')}' continuous scale needs two or more [value, color] stops")
+            elif any(b <= a for a, b in zip(values, values[1:])):
+                report.error(source.id, f"layer '{layer.get('id')}' continuous stops must rise strictly")
+            elif not all(isinstance(c, str) and re.fullmatch(r"#[0-9a-fA-F]{6}", c) for c in colors):
+                report.error(source.id, f"layer '{layer.get('id')}' continuous stop colors must be #rrggbb")
         if scale in {"ordinal", "categorical"} and not paint.get("stops"):
             report.error(source.id, f"layer '{layer.get('id')}' {scale} scale needs stops")
         if layer.get("ranked") and not (layer.get("uncertainty_note") or layer.get("class_band")):

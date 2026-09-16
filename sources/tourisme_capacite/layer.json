@@ -24,6 +24,7 @@
     "id": "lits_touristiques",
     "label": "Tourist beds, total",
     "group": "Tourism",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "lits_touristiques",

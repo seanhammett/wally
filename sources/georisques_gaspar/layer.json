@@ -66,7 +66,8 @@
   {
     "id": "flood_ppr",
     "label": "Flood prevention plan (PPRI) status",
-    "group": "Hazards",
+    "group": "Habitability 2050",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "inond_ppr",
@@ -116,7 +117,8 @@
   {
     "id": "coastal_risk",
     "label": "Coastal hazard (submersion, retreating shoreline)",
-    "group": "Hazards",
+    "group": "Habitability 2050",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "littoral_alea",

@@ -58,6 +58,7 @@
     "id": "property_price_house",
     "label": "Price of a house",
     "group": "Income & property",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "prix_maison_median",

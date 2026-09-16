@@ -26,6 +26,7 @@
     "id": "age_65_plus",
     "label": "Share aged 65 and over",
     "group": "Population & access",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "part_65_plus",
@@ -47,6 +48,7 @@
     "id": "age_ratio",
     "label": "Ageing ratio (65+ per 100 under-20s)",
     "group": "Population & access",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "indice_vieillissement",

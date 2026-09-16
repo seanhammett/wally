@@ -3,6 +3,7 @@
     "id": "fire_area",
     "label": "Forest area burned (2016–2025)",
     "group": "Hazards",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "incendies_ha",
@@ -53,6 +54,7 @@
     "id": "fire_count",
     "label": "Number of forest fires (2016–2025)",
     "group": "Hazards",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "incendies_nb",

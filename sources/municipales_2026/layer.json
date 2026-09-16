@@ -3,6 +3,7 @@
     "id": "muni26_turnout",
     "label": "Municipal 2026 — turnout",
     "group": "Elections",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "muni26_participation_t1_pct",
@@ -56,6 +57,7 @@
     "id": "muni26_competition",
     "label": "Municipal 2026 — lists standing",
     "group": "Elections",
+    "detail": true,
     "type": "choropleth",
     "paint": {
       "property": "muni26_nb_listes",
