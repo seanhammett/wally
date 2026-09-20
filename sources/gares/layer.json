@@ -19,6 +19,9 @@
     },
     "fields": [
       { "name": "nom", "type": "categorical", "unit": "", "label": "Station" },
+      { "name": "trains_jour", "type": "numeric", "unit": "/day", "label": "Trains leaving a day" },
+      { "name": "destinations", "type": "numeric", "unit": "stations", "label": "Reached without changing" },
+      { "name": "services", "type": "categorical", "unit": "", "label": "Services calling" },
       { "name": "voyageurs", "type": "numeric", "unit": "passengers/yr", "label": "Passengers in 2024" },
       { "name": "voyageurs_2019", "type": "numeric", "unit": "passengers/yr", "label": "Passengers in 2019 (pre-Covid)" },
       { "name": "tendance_pct", "type": "numeric", "unit": "%", "label": "Change since 2019" },
@@ -27,6 +30,6 @@
     ],
     "default_visible": false,
     "default_opacity": 0.9,
-    "legend_note": "Circles are sized and coloured by annual passengers, because that is what separates a station you could commute from and a concrete platform served twice a day. The 50 busiest stations carry more passengers than the other 2,700 combined. Click one for its 2019 figure too: a station well below its pre-Covid count is a line losing its service. Grey means no footfall published for that station."
+    "legend_note": "Circles are sized and coloured by annual passengers, because that is what separates a station you could commute from and a concrete platform served twice a day. The 50 busiest stations carry more passengers than the other 2,700 combined. Click one for its 2019 figure too: a station well below its pre-Covid count is a line losing its service. Grey means no footfall published for that station. Click a station to draw everywhere its trains go without changing."
   }
 ]

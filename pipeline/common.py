@@ -318,6 +318,47 @@ def extract_zip(zip_path: Path, dest_dir: Path, *, members: list[str] | None = N
     return dest_dir
 
 
+def read_melodi_cube(zip_path: Path, member: str, keep: dict[str, Iterable[str]], *,
+                     chunksize: int = 500_000):
+    """Stream one INSEE Melodi cube out of its zip, keeping metropolitan COM rows.
+
+    `keep` maps each dimension column to the codes wanted in it; a row survives
+    only if every listed column matches. Dimensions not listed are returned as
+    they are, so the caller can pivot on them — but any dimension the caller
+    neither filters nor pivots on will count the same people more than once,
+    which is why a column named in `keep` that is missing from the file raises
+    rather than being skipped.
+
+    Returns every column of the file, with `GEO` replaced by `code_insee` and a numeric
+    `OBS_VALUE` (NaN where INSEE left the cell blank).
+    """
+    import pandas as pd
+
+    wanted = {col: {str(v) for v in values} for col, values in keep.items()}
+    parts = []
+    with zipfile.ZipFile(zip_path) as zf:
+        if member not in zf.namelist():
+            raise BuildError(f"{member} is not in {zip_path.name}; members: {zf.namelist()}")
+        with zf.open(member) as raw:
+            reader = pd.read_csv(raw, sep=";", dtype=str, chunksize=chunksize, keep_default_na=False)
+            for chunk in reader:
+                missing = {"GEO", "GEO_OBJECT", "OBS_VALUE", *wanted} - set(chunk.columns)
+                if missing:
+                    raise BuildError(f"{member}: missing column(s) {sorted(missing)}; header is {list(chunk.columns)}")
+                mask = chunk["GEO_OBJECT"] == "COM"
+                for col, codes in wanted.items():
+                    mask &= chunk[col].isin(codes)
+                if mask.any():
+                    parts.append(chunk.loc[mask])
+    if not parts:
+        raise BuildError(f"{member}: no commune rows matched {keep}")
+    df = pd.concat(parts, ignore_index=True)
+    df["code_insee"] = df.pop("GEO").map(normalise_insee)
+    df = df[df["code_insee"].notna() & df["code_insee"].map(is_metropolitan)]
+    df["OBS_VALUE"] = pd.to_numeric(df["OBS_VALUE"], errors="coerce")
+    return df
+
+
 # --------------------------------------------------------------------------
 # Data helpers
 # --------------------------------------------------------------------------

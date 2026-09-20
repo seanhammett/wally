@@ -1,0 +1,577 @@
+[
+  {
+    "id": "secteur_distinctif",
+    "label": "Distinctive sector",
+    "group": "Work & economy",
+    "type": "choropleth",
+    "paint": {
+      "property": "secteur_distinctif",
+      "scale": "categorical",
+      "stops": [
+        [
+          "Agriculture",
+          "#6a9f3a",
+          "Agriculture"
+        ],
+        [
+          "Industry & energy",
+          "#6b5b4b",
+          "Industry & energy"
+        ],
+        [
+          "Construction",
+          "#e08a2c",
+          "Construction"
+        ],
+        [
+          "Transport & logistics",
+          "#4f9fa3",
+          "Transport & logistics"
+        ],
+        [
+          "Retail & trade",
+          "#e3c34d",
+          "Retail & trade"
+        ],
+        [
+          "Hospitality",
+          "#d9534f",
+          "Hospitality"
+        ],
+        [
+          "Culture, media & leisure",
+          "#a05fa8",
+          "Culture, media & leisure"
+        ],
+        [
+          "Tech & digital",
+          "#2f6db5",
+          "Tech & digital"
+        ],
+        [
+          "Business, finance & property",
+          "#1f3a5f",
+          "Business, finance & property"
+        ],
+        [
+          "Public sector, health & education",
+          "#8fb8de",
+          "Public sector, health & education"
+        ],
+        [
+          "Mixed",
+          "#cfcdc6",
+          "Mixed — nothing stands out"
+        ]
+      ],
+      "no_data_color": "#e5e7eb",
+      "strength": {
+        "property": "lq_distinctif",
+        "from": 1.5,
+        "to": 6,
+        "floor": 0.2,
+        "neutral": "#cfcdc6",
+        "label": "Stands out: × national share",
+        "label_from": "1.5×",
+        "label_to": "6×+"
+      }
+    },
+    "fields": [
+      {
+        "name": "secteur_distinctif",
+        "type": "categorical",
+        "unit": "",
+        "label": "Most over-represented sector"
+      },
+      {
+        "name": "lq_distinctif",
+        "type": "numeric",
+        "unit": "× national share",
+        "label": "How over-represented"
+      },
+      {
+        "name": "actifs_occupes_secteur",
+        "type": "numeric",
+        "unit": "people",
+        "label": "Residents in work"
+      },
+      {
+        "name": "part_hotellerie_restauration",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Hospitality"
+      },
+      {
+        "name": "part_culture_medias_loisirs",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Culture, media & leisure"
+      },
+      {
+        "name": "part_numerique",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Tech & digital"
+      },
+      {
+        "name": "part_agriculture",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Agriculture"
+      },
+      {
+        "name": "part_industrie",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Industry & energy"
+      },
+      {
+        "name": "part_construction",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Construction"
+      },
+      {
+        "name": "part_commerce",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Retail & trade"
+      },
+      {
+        "name": "part_transport",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Transport & logistics"
+      },
+      {
+        "name": "part_public_sante_enseignement",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Public sector, health & education"
+      },
+      {
+        "name": "part_services_entreprises",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Business, finance & property"
+      },
+      {
+        "name": "part_autres_services",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Other services"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.75,
+    "legend_note": "The sector that residents work in more than France as a whole does, measured as a multiple of its national share. Colour saturation shows how strongly it stands out: pale at 1.5× the national share, full colour at 6× or more. Below 1.5× nothing stands out and the commune is plain gray (Mixed). It shows what is distinctive, not what is biggest: nearly everywhere, most people work in public services and shops. Much of rural France reads Agriculture even though farmers are a minority there, because nationally they are 2%. In ski country Transport can win: INSEE classes lift operators as land transport. Blank under 200 residents in work, where the census sample is too small to compare eleven shares."
+  },
+  {
+    "id": "part_hotellerie",
+    "label": "Hospitality (residents)",
+    "group": "Work & economy",
+    "type": "choropleth",
+    "paint": {
+      "property": "part_hotellerie_restauration",
+      "scale": "numeric",
+      "breaks": [
+        2,
+        4,
+        6,
+        10,
+        18
+      ],
+      "colors": [
+        "#fff5f0",
+        "#fee0d2",
+        "#fcbba1",
+        "#fc9272",
+        "#ef3b2c",
+        "#a50f15"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "part_hotellerie_restauration",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Hospitality"
+      },
+      {
+        "name": "part_independants_hotellerie_restauration",
+        "type": "numeric",
+        "unit": "% of the sector",
+        "label": "Of whom self-employed"
+      },
+      {
+        "name": "part_emplois_hotellerie_restauration",
+        "type": "numeric",
+        "unit": "% of local salaried jobs",
+        "label": "Hospitality, local jobs"
+      },
+      {
+        "name": "emplois_hotellerie_restauration",
+        "type": "numeric",
+        "unit": "jobs",
+        "label": "Hospitality jobs located here"
+      },
+      {
+        "name": "actifs_occupes_secteur",
+        "type": "numeric",
+        "unit": "people",
+        "label": "Residents in work"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Share of residents in work who work in hotels, restaurants, cafés, campsites and other accommodation, wherever that job is. Nationally 4.2%. Resorts and the centres of tourist towns run highest. Blank where fewer than 60 residents are in work: below that the sample behind the share is a handful of people."
+  },
+  {
+    "id": "part_culture",
+    "label": "Culture, media & leisure (residents)",
+    "group": "Work & economy",
+    "type": "choropleth",
+    "paint": {
+      "property": "part_culture_medias_loisirs",
+      "scale": "numeric",
+      "breaks": [
+        2,
+        4,
+        6,
+        9,
+        14
+      ],
+      "colors": [
+        "#fcfbfd",
+        "#efedf5",
+        "#dadaeb",
+        "#bcbddc",
+        "#807dba",
+        "#54278f"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "part_culture_medias_loisirs",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Culture, media & leisure"
+      },
+      {
+        "name": "part_independants_culture_medias_loisirs",
+        "type": "numeric",
+        "unit": "% of the sector",
+        "label": "Of whom self-employed"
+      },
+      {
+        "name": "part_emplois_culture_medias_loisirs",
+        "type": "numeric",
+        "unit": "% of local salaried jobs",
+        "label": "Culture, media & leisure, local jobs"
+      },
+      {
+        "name": "emplois_culture_medias_loisirs",
+        "type": "numeric",
+        "unit": "jobs",
+        "label": "Such jobs located here"
+      },
+      {
+        "name": "actifs_occupes_secteur",
+        "type": "numeric",
+        "unit": "people",
+        "label": "Residents in work"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Publishing, film, TV, radio, music; advertising, design and photography; arts, performance, museums and libraries — and also sport, recreation and gambling, which the census cannot separate from the arts. So ski resorts score high for their instructors and lift staff. Nationally 3.9%. The popup gives the self-employed share: the freelance creative scene. Blank where fewer than 60 residents are in work: below that the sample behind the share is a handful of people."
+  },
+  {
+    "id": "part_agriculture",
+    "label": "Agriculture (residents)",
+    "group": "Work & economy",
+    "detail": true,
+    "type": "choropleth",
+    "paint": {
+      "property": "part_agriculture",
+      "scale": "numeric",
+      "breaks": [
+        2,
+        5,
+        10,
+        20,
+        35
+      ],
+      "colors": [
+        "#ffffe5",
+        "#f7fcb9",
+        "#d9f0a3",
+        "#addd8e",
+        "#41ab5d",
+        "#006837"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "part_agriculture",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Agriculture"
+      },
+      {
+        "name": "actifs_occupes_secteur",
+        "type": "numeric",
+        "unit": "people",
+        "label": "Residents in work"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Farming, forestry and fishing, as a share of residents in work. Nationally 2.3%; in the median commune 4%, and a tenth of communes are above 17%. Blank where fewer than 60 residents are in work: below that the sample behind the share is a handful of people."
+  },
+  {
+    "id": "part_industrie",
+    "label": "Industry & energy (residents)",
+    "group": "Work & economy",
+    "detail": true,
+    "type": "choropleth",
+    "paint": {
+      "property": "part_industrie",
+      "scale": "numeric",
+      "breaks": [
+        8,
+        12,
+        18,
+        25,
+        35
+      ],
+      "colors": [
+        "#f7f4f0",
+        "#e3d7c8",
+        "#c9b39a",
+        "#a8876a",
+        "#7f5d43",
+        "#4e3526"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "part_industrie",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Industry & energy"
+      },
+      {
+        "name": "actifs_occupes_secteur",
+        "type": "numeric",
+        "unit": "people",
+        "label": "Residents in work"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Manufacturing, mining, energy, water and waste, as a share of residents in work. Nationally 11.8%; a tenth of communes are above 26%. Blank where fewer than 60 residents are in work: below that the sample behind the share is a handful of people."
+  },
+  {
+    "id": "part_public",
+    "label": "Public sector, health & education (residents)",
+    "group": "Work & economy",
+    "detail": true,
+    "type": "choropleth",
+    "paint": {
+      "property": "part_public_sante_enseignement",
+      "scale": "numeric",
+      "breaks": [
+        20,
+        26,
+        32,
+        38,
+        45
+      ],
+      "colors": [
+        "#f7fbff",
+        "#deebf7",
+        "#c6dbef",
+        "#9ecae1",
+        "#4292c6",
+        "#08519c"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "part_public_sante_enseignement",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Public sector, health & education"
+      },
+      {
+        "name": "actifs_occupes_secteur",
+        "type": "numeric",
+        "unit": "people",
+        "label": "Residents in work"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Administration, defence, teaching, health and social care. Nationally 30.7%, the largest group almost everywhere. Préfectures, garrison towns and hospital towns run highest. Blank where fewer than 60 residents are in work: below that the sample behind the share is a handful of people."
+  },
+  {
+    "id": "part_numerique",
+    "label": "Tech & digital (residents)",
+    "group": "Work & economy",
+    "detail": true,
+    "type": "choropleth",
+    "paint": {
+      "property": "part_numerique",
+      "scale": "numeric",
+      "breaks": [
+        1,
+        2.5,
+        4,
+        7,
+        12
+      ],
+      "colors": [
+        "#f7fbff",
+        "#c6dbef",
+        "#9ecae1",
+        "#6baed6",
+        "#2171b5",
+        "#08306b"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "part_numerique",
+        "type": "numeric",
+        "unit": "% of residents in work",
+        "label": "Tech & digital"
+      },
+      {
+        "name": "actifs_occupes_secteur",
+        "type": "numeric",
+        "unit": "people",
+        "label": "Residents in work"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Software, IT services and telecoms. Nationally 2.6%, but concentrated: in over half of communes nobody in the sample works in it, so it picks out the tech suburbs of the big cities. Blank where fewer than 60 residents are in work: below that the sample behind the share is a handful of people."
+  },
+  {
+    "id": "part_emplois_hotellerie",
+    "label": "Hospitality (local jobs)",
+    "group": "Work & economy",
+    "detail": true,
+    "type": "choropleth",
+    "paint": {
+      "property": "part_emplois_hotellerie_restauration",
+      "scale": "numeric",
+      "breaks": [
+        3,
+        6,
+        10,
+        20,
+        40
+      ],
+      "colors": [
+        "#fff5eb",
+        "#fee6ce",
+        "#fdae6b",
+        "#f16913",
+        "#d94801",
+        "#7f2704"
+      ],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      {
+        "name": "part_emplois_hotellerie_restauration",
+        "type": "numeric",
+        "unit": "% of local salaried jobs",
+        "label": "Hospitality, local jobs"
+      },
+      {
+        "name": "emplois_hotellerie_restauration",
+        "type": "numeric",
+        "unit": "jobs",
+        "label": "Hospitality jobs located here"
+      },
+      {
+        "name": "emplois_salaries",
+        "type": "numeric",
+        "unit": "jobs",
+        "label": "Salaried jobs located here"
+      },
+      {
+        "name": "part_emplois_culture_medias_loisirs",
+        "type": "numeric",
+        "unit": "% of local salaried jobs",
+        "label": "Culture, media & leisure, local jobs"
+      },
+      {
+        "name": "part_emplois_numerique",
+        "type": "numeric",
+        "unit": "% of local salaried jobs",
+        "label": "Tech & digital, local jobs"
+      },
+      {
+        "name": "part_emplois_agriculture",
+        "type": "numeric",
+        "unit": "% of local salaried jobs",
+        "label": "Agriculture, local jobs"
+      },
+      {
+        "name": "part_emplois_industrie",
+        "type": "numeric",
+        "unit": "% of local salaried jobs",
+        "label": "Industry & energy, local jobs"
+      },
+      {
+        "name": "part_emplois_construction",
+        "type": "numeric",
+        "unit": "% of local salaried jobs",
+        "label": "Construction, local jobs"
+      },
+      {
+        "name": "part_emplois_commerce",
+        "type": "numeric",
+        "unit": "% of local salaried jobs",
+        "label": "Retail & trade, local jobs"
+      },
+      {
+        "name": "part_emplois_transport",
+        "type": "numeric",
+        "unit": "% of local salaried jobs",
+        "label": "Transport & logistics, local jobs"
+      },
+      {
+        "name": "part_emplois_public_sante_enseignement",
+        "type": "numeric",
+        "unit": "% of local salaried jobs",
+        "label": "Public sector, health & education, local jobs"
+      },
+      {
+        "name": "part_emplois_services_entreprises",
+        "type": "numeric",
+        "unit": "% of local salaried jobs",
+        "label": "Business, finance & property, local jobs"
+      },
+      {
+        "name": "part_emplois_autres_services",
+        "type": "numeric",
+        "unit": "% of local salaried jobs",
+        "label": "Other services, local jobs"
+      }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Salaried jobs located in the commune in hotels, restaurants and other accommodation, 31 December 2024 (FLORES), whoever holds them. It excludes the self-employed, so it misses owner-run places. December counts ski resorts in season and seaside resorts out of it. Blank where the commune has fewer than 30 salaried jobs."
+  }
+]

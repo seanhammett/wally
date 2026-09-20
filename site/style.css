@@ -250,17 +250,13 @@ body.reordering { cursor: grabbing; user-select: none; }
 .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 /* -------------------------------------------------------------- layers */
-.group { margin-bottom: 14px; }
+.group { margin-bottom: 10px; }
 .group > h3 { font-size: 12px; margin: 0 0 6px; font-weight: 600; }
+.group.collapsed > h3 { margin-bottom: 0; }
+.group > h3 .block-toggle { color: var(--fg); }
+.group-count { margin-left: 2px; }
 .layer { padding: 6px 0 8px; border-bottom: 1px dotted var(--line); }
 .layer:last-child { border-bottom: none; }
-/* Detail layers fold away until their group is opened; one switched on stays. */
-.group:not(.open) .layer.detail:not(.on) { display: none; }
-.more-toggle {
-  margin-top: 4px; padding: 2px 0; border: 0; background: none; cursor: pointer;
-  font-size: 11px; color: var(--accent);
-}
-.more-toggle:hover, .more-toggle:focus-visible { text-decoration: underline; }
 .layer .row { display: flex; align-items: center; gap: 8px; }
 .layer label { font-size: 12.5px; cursor: pointer; flex: 1; line-height: 1.3; }
 .layer input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; }
@@ -337,6 +333,8 @@ body.reordering { cursor: grabbing; user-select: none; }
                  cursor: pointer; color: var(--muted); padding: 0 2px; }
 .insp-group { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 12px; }
 .insp-group h3 { font-size: 12px; margin: 0 0 6px; }
+.insp-group.collapsed h3 { margin-bottom: 0; }
+.insp-n { margin-left: auto; font-size: 10px; font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
 .insp-row { display: flex; justify-content: space-between; gap: 12px; font-size: 12px;
             padding: 3px 0; border-bottom: 1px dotted var(--line); }
 .insp-row .k { color: var(--muted); }
@@ -352,6 +350,53 @@ body.reordering { cursor: grabbing; user-select: none; }
 .insp-links { display: flex; gap: 6px; }
 .insp-links .insp-action { flex: 1; min-width: 0; text-align: center; text-decoration: none; white-space: nowrap; }
 .insp-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* A clicked station's direct destinations. Colours come from the script, as
+   --c, so the list and the lines on the map are painted from one table. */
+.route-summary { font-size: 12px; margin-bottom: 6px; }
+.route-key { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+.route-key-item { display: inline-flex; align-items: center; gap: 5px; }
+.route-key-item i { width: 16px; height: 0; border-top: 3px solid var(--c); }
+.route-key-item.car i { border-top-style: dashed; border-top-width: 2px; }
+/* Coaches are the one switchable entry: faded while hidden. */
+button.route-key-item { font: inherit; color: inherit; background: none; border: 1px solid var(--line);
+                        border-radius: 999px; padding: 1px 8px; cursor: pointer; }
+button.route-key-item:hover { border-color: var(--accent); }
+button.route-key-item[aria-pressed="false"] { opacity: .55; }
+button.route-key-item[aria-pressed="false"]::after { content: ' · show'; }
+button.route-key-item[aria-pressed="true"]::after { content: ' · hide'; }
+/* One entry per terminus; its calls fold out beneath it. */
+.route-line { border-bottom: 1px solid var(--line); padding: 5px 0; }
+.route-line-head { display: flex; align-items: baseline; gap: 10px; width: 100%; padding: 0; font: inherit;
+                   font-size: 12.5px; color: inherit; text-align: left; background: none; border: none; cursor: pointer; }
+.route-line-head .num { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.route-line-name { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.route-line-name::before { content: '▸'; display: inline-block; width: 12px; color: var(--muted); font-size: 10px; }
+.route-line.open .route-line-name::before { content: '▾'; }
+.route-line.nonstop .route-line-name::before { content: ''; }
+.route-line.nonstop .route-line-head { cursor: default; }
+.route-line.nonstop .route-line-head:hover .route-line-name { color: inherit; }
+.route-line-head:hover .route-line-name { color: var(--accent); }
+.route-line-head:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.route-line-via { font-size: 11px; color: var(--muted); padding: 1px 0 0 26px; }
+.route-line .route-list { display: none; margin: 3px 0 2px; }
+.route-line.open .route-list { display: table; }
+.route-line.open .route-line-via { display: none; }
+.route-line .route-list td:first-child { padding-left: 26px; position: relative; }
+/* A line down the calls, like a timetable's. */
+.route-line .route-list td:first-child::before { content: ''; position: absolute; left: 15px; top: 0; bottom: 0;
+                                                 border-left: 2px solid var(--line); }
+.route-line .route-list tr.terminus td { font-weight: 700; border-bottom: none; }
+.route-line .route-list td.num { font-weight: 400; color: var(--muted); }
+.route-line .route-list tr.partial td.num:last-child { color: #b45309; font-weight: 600; }
+.route-list { width: 100%; border-collapse: collapse; font-size: 12px; }
+.route-list th { font-size: 10.5px; font-weight: 600; color: var(--muted); text-align: left; padding: 2px 0 4px; }
+.route-list td { padding: 3px 0; border-bottom: 1px dotted var(--line); overflow-wrap: anywhere; }
+.route-list .num { text-align: right; padding-left: 10px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.route-list td.num { font-weight: 600; }
+.route-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%;
+             border: 1.5px dashed var(--c); vertical-align: 0; }
+.route-dot.rail { background: var(--c); border-style: solid; }
 
 /* -------------------------------------------------------- climate table */
 /* Over the map, not in a column: thirteen columns of numbers need the width. */

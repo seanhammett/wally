@@ -1,12 +1,17 @@
 id: gares
 name: "Gares de voyageurs et fréquentation annuelle"
-attribution: "SNCF Gares & Connexions — Open Data SNCF (gares de voyageurs, fréquentation en gares) — Licence Ouverte 2.0"
+attribution: "SNCF Gares & Connexions — Open Data SNCF (gares de voyageurs, fréquentation en gares) · SNCF Voyageurs — horaires GTFS TER, TGV, Intercités — Licence Ouverte 2.0"
 url: "https://ressources.data.sncf.com/explore/dataset/frequentation-gares/"
 fetched: 2026-09-12
 source_crs: "EPSG:4326"
 kind: point
 fetch: auto
 order: 35
+# Every station's timetabled routes, fetched when a station is clicked:
+# published to site/files/gares/.
+site_files: gares
+# The rail network the routes are drawn along.
+inputs: [voies_ferrees]
 
 api_base: "https://ressources.data.sncf.com/api/explore/v2.1/catalog/datasets"
 
@@ -19,6 +24,45 @@ exports:
     dataset: frequentation-gares
     format: json
     filename: frequentation-gares.json
+
+# The national timetable (TER, TGV INOUI, OUIGO, Intercités and their coaches)
+# as one GTFS feed, republished by SNCF every day and running about five months
+# ahead. It has no shapes.txt, so routes are drawn stop to stop.
+gtfs:
+  url: "https://eu.ftp.opendatasoft.com/sncf/plandata/Export_OpenData_SNCF_GTFS_NewTripId.zip"
+  filename: sncf-gtfs.zip
+
+# Trains are counted over one ordinary week. Left null, it is the first Monday
+# at least a week after the feed starts, clear of short-notice engineering work;
+# set a date (YYYY-MM-DD, a Monday) to pin it, e.g. to step around a holiday.
+semaine_type: null
+
+# The product each GTFS stop point is published under, as a map category and the
+# name a traveller knows it by. An unlisted product fails the build rather than
+# being silently mis-drawn.
+services:
+  "TGV INOUI":          { categorie: tgv, nom: "TGV INOUI" }
+  "OUIGO":              { categorie: tgv, nom: "OUIGO" }
+  "ICE":                { categorie: tgv, nom: "ICE" }
+  "Lyria":              { categorie: tgv, nom: "TGV Lyria" }
+  "INTERCITES":         { categorie: intercites, nom: "Intercités" }
+  "INTERCITES de nuit": { categorie: intercites, nom: "Intercités de nuit" }
+  "Train TER":          { categorie: ter, nom: "TER" }
+  "TramTrain":          { categorie: ter, nom: "Tram-train" }
+  "Train":              { categorie: ter, nom: "Train" }
+  "Navette":            { categorie: ter, nom: "Shuttle train" }
+  "Car TER":            { categorie: car, nom: "TER coach" }
+  "Car à réservation":  { categorie: car, nom: "Coach, booking required" }
+
+# Routing each hop between consecutive stops along the track (voies_ferrees).
+voies:
+  jonction_m: 60          # a line end this close to another line joins it
+  gare_m: 1000            # a stop further than this from any live track is drawn straight
+  gare_lignes_m: 150      # every classic line this much further than the nearest meets at the station
+  penalite_lgv: 4         # TER and Intercités take an LGV only when nothing else is close
+  detour_max: 2.5         # a route this many times the crow-fly distance is a gap in the network
+  simplification_m: 20
+  vitesse_defaut: { lgv: 300, conventionnel: 100, voie_etroite: 50 }   # km/h, where no v_max is published
 
 # The year the map reports. Kept in metadata so next year's edition is a
 # one-line change rather than a hunt through the transform.
@@ -47,15 +91,23 @@ notes: |
   from, and it is the reason this layer sizes its circles by footfall rather than
   drawing every station the same.
 
-  **This is not a TGV map.** SNCF publishes no open per-station service list, so
-  nothing here says which stations a TGV calls at. Footfall is the available
-  proxy and a good one — the stations with TGV service are overwhelmingly the
-  large-footfall ones — but it is a proxy, and a busy Transilien station in the
-  Paris suburbs will outrank a TGV stop in the Massif Central.
+  **What actually stops there comes from the timetable.** SNCF's national GTFS
+  feed carries every TER, TGV INOUI, OUIGO and Intercités trip, so each station
+  also gets its trains per day and the services that call. Click a station and
+  the map draws every place its trains reach directly, with the fastest time and
+  how many trains a day go there. Île-de-France suburban services (Transilien,
+  RER) are timetabled by IDFM, not in this feed: those stations show footfall but
+  no trains. The feed has no track geometry, so each hop between consecutive
+  stops is routed along the voies_ferrees network by the quickest way: a
+  high-speed train by line speed, LGV included; TER and Intercités with a heavy
+  penalty on LGV, so they keep to the classic line unless there is no other.
+  Coaches, and the few hops the network cannot join (foreign stops, gaps in the
+  export), stay straight lines.
 
   The 2019 column is carried deliberately. Rail ridership collapsed in 2020 and
   recovered unevenly, so a station's 2024 figure read against its 2019 figure
   says whether the line is recovering, growing, or quietly being abandoned.
 
   Stations are matched to communes by their UIC code's own `codeinsee` field
-  where present. Footfall is joined on the UIC code, which both files share.
+  where present. Footfall is joined on the UIC code, which both files share, and
+  so is the timetable: a GTFS stop area is `StopArea:OCE` plus the same code.

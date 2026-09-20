@@ -90,9 +90,48 @@ function colorExpression(paint) {
   }
   // ordinal and categorical are both a match on the raw value
   const match = ['match', ['to-string', value]];
-  paint.stops.forEach(([value_, color]) => match.push(String(value_), color));
+  paint.stops.forEach(([value_, color]) => match.push(String(value_), strengthRamp(paint, color)));
   match.push(noData);
   return match;
+}
+
+// A class colour on its own, or — when the paint block has a `strength` — a ramp
+// from a neutral gray to that colour, driven by a second property on a log
+// scale. A feature with no strength value sits at the gray end.
+function strengthRamp(paint, color) {
+  const s = paint.strength;
+  if (!s) return color;
+  const get = paint.source === 'feature-state' ? 'feature-state' : 'get';
+  const x = ['ln', ['max', ['to-number', [get, s.property], s.from], s.from]];
+  return ['interpolate', ['linear'], x,
+    Math.log(s.from), mixHex(s.neutral, color, s.floor || 0),
+    Math.log(s.to), color];
+}
+
+function mixHex(a, b, t) {
+  const hex = (c) => [1, 3, 5].map((k) => parseInt(c.slice(k, k + 2), 16));
+  const [x, y] = [hex(a), hex(b)];
+  return `#${x.map((c, i) => Math.round(c + (y[i] - c) * t).toString(16).padStart(2, '0')).join('')}`;
+}
+
+// The legend's key to a strength ramp: one bar from the gray end to full colour.
+function strengthBar(paint) {
+  const s = paint.strength;
+  const wrap = el('div', 'act-scale');
+  const bar = el('div', 'act-bar act-gradient');
+  bar.style.background = `linear-gradient(to right, ${s.neutral}, ${s.legend_color || '#555555'})`;
+  const ticks = el('div', 'act-ticks');
+  [[0, s.label_from || `${s.from}`], [1, s.label_to || `${s.to}`]].forEach(([at, text]) => {
+    // Pinned to the ends rather than centred on them, so neither label runs
+    // out past the bar.
+    const tick = el('span', 'tick', text);
+    tick.style[at ? 'right' : 'left'] = '0';
+    tick.style.transform = 'none';
+    ticks.appendChild(tick);
+  });
+  if (s.label) wrap.appendChild(el('div', 'act-unit', s.label));
+  wrap.append(bar, ticks);
+  return wrap;
 }
 
 // A paint block with a `no_data_label` names its no-data colour as one more
@@ -465,7 +504,8 @@ function restack(map) {
   }
   // The selected commune's border, the country border and the city names read
   // over every data layer, or a choropleth hides them.
-  for (const id of [SELECTED.casing, SELECTED.line, OUTLINE.line, ...cityLayerIds()]) {
+  // A clicked station's routes go over those, so their names win a collision.
+  for (const id of [SELECTED.casing, SELECTED.line, OUTLINE.line, ...cityLayerIds(), ...routeLayerIds()]) {
     if (map.getLayer(id)) map.moveLayer(id);
   }
 }
@@ -522,8 +562,9 @@ function applyStack(map) {
 }
 
 // ---------------------------------------------------- active layer stack UI
-// Every active row carries its own scale, so which values a colour stands for
-// is readable without scrolling down to the legend.
+// A layer that fills areas carries its own scale in its row, so which values a
+// colour stands for is readable without scrolling down to the legend. Lines
+// and points are left to the legend: a railway reads as a railway.
 
 function unitOf(layer) {
   const paint = layer.paint || {};
@@ -658,7 +699,11 @@ function scaleBlock(layer) {
   const paint = layer.paint || {};
   if (paint.scale === 'continuous' && paint.stops) return continuousScale(paint, unitOf(layer));
   if (paint.scale === 'numeric' && paint.breaks && paint.colors) return numericScale(paint, unitOf(layer));
-  return classScale(legendEntries(paint));
+  const block = classScale(legendEntries(paint));
+  if (!paint.strength) return block;
+  const wrap = el('div');
+  wrap.append(block, strengthBar(paint));
+  return wrap;
 }
 
 const GRIP_DOTS = [3, 8, 13]
@@ -772,7 +817,8 @@ function buildActive(map) {
     });
     ctl.append(slider, pct);
 
-    card.append(head, scaleBlock(layer), ctl);
+    const fills = layer.type === 'choropleth' || layer.type === 'polygon';
+    card.append(head, ...(fills ? [scaleBlock(layer)] : []), ctl);
 
     const grip = el('button', 'grip');
     grip.type = 'button';
@@ -825,15 +871,25 @@ function buildPanel(map) {
     // inspect panel, feeds the stat tools, and turns on from a shared link.
     const listed = all.filter((l) => l.panel !== false);
     if (!listed.length) continue;
-    // `detail` layers are listed after the rest and folded away until the group
-    // is opened; one that is switched on shows either way.
+    // `detail` layers are listed after the rest.
     const isTop = name === top.label;
-    const detail = isTop ? [] : listed.filter((l) => l.detail);
-    const layers = isTop ? listed : listed.filter((l) => !l.detail).concat(detail);
+    const layers = isTop ? listed : listed.filter((l) => !l.detail).concat(listed.filter((l) => l.detail));
     const block = el('div', 'group');
-    block.appendChild(el('h3', null, name));
+    // Each group folds to its heading. The badge counts the group's layers that
+    // are switched on, so a folded group still says it has something on the map.
+    const heading = el('h3');
+    const toggle = el('button', 'block-toggle');
+    toggle.type = 'button';
+    const chev = el('span', 'chev');
+    chev.setAttribute('aria-hidden', 'true');
+    const badge = el('span', 'count group-count');
+    badge.hidden = true;
+    toggle.append(chev, name, badge);
+    heading.appendChild(toggle);
+    const body = el('div', 'group-body');
+    block.append(heading, body);
     for (const layer of layers) {
-      const item = el('div', layer.detail && !isTop ? 'layer detail' : 'layer');
+      const item = el('div', 'layer');
       item.dataset.id = layer.id;
 
       const row = el('div', 'row');
@@ -850,9 +906,11 @@ function buildPanel(map) {
       const about = [layer.legend_note, layer.attribution && `Source: ${layer.attribution}`].filter(Boolean);
       item.appendChild(row);
       if (about.length) item.appendChild(fold('notes & sources', about, 'note'));
-      block.appendChild(item);
+      body.appendChild(item);
     }
-    if (detail.length) block.appendChild(moreToggle(block, name, detail.length));
+    // Folded by default except the top items: the whole list open at once is
+    // ninety rows.
+    collapsible(block, toggle, body, `layers-group:${name}`, isTop);
     host.appendChild(block);
   }
   syncPanel();
@@ -871,30 +929,17 @@ function fold(what, paragraphs, cls) {
   return details;
 }
 
-// The fold at the foot of a group with detail layers. Whether it is open is a
-// preference of this browser, like the tool panels', not part of the link.
-function moreToggle(block, name, count) {
-  const key = `layers-more:${name}`;
-  const button = el('button', 'more-toggle');
-  button.type = 'button';
-  const setOpen = (open) => {
-    block.classList.toggle('open', open);
-    button.setAttribute('aria-expanded', String(open));
-    button.textContent = open ? 'Show fewer' : `Show ${count} more`;
-    try { localStorage.setItem(key, open ? '1' : '0'); } catch (err) { /* storage blocked */ }
-  };
-  let open = false;
-  try { open = localStorage.getItem(key) === '1'; } catch (err) { /* storage blocked */ }
-  setOpen(open);
-  button.addEventListener('click', () => setOpen(!block.classList.contains('open')));
-  return button;
-}
-
 function syncPanel() {
   for (const item of document.querySelectorAll('.layer')) {
     const on = state.visible.has(item.dataset.id);
     item.classList.toggle('on', on);
     item.querySelector('input[type=checkbox]').checked = on;
+  }
+  for (const group of document.querySelectorAll('#layers .group')) {
+    const n = group.querySelectorAll('.layer.on').length;
+    const badge = group.querySelector('.group-count');
+    badge.textContent = n;
+    badge.hidden = !n;
   }
 }
 
@@ -937,6 +982,7 @@ function renderLegend() {
       sw.appendChild(row);
     }
     block.appendChild(sw);
+    if ((layer.paint || {}).strength) block.appendChild(strengthBar(layer.paint));
     host.appendChild(block);
   }
   // Licence attribution for every visible layer, as Licence Ouverte requires.
@@ -964,7 +1010,16 @@ function formatValue(value, field) {
 function inspect(map, point, lngLat, { code = null } = {}) {
   const ids = state.layers.filter((l) => state.visible.has(l.id)).flatMap((l) => drawnIds(l.id));
   if (map.getLayer('__commune_probe')) ids.push('__commune_probe');
-  const hitOf = (layer) => hits.find((f) => f.layer.id === layer.id || f.layer.id === `${layer.id}__areas`);
+  // Where points crowd — a city's stations — the one nearest the click, not
+  // whichever happens to be drawn on top.
+  const away = (f) => {
+    if (f.geometry.type !== 'Point') return 0;
+    const p = map.project(f.geometry.coordinates);
+    return (p.x - point.x) ** 2 + (p.y - point.y) ** 2;
+  };
+  const hitOf = (layer) => hits
+    .filter((f) => f.layer.id === layer.id || f.layer.id === `${layer.id}__areas`)
+    .reduce((best, f) => (!best || away(f) < away(best) ? f : best), null);
   const hits = map.queryRenderedFeatures([[point.x - 3, point.y - 3], [point.x + 3, point.y + 3]],
     { layers: ids.filter((id) => map.getLayer(id)) });
 
@@ -1046,6 +1101,16 @@ function inspect(map, point, lngLat, { code = null } = {}) {
     body.appendChild(head);
   }
 
+  // A station under the cursor: where its trains go, drawn on the map and listed.
+  const gares = state.layers.find((l) => l.source_id === 'gares' && state.visible.has(l.id));
+  const station = gares && networkFiles() ? hitOf(gares) : null;
+  if (station) {
+    const [lng, lat] = station.geometry.coordinates;
+    body.appendChild(stationBlock(map, station.properties, { lng, lat }));
+  } else {
+    clearRoutes(map);
+  }
+
   // The correlator's own reading for this commune. It cannot come from the
   // feature's properties — nothing computed it until the user asked — so it is
   // looked up by INSEE code in the columns the correlator already has.
@@ -1078,16 +1143,15 @@ function inspect(map, point, lngLat, { code = null } = {}) {
   }
 
   for (const { layer, rows } of bySource.values()) {
-    const block = el('div', 'insp-group');
-    block.appendChild(el('h3', null, layer.source_name || layer.label));
+    const { block, inner } = foldedGroup(layer.source_id, layer.source_name || layer.label, rows.length);
     for (const { k, v } of rows) {
       const row = el('div', 'insp-row');
       row.append(el('span', 'k', k), el('span', 'v', v));
-      block.appendChild(row);
+      inner.appendChild(row);
     }
     const attr = el('div', 'insp-attr');
     attr.textContent = layer.attribution + (layer.fetched ? ` · fetched ${layer.fetched}` : '');
-    block.appendChild(attr);
+    inner.appendChild(attr);
     body.appendChild(block);
   }
 
@@ -1095,6 +1159,33 @@ function inspect(map, point, lngLat, { code = null } = {}) {
     body.appendChild(el('p', 'insp-empty', 'Nothing loaded at this point. Switch on a layer and click again.'));
   }
   $('#inspect').hidden = false;
+}
+
+// A source's rows in the inspect panel fold under its heading, closed until
+// opened. What is open is remembered for the session, so reading one source
+// commune after commune does not mean reopening it on every click.
+const inspectOpen = new Set();
+
+function foldedGroup(key, title, count) {
+  const block = el('div', 'insp-group');
+  const heading = el('h3');
+  const toggle = el('button', 'block-toggle');
+  toggle.type = 'button';
+  const chev = el('span', 'chev');
+  chev.setAttribute('aria-hidden', 'true');
+  toggle.append(chev, title, el('span', 'insp-n', String(count)));
+  heading.appendChild(toggle);
+  const inner = el('div');
+  const setOpen = (open) => {
+    toggle.setAttribute('aria-expanded', String(open));
+    inner.hidden = !open;
+    block.classList.toggle('collapsed', !open);
+    if (open) inspectOpen.add(key); else inspectOpen.delete(key);
+  };
+  setOpen(inspectOpen.has(key));
+  toggle.addEventListener('click', () => setOpen(inner.hidden));
+  block.append(heading, inner);
+  return { block, inner };
 }
 
 // Outbound searches for the commune under the cursor. Both are centred on the
@@ -1182,6 +1273,451 @@ function communeByCode(map, code) {
 function closeInspect(map) {
   $('#inspect').hidden = true;
   highlightCommune(map, null);
+  clearRoutes(map);
+}
+
+// ---------------------------------------------------------- station routes
+// Click a station and the map draws everywhere its trains go without changing,
+// each hop as thick as the number of this station's trains that make it. The
+// pipeline folds SNCF's timetable into distinct stop patterns — one file for the
+// whole country, fetched the first time a station is clicked.
+
+const ROUTES = {
+  source: '__station_routes',
+  casing: '__station_routes_casing', coach: '__station_routes_coach', rail: '__station_routes_rail',
+  stops: '__station_routes_stops', origin: '__station_routes_origin', labels: '__station_routes_labels',
+};
+const routeLayerIds = () => [ROUTES.casing, ROUTES.coach, ROUTES.rail, ROUTES.stops, ROUTES.origin, ROUTES.labels];
+// Red for high speed, as on the railway layer's LGV; coaches dashed and grey.
+const ROUTE_CATS = [
+  ['tgv', '#dc2626', 'High-speed'],
+  ['intercites', '#7c3aed', 'Intercités'],
+  ['ter', '#2563eb', 'TER'],
+  ['car', '#6b7280', 'Coach'],
+];
+const ROUTE_COLOUR = ['match', ['get', 'cat'], ...ROUTE_CATS.flatMap(([id, c]) => [id, c]), '#2563eb'];
+const ROUTE_LIST = 12;
+// Coaches are off until asked for: they run on roads, so they can only be drawn
+// as straight lines, and those cut across everything the rails show.
+const routes = { index: null, loading: null, network: null, run: 0, coaches: false };
+const NO_ROUTES = { type: 'FeatureCollection', features: [] };
+
+function networkFiles() {
+  return ((state.manifest || {}).files || {}).gares || null;
+}
+
+function addRouteLayers(map) {
+  if (!networkFiles()) return;
+  map.addSource(ROUTES.source, { type: 'geojson', data: NO_ROUTES });
+  const line = ['==', ['geometry-type'], 'LineString'];
+  // Trains a day along a hop → width, so the main line reads as the main line.
+  const width = (scale) => ['*', scale, ['interpolate', ['linear'], ['get', 'day'], 0, 1.2, 4, 2, 16, 3.2, 48, 5, 120, 7]];
+  map.addLayer({
+    id: ROUTES.casing, type: 'line', source: ROUTES.source, filter: line,
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#ffffff', 'line-opacity': 0.85, 'line-width': ['+', width(1), 2.5] },
+  });
+  map.addLayer({
+    id: ROUTES.coach, type: 'line', source: ROUTES.source, filter: ['all', line, ['==', ['get', 'cat'], 'car']],
+    layout: { 'line-join': 'round' },
+    paint: { 'line-color': ROUTE_COLOUR, 'line-width': width(0.8), 'line-dasharray': [2, 1.5] },
+  });
+  map.addLayer({
+    id: ROUTES.rail, type: 'line', source: ROUTES.source, filter: ['all', line, ['!=', ['get', 'cat'], 'car']],
+    layout: { 'line-join': 'round', 'line-cap': 'round', 'line-sort-key': ['get', 'rank'] },
+    paint: { 'line-color': ROUTE_COLOUR, 'line-width': width(1) },
+  });
+  map.addLayer({
+    id: ROUTES.stops, type: 'circle', source: ROUTES.source, filter: ['==', ['get', 'kind'], 'stop'],
+    paint: {
+      'circle-color': '#ffffff', 'circle-stroke-color': ROUTE_COLOUR, 'circle-stroke-width': 1.8,
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 2.5, 10, 4.5],
+    },
+  });
+  map.addLayer({
+    id: ROUTES.origin, type: 'circle', source: ROUTES.source, filter: ['==', ['get', 'kind'], 'origin'],
+    paint: {
+      'circle-color': '#111827', 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2.5,
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 5, 10, 8],
+    },
+  });
+  // Busiest destinations are named first; the rest appear as the map zooms in
+  // and there is room.
+  map.addLayer({
+    id: ROUTES.labels, type: 'symbol', source: ROUTES.source, filter: ['!=', ['geometry-type'], 'LineString'],
+    layout: {
+      'text-field': ['get', 'name'],
+      'text-font': ['Open Sans Semibold'],
+      'text-size': ['case', ['==', ['get', 'kind'], 'origin'], 13, 11],
+      'text-variable-anchor': ['left', 'right', 'top', 'bottom'],
+      'text-radial-offset': 0.7,
+      'text-justify': 'auto',
+      'symbol-sort-key': ['case', ['==', ['get', 'kind'], 'origin'], -1e9, ['-', ['get', 'day']]],
+    },
+    paint: { 'text-color': '#111827', 'text-halo-color': 'rgba(255, 255, 255, 0.95)', 'text-halo-width': 1.4 },
+  });
+}
+
+function clearRoutes(map) {
+  routes.run++;
+  const source = map.getSource(ROUTES.source);
+  if (source) source.setData(NO_ROUTES);
+}
+
+async function loadNetwork() {
+  if (!routes.loading) {
+    const files = networkFiles();
+    routes.loading = (async () => {
+      const index = await fetchJson(files.index);
+      const [net, tracks] = await Promise.all([
+        fetchJson(`${files.dir}/${index.network}`),
+        index.tracks ? fetchJson(`${files.dir}/${index.tracks}`) : null,
+      ]);
+      // Which patterns call at each stop, and where in them.
+      const through = net.stops.map(() => []);
+      net.patterns.forEach((p, k) => p[1].forEach((stop, pos) => through[stop].push([k, pos])));
+      routes.index = index;
+      routes.network = {
+        ...net, through, at: new Map(net.stops.map((s, i) => [s[0], i])),
+        ...(tracks ? decodeTracks(tracks) : { pieces: [], hopPath: new Map(), snap: {} }),
+      };
+      return routes.network;
+    })().catch((err) => {
+      routes.loading = null;       // let the next click try again
+      throw err;
+    });
+  }
+  return routes.loading;
+}
+
+// The track between consecutive stops, routed by the pipeline: pieces of the
+// rail network stored once as delta-encoded 1e-5° integers, and per hop the
+// pieces it runs along — negative, as ~id, where it runs a piece backwards.
+function decodeTracks(tracks) {
+  const pieces = tracks.pieces.map((flat) => {
+    const coords = [];
+    let x = 0, y = 0;
+    for (let i = 0; i < flat.length; i += 2) {
+      x += flat[i];
+      y += flat[i + 1];
+      coords.push([x / 1e5, y / 1e5]);
+    }
+    return coords;
+  });
+  const hopPath = new Map(tracks.hops.map(([group, a, b, path]) => [`${group} ${a} ${b}`, path]));
+  return { pieces, hopPath, snap: tracks.snap };
+}
+
+const trackGroup = (cat) => (cat === 'tgv' ? 'tgv' : 'rail');
+
+// Everything reachable from one stop without changing. A pattern is only
+// followed from the point this station is in it, and only where the train lets
+// passengers board here and alight there: a TGV that sets down only on its way
+// into Paris does not make the suburbs a destination.
+function stationReach(net, code, coaches = true) {
+  const from = net.at.get(code);
+  if (from === undefined) return null;
+  const { no_pickup: noPickup, no_drop_off: noDrop } = routes.index.flags;
+  const products = routes.index.products;
+  const dests = new Map();         // stop -> { runs, fastest, cat, names }
+  const hops = new Map();          // "cat a b" -> { cat, a, b, runs }
+  const lines = new Map();         // terminus -> { runs, cats, names, calls: stop -> { runs, fastest }, next }
+  let departures = 0;
+  for (const [k, pos] of net.through[from]) {
+    const [product, stops, times, runs, flags] = net.patterns[k];
+    if (pos === stops.length - 1 || (flags && flags[pos] & noPickup)) continue;
+    const { categorie: cat, nom } = products[product];
+    if (cat === 'car' && !coaches) continue;
+    if (cat !== 'car') departures += runs;
+    const end = stops[stops.length - 1];
+    const line = lines.get(end) || { runs: 0, cats: new Set(), names: new Set(), calls: new Map(), next: new Map() };
+    line.runs += runs;
+    line.cats.add(cat);
+    line.names.add(nom);
+    lines.set(end, line);
+    let prev = null;
+    for (let j = pos + 1; j < stops.length; j++) {
+      const a = Math.min(stops[j - 1], stops[j]);
+      const b = Math.max(stops[j - 1], stops[j]);
+      const key = `${cat} ${a} ${b}`;
+      const hop = hops.get(key) || { cat, a, b, runs: 0 };
+      hop.runs += runs;
+      hops.set(key, hop);
+      if ((flags && flags[j] & noDrop) || stops[j] === from) continue;
+      const call = line.calls.get(stops[j]) || { runs: 0, fastest: Infinity };
+      call.runs += runs;
+      call.fastest = Math.min(call.fastest, times[j] - times[pos]);
+      line.calls.set(stops[j], call);
+      // Which call follows which, to put every train's calls in one order.
+      if (prev !== null) {
+        if (!line.next.has(prev)) line.next.set(prev, new Set());
+        line.next.get(prev).add(stops[j]);
+      }
+      prev = stops[j];
+      const d = dests.get(stops[j]) || { runs: 0, fastest: Infinity, cats: new Set(), names: new Set() };
+      d.runs += runs;
+      d.fastest = Math.min(d.fastest, times[j] - times[pos]);
+      d.cats.add(cat);
+      d.names.add(nom);
+      dests.set(stops[j], d);
+    }
+  }
+  lines.delete(from);              // a loop back to where it started is not a destination
+  return { from, dests, hops, departures, lines };
+}
+
+// The calls of every train to one terminus, in running order. Trains to the same
+// place mostly call at the same stations, some skipping a few, so their orders
+// agree and merge into one sequence; where they do not (a train routed another
+// way), the stop reached sooner goes first.
+function callOrder(line) {
+  const waiting = new Map([...line.calls.keys()].map((s) => [s, 0]));
+  for (const nexts of line.next.values()) for (const n of nexts) waiting.set(n, waiting.get(n) + 1);
+  const order = [];
+  const left = new Set(line.calls.keys());
+  const ready = (s) => waiting.get(s) <= 0;
+  while (left.size) {
+    let pick = null;
+    for (const s of left) {
+      if (pick === null || (ready(s) && !ready(pick))) pick = s;
+      else if (ready(s) === ready(pick) && line.calls.get(s).fastest < line.calls.get(pick).fastest) pick = s;
+    }
+    left.delete(pick);
+    order.push(pick);
+    for (const n of line.next.get(pick) || []) waiting.set(n, waiting.get(n) - 1);
+  }
+  return order;
+}
+
+// The fastest kind of train that goes there, for the colour of its row.
+const bestCat = (cats) => (ROUTE_CATS.find(([id]) => cats.has(id)) || ROUTE_CATS[2])[0];
+
+// Each piece of track is drawn once per kind of train, as thick as the number of
+// this station's trains that run along it — so where two routes share a line,
+// the line carries both. A hop with no routed track is drawn straight.
+function drawRoutes(map, net, reach) {
+  const point = (i) => [net.stops[i][2], net.stops[i][3]];
+  const has = (i) => net.stops[i][2] != null;
+  const rank = new Map(ROUTE_CATS.map(([id], i) => [id, ROUTE_CATS.length - i]));
+  const line = (cat, runs, coordinates) => ({
+    type: 'Feature',
+    properties: { cat, day: runs / 7, rank: rank.get(cat) },
+    geometry: { type: 'LineString', coordinates },
+  });
+  const onTrack = new Map();       // "cat piece" -> runs
+  const spurs = new Map();         // "cat stop" -> runs: station dot to where it meets the track
+  const features = [];
+  for (const hop of reach.hops.values()) {
+    if (!has(hop.a) || !has(hop.b)) continue;
+    const path = hop.cat === 'car' ? null : net.hopPath.get(`${trackGroup(hop.cat)} ${hop.a} ${hop.b}`);
+    if (!path) {
+      features.push(line(hop.cat, hop.runs, [point(hop.a), point(hop.b)]));
+      continue;
+    }
+    for (const p of path) {
+      const key = `${hop.cat} ${p < 0 ? ~p : p}`;
+      onTrack.set(key, (onTrack.get(key) || 0) + hop.runs);
+    }
+    // The busiest hop at a stop, not their sum: a train calling there uses both.
+    for (const stop of [hop.a, hop.b]) {
+      spurs.set(`${hop.cat} ${stop}`, Math.max(spurs.get(`${hop.cat} ${stop}`) || 0, hop.runs));
+    }
+  }
+  for (const [key, runs] of onTrack) {
+    const [cat, piece] = key.split(' ');
+    features.push(line(cat, runs, net.pieces[Number(piece)]));
+  }
+  for (const [key, runs] of spurs) {
+    const [cat, stop] = key.split(' ');
+    const snap = net.snap[stop];
+    if (snap) features.push(line(cat, runs, [point(Number(stop)), snap]));
+  }
+  for (const [stop, d] of reach.dests) {
+    if (!has(stop)) continue;
+    features.push({
+      type: 'Feature',
+      properties: { kind: 'stop', name: net.stops[stop][1], cat: bestCat(d.cats), day: d.runs / 7 },
+      geometry: { type: 'Point', coordinates: point(stop) },
+    });
+  }
+  if (has(reach.from)) {
+    features.push({
+      type: 'Feature',
+      properties: { kind: 'origin', name: net.stops[reach.from][1], day: 0 },
+      geometry: { type: 'Point', coordinates: point(reach.from) },
+    });
+  }
+  map.getSource(ROUTES.source).setData({ type: 'FeatureCollection', features });
+  return features;
+}
+
+function fmtDuration(min) {
+  if (min < 60) return `${min} min`;
+  return `${Math.floor(min / 60)}h${String(min % 60).padStart(2, '0')}`;
+}
+
+// A weekly count as a traveller would say it: 40 a day, or 3 a week.
+function fmtFrequency(runs) {
+  return runs >= 7 ? `${Math.round(runs / 7)}/day` : `${runs}/week`;
+}
+
+function stationBlock(map, props, lngLat) {
+  const block = el('div', 'insp-group');
+  block.appendChild(el('h3', null, `Direct trains from ${props.nom}`));
+  const body = block.appendChild(el('div', 'route-body'));
+  body.appendChild(el('p', 'insp-empty', 'Loading the timetable…'));
+
+  // Google's page for the station carries its live departure board.
+  const links = el('div', 'insp-links');
+  const maps = el('a', 'insp-action', 'Departures (Google) ↗');
+  maps.target = '_blank';
+  maps.rel = 'noopener noreferrer';
+  maps.title = `Google Maps' page for ${props.nom} station, with its departure board`;
+  maps.href = `https://www.google.com/maps/search/${encodeURIComponent(`Gare ${props.nom}`)}`
+    + `/@${lngLat.lat.toFixed(5)},${lngLat.lng.toFixed(5)},15z`;
+  links.appendChild(maps);
+  block.appendChild(links);
+  block.appendChild(el('div', 'insp-attr route-notes'));
+
+  const run = ++routes.run;
+  loadNetwork().then((net) => {
+    if (run !== routes.run) return;              // another click has moved on
+    renderStation(map, net, props, body);
+  }).catch((err) => {
+    if (run !== routes.run) return;
+    body.innerHTML = '';
+    body.appendChild(el('p', 'insp-empty', `Could not load the timetable: ${err.message}`));
+  });
+  return block;
+}
+
+function renderStation(map, net, props, body) {
+  body.innerHTML = '';
+  const links = body.nextElementSibling;
+  const notes = links.nextElementSibling;
+  notes.textContent = routes.index.notes.join(' ');
+  const reach = props.code_uic ? stationReach(net, props.code_uic) : null;
+  if (!reach || !reach.dests.size) {
+    clearRoutes(map);
+    body.appendChild(el('p', 'insp-empty', reach
+      ? 'Trains stop here but nothing boards in the timetable week.'
+      : 'Not in SNCF\'s TER, TGV and Intercités timetable. Île-de-France suburban stations are timetabled by IDFM.'));
+    return;
+  }
+  // Drawn and listed without coaches unless they are switched on; the summary
+  // still counts the places only a coach reaches.
+  const shown = routes.coaches ? reach : stationReach(net, props.code_uic, false);
+  const features = drawRoutes(map, net, shown);
+
+  const byRail = [...reach.dests.values()].filter((d) => [...d.cats].some((c) => c !== 'car')).length;
+  const summary = el('div', 'route-summary');
+  summary.append(
+    el('strong', null, reach.departures >= 7 ? `${Math.round(reach.departures / 7)} trains a day` : `${reach.departures} trains a week`),
+    document.createTextNode(` to ${byRail} station${byRail === 1 ? '' : 's'}`
+      + (reach.dests.size > byRail ? `, plus ${reach.dests.size - byRail} by coach only` : '')),
+  );
+  body.appendChild(summary);
+
+  const present = new Set([...reach.hops.values()].map((h) => h.cat));
+  const key = body.appendChild(el('div', 'route-key'));
+  for (const [id, colour, label] of ROUTE_CATS) {
+    if (!present.has(id)) continue;
+    const coach = id === 'car';
+    const item = key.appendChild(el(coach ? 'button' : 'span', `route-key-item ${id}`));
+    item.appendChild(el('i')).style.setProperty('--c', colour);
+    item.appendChild(document.createTextNode(label));
+    if (coach) {
+      item.type = 'button';
+      item.setAttribute('aria-pressed', String(routes.coaches));
+      item.title = routes.coaches ? 'Hide coach routes' : 'Show coach routes — drawn as straight lines';
+      item.addEventListener('click', () => {
+        routes.coaches = !routes.coaches;
+        renderStation(map, net, props, body);
+      });
+    }
+  }
+
+  // One entry per terminus, busiest first: where the trains are going, then
+  // everywhere they call on the way, in order.
+  const colour = new Map(ROUTE_CATS.map(([id, c]) => [id, c]));
+  const dot = (cats) => {
+    const i = el('i', 'route-dot');
+    i.style.setProperty('--c', colour.get(bestCat(cats)));
+    if (!(cats.size === 1 && cats.has('car'))) i.classList.add('rail');
+    return i;
+  };
+  const lines = [...shown.lines.entries()]
+    .filter(([end, line]) => line.calls.has(end))
+    .sort((a, b) => b[1].runs - a[1].runs || a[1].calls.get(a[0]).fastest - b[1].calls.get(b[0]).fastest);
+  const list = body.appendChild(el('div', 'route-lines'));
+  const open = lines.length <= 3;
+  lines.forEach(([end, line], i) => {
+    const item = list.appendChild(el('div', 'route-line'));
+    if (i >= ROUTE_LIST) item.hidden = true;
+    const head = item.appendChild(el('button', 'route-line-head'));
+    head.type = 'button';
+    head.title = [...line.names].join(', ');
+    const name = head.appendChild(el('span', 'route-line-name'));
+    name.append(dot(line.cats), document.createTextNode(net.stops[end][1]));
+    head.appendChild(el('span', 'num', fmtDuration(line.calls.get(end).fastest)));
+    head.appendChild(el('span', 'num', fmtFrequency(line.runs)));
+
+    const order = callOrder(line).filter((stop) => stop !== end);
+    const via = item.appendChild(el('div', 'route-line-via'));
+    // Only stops every one of these trains makes are "via"; the rest are
+    // counted, so "via Mâcon" never hides that most Paris trains run non-stop.
+    const every = order.filter((stop) => line.calls.get(stop).runs === line.runs);
+    const names = (stops) => stops.slice(0, 3).map((stop) => net.stops[stop][1]).join(', ')
+      + (stops.length > 3 ? ` +${stops.length - 3}` : '');
+    const some = order.length - every.length;
+    if (!order.length) via.textContent = 'non-stop';
+    else if (!every.length) via.textContent = `some via ${names(order)}`;
+    else via.textContent = `via ${names(every)}${some ? ` · some also call at ${some} more` : ''}`;
+
+    const table = item.appendChild(el('table', 'route-list'));
+    const tbody = table.appendChild(el('tbody'));
+    for (const stop of [...order, end]) {
+      const call = line.calls.get(stop);
+      const tr = tbody.appendChild(el('tr', stop === end ? 'terminus' : null));
+      // Fewer than all of this terminus's trains stop here.
+      if (call.runs < line.runs) {
+        tr.classList.add('partial');
+        tr.title = `${fmtFrequency(call.runs)} of the ${fmtFrequency(line.runs)} to ${net.stops[end][1]} stop here`;
+      }
+      tr.append(el('td', null, net.stops[stop][1]), el('td', 'num', fmtDuration(call.fastest)),
+                el('td', 'num', fmtFrequency(call.runs)));
+    }
+    const setOpen = (on) => {
+      item.classList.toggle('open', on);
+      head.setAttribute('aria-expanded', String(on));
+    };
+    if (order.length) {
+      setOpen(open);
+      head.addEventListener('click', () => setOpen(!item.classList.contains('open')));
+    } else {
+      item.classList.add('nonstop');   // nothing to unfold
+      head.tabIndex = -1;
+    }
+  });
+  if (lines.length > ROUTE_LIST) {
+    const more = body.appendChild(el('button', 'insp-action', `All ${lines.length} destinations`));
+    more.type = 'button';
+    more.addEventListener('click', () => {
+      for (const item of list.children) item.hidden = false;
+      more.remove();
+    });
+  }
+
+  const fit = links.insertBefore(el('button', 'insp-action', 'Zoom to routes'), links.firstChild);
+  fit.type = 'button';
+  fit.addEventListener('click', () => {
+    const bounds = new maplibregl.LngLatBounds();
+    for (const f of features) {
+      const c = f.geometry.coordinates;
+      if (f.geometry.type === 'Point') bounds.extend(c); else c.forEach((p) => bounds.extend(p));
+    }
+    map.fitBounds(bounds, { padding: { top: 40, bottom: 40, left: PANEL_W + 40, right: 380 }, maxZoom: 11 });
+  });
 }
 
 // ---------------------------------------------------------- commune search
@@ -2190,15 +2726,18 @@ const correlationLayer = () => computedLayer({
 // A section of the panel whose body folds away under its header. Folding only
 // hides the controls; whatever the tool has put on the map stays there, and the
 // header badge keeps its headline readable.
-function collapsible(block, toggle, body, storageKey) {
+function collapsible(block, toggle, body, storageKey, openByDefault = true) {
   const setOpen = (open) => {
     toggle.setAttribute('aria-expanded', String(open));
     body.hidden = !open;
     block.classList.toggle('collapsed', !open);
     try { localStorage.setItem(storageKey, open ? '1' : '0'); } catch (err) { /* storage blocked */ }
   };
-  let open = true;
-  try { open = localStorage.getItem(storageKey) !== '0'; } catch (err) { /* storage blocked */ }
+  let open = openByDefault;
+  try {
+    const saved = localStorage.getItem(storageKey);
+    if (saved !== null) open = saved !== '0';
+  } catch (err) { /* storage blocked */ }
   setOpen(open);
   toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));
 }
@@ -2896,6 +3435,7 @@ async function main() {
     for (const layer of state.layers) addLayer(map, layer);
     addProbeLayer(map);
     addSelectionLayers(map);
+    addRouteLayers(map);
     restack(map);                       // honour an order restored from the hash
     buildBasemaps(map);
     buildPanel(map);

@@ -1,0 +1,139 @@
+id: emploi_secteurs
+name: "Secteurs d'activité : actifs occupés résidents (RP 2023) et emplois salariés au lieu de travail (FLORES 2024)"
+attribution: "INSEE — Recensement de la population 2023, exploitation complémentaire (ACT3) · FLORES 2024 — Licence Ouverte / Etalab 2.0"
+url: "https://www.insee.fr/fr/statistiques/zones/8581444"
+fetched: 2026-09-19
+kind: commune_table
+fetch: auto
+order: 102
+min_join_rate: 0.98
+
+resources:
+  residents:        # employed residents by 38 sectors × self-employed/employee
+    url: "https://api.insee.fr/melodi/file/DS_RP_TD_ACTIVITE_ACTIVITYEMPFORM_COMP/DS_RP_TD_ACTIVITE_ACTIVITYEMPFORM_COMP_2023_CSV_FR"
+    filename: "DS_RP_TD_ACTIVITE_ACTIVITYEMPFORM_COMP_2023.zip"
+    member: "DS_RP_TD_ACTIVITE_ACTIVITYEMPFORM_COMP_2023_data.csv"
+    millesime: "2023"
+  emplois:          # salaried jobs located in the commune by 88 sectors, 31 December
+    url: "https://api.insee.fr/melodi/file/DS_FLORES_A88/DS_FLORES_A88_2024_CSV_FR"
+    filename: "DS_FLORES_A88_2024.zip"
+    member: "DS_FLORES_A88_2024_data.csv"
+    millesime: "2024"
+
+# The sector groups mapped. INSEE publishes residents in 38 sectors (A38 letter
+# codes) and local jobs in 88 (A88 = NAF division, two digits); both are folded
+# into the same groups so the two views can be read against each other. The A88
+# lists are the NAF divisions that make up each A38 code, so a group means the
+# same activities on both sides. This mapping is a judgement — change it here.
+#
+# `distinctif: false` keeps a group out of the "distinctive sector" map: a
+# residual category being over-represented says nothing a reader can use.
+groupes:
+  hotellerie_restauration:
+    label: Hospitality
+    a38: [IZ]
+    a88: ["55", "56"]
+  culture_medias_loisirs:
+    # A38 cannot split the creative trades from leisure: RZ is arts *and* sport,
+    # recreation and gambling; MC is advertising, design and photography *and*
+    # vets. So this group has ski instructors in it, and says so in the notes.
+    label: Culture, media & leisure
+    a38: [JA, RZ, MC]
+    a88: ["58", "59", "60", "73", "74", "75", "90", "91", "92", "93"]
+  numerique:
+    label: Tech & digital
+    a38: [JB, JC]
+    a88: ["61", "62", "63"]
+  agriculture:
+    label: Agriculture
+    a38: [AZ]
+    a88: ["01", "02", "03"]
+  industrie:
+    label: Industry & energy
+    a38: [BZ, CA, CB, CC, CD, CE, CF, CG, CH, CI, CJ, CK, CL, CM, DZ, EZ]
+    a88: ["05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18",
+          "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32",
+          "33", "35", "36", "37", "38", "39"]
+  construction:
+    label: Construction
+    a38: [FZ]
+    a88: ["41", "42", "43"]
+  commerce:
+    label: Retail & trade
+    a38: [GZ]
+    a88: ["45", "46", "47"]
+  transport:
+    label: Transport & logistics
+    a38: [HZ]
+    a88: ["49", "50", "51", "52", "53"]
+  public_sante_enseignement:
+    label: Public sector, health & education
+    a38: [OZ, PZ, QA, QB]
+    a88: ["84", "85", "86", "87", "88"]
+  services_entreprises:
+    label: Business, finance & property
+    a38: [KZ, LZ, MA, MB, NZ]
+    a88: ["64", "65", "66", "68", "69", "70", "71", "72", "77", "78", "79", "80", "81", "82"]
+  autres_services:
+    label: Other services
+    a38: [SZ, TZ, UZ]
+    a88: ["94", "95", "96", "97", "98", "99"]
+    distinctif: false
+
+# Groups whose self-employed share is published too — the two the map is asked
+# to show: how freelance the creative and hospitality trades are locally.
+independants_pour: [hotellerie_restauration, culture_medias_loisirs]
+
+# Communes with fewer employed residents than this get blank sector shares.
+# ACT3 is the census's complementary exploitation: under 10,000 inhabitants
+# only one questionnaire in four has its sector coded, so a commune with 60
+# people in work has about 15 coded — a share over 15 people is not a figure.
+min_actifs_parts: 60
+# The distinctive-sector map needs more: it compares eleven shares at once, and
+# with small samples one of them will look over-represented by chance alone.
+min_actifs_distinctif: 200
+# A group is "distinctive" only when its share is at least this multiple of its
+# national share (the location quotient). Below it the commune is "Mixed".
+min_lq: 1.5
+# FLORES local-job shares are blank where the commune has fewer salaried jobs.
+min_emplois: 30
+
+reference_communes:
+  - { code_insee: "74056", name: Chamonix-Mont-Blanc }
+  - { code_insee: "75056", name: Paris }
+  - { code_insee: "92062", name: Puteaux }
+  - { code_insee: "28085", name: Chartres }
+  - { code_insee: "13001", name: Aix-en-Provence }
+  - { code_insee: "31555", name: Toulouse }
+  - { code_insee: "51108", name: Châlons-en-Champagne }
+
+notes: |
+  What kind of work — two views that answer different questions.
+
+  **Residents' jobs** (census 2023) is what the people who live here do,
+  wherever they do it. A commuter village outside Lyon can have a third of its
+  residents in business services without a single office in the village. This
+  is the view for "who would my neighbours be". It is the census's
+  complementary exploitation: in communes under 10,000 inhabitants only one
+  questionnaire in four is coded to a sector, and INSEE's counts are weighted
+  estimates with decimals. Shares are blank below 60 residents in work, and the
+  distinctive-sector map below 200.
+
+  **Local jobs** (FLORES 2024) is the salaried jobs physically located in the
+  commune on 31 December, whoever holds them. It is an administrative count,
+  not a sample, so a village's number is exact — but it has no self-employed
+  in it at all, which hides most farmers, artisans and freelancers; and it
+  dates jobs to the employer's establishment, so a firm registered here with
+  staff on sites elsewhere lifts this commune. December also means ski resorts
+  are counted in season and seaside resorts out of it.
+
+  **Culture, media & leisure is broader than "creative".** The census's 38
+  sectors cannot separate the arts from sport and recreation, or advertising and
+  design from veterinary work. So a ski resort scores high on it for its ski
+  instructors and lift operators. The local-jobs fields do carry the finer
+  divisions if you need them.
+
+  **The distinctive sector** is the group whose share among residents is
+  furthest above its national share (the location quotient). Everywhere has
+  shops and schools; this map shows what a commune has more of than France
+  does. Where no group reaches 1.5× its national share it is "Mixed".

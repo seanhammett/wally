@@ -1,0 +1,112 @@
+[
+  {
+    "id": "taux_emploi",
+    "label": "Employment rate (15–64)",
+    "group": "Work & economy",
+    "type": "choropleth",
+    "paint": {
+      "property": "taux_emploi_15_64",
+      "scale": "numeric",
+      "breaks": [60, 66, 70, 74, 78],
+      "colors": ["#f7fcf5", "#c7e9c0", "#a1d99b", "#74c476", "#31a354", "#006d2c"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "taux_emploi_15_64", "type": "numeric", "unit": "%", "label": "Employment rate, 15–64" },
+      { "name": "taux_chomage", "type": "numeric", "unit": "%", "label": "Unemployment (census definition)" },
+      { "name": "part_independants", "type": "numeric", "unit": "% of workers", "label": "Self-employed" },
+      { "name": "part_precaires", "type": "numeric", "unit": "% of employees", "label": "Fixed-term, temp and other contracts" },
+      { "name": "part_temps_partiel", "type": "numeric", "unit": "% of workers", "label": "Part-time" },
+      { "name": "part_retraites", "type": "numeric", "unit": "% of 15+", "label": "Retired" },
+      { "name": "part_etudiants", "type": "numeric", "unit": "% of 15+", "label": "Students" },
+      { "name": "actifs_occupes", "type": "numeric", "unit": "people", "label": "Residents in work" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Residents aged 15–64 in work, as a share of everyone that age, 2023 census. Nationally 67.4%; the median commune 72%. It counts people who have stopped looking for work, which the unemployment rate does not, so it is the better single measure. University towns read low because students are in the denominator. Blank under 30 residents aged 15–64."
+  },
+  {
+    "id": "taux_chomage",
+    "label": "Unemployment (census)",
+    "group": "Work & economy",
+    "detail": true,
+    "type": "choropleth",
+    "paint": {
+      "property": "taux_chomage",
+      "scale": "numeric",
+      "breaks": [5, 7, 9, 12, 16],
+      "colors": ["#fff5eb", "#fdd0a2", "#fdae6b", "#fd8d3c", "#e6550d", "#a63603"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "taux_chomage", "type": "numeric", "unit": "%", "label": "Unemployment (census definition)" },
+      { "name": "taux_emploi_15_64", "type": "numeric", "unit": "%", "label": "Employment rate, 15–64" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Unemployed ÷ active population, aged 15–64. Self-declared in the census, so it runs above INSEE's quarterly ILO rate: 11.0% nationally against about 7.5%. Compare communes with each other, not with the headline figure. Blank under 30 active residents."
+  },
+  {
+    "id": "part_independants",
+    "label": "Self-employed",
+    "group": "Work & economy",
+    "type": "choropleth",
+    "paint": {
+      "property": "part_independants",
+      "scale": "numeric",
+      "breaks": [10, 14, 18, 24, 32],
+      "colors": ["#f2f0f7", "#dadaeb", "#bcbddc", "#9e9ac8", "#756bb1", "#54278f"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "part_independants", "type": "numeric", "unit": "% of workers", "label": "Self-employed" },
+      { "name": "actifs_occupes", "type": "numeric", "unit": "people", "label": "Residents in work" },
+      { "name": "part_temps_partiel", "type": "numeric", "unit": "% of workers", "label": "Part-time" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Residents in work who are not salaried: farmers, artisans, shopkeepers, liberal professions, freelancers and micro-entrepreneurs whose main job it is. Nationally 13.8%. Very high values are mostly farming communes. In towns, high values mean freelancers and professions libérales. Blank under 30 residents in work."
+  },
+  {
+    "id": "part_precaires",
+    "label": "Fixed-term and temp contracts",
+    "group": "Work & economy",
+    "detail": true,
+    "type": "choropleth",
+    "paint": {
+      "property": "part_precaires",
+      "scale": "numeric",
+      "breaks": [9, 12, 15, 18, 22],
+      "colors": ["#fff7ec", "#fee8c8", "#fdd49e", "#fc8d59", "#e34a33", "#b30000"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "part_precaires", "type": "numeric", "unit": "% of employees", "label": "Fixed-term, temp and other contracts" },
+      { "name": "part_temps_partiel", "type": "numeric", "unit": "% of workers", "label": "Part-time" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Employees on anything but a permanent contract or civil-service post: fixed-term, temping, apprenticeship, subsidised contracts, internships. Nationally 15.4%. Seasonal resorts and communes with a training centre run high."
+  },
+  {
+    "id": "concentration_emploi",
+    "label": "Jobs per 100 working residents",
+    "group": "Work & economy",
+    "type": "choropleth",
+    "paint": {
+      "property": "indicateur_concentration_emploi",
+      "scale": "numeric",
+      "breaks": [20, 40, 70, 130, 250],
+      "colors": ["#8c510a", "#d8b365", "#f6e8c3", "#e0e0e0", "#80cdc1", "#01665e"],
+      "no_data_color": "#e5e7eb"
+    },
+    "fields": [
+      { "name": "indicateur_concentration_emploi", "type": "numeric", "unit": "per 100", "label": "Jobs here per 100 working residents" },
+      { "name": "emplois_au_lieu_de_travail", "type": "numeric", "unit": "jobs", "label": "Jobs located here" },
+      { "name": "actifs_occupes", "type": "numeric", "unit": "people", "label": "Residents in work" }
+    ],
+    "default_visible": false,
+    "default_opacity": 0.72,
+    "legend_note": "Jobs located in the commune ÷ residents in work × 100 (INSEE's indicateur de concentration d'emploi). Teal is an employment hub that draws commuters in each morning. Brown is residential, and its people work elsewhere. The median commune is 36: most of France commutes out. It does not show whether residents hold the local jobs."
+  }
+]

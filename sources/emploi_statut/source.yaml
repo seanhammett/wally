@@ -1,0 +1,70 @@
+id: emploi_statut
+name: "Activité et emploi : taux d'emploi, chômage, non-salariés, contrats précaires, emplois au lieu de travail (RP 2023)"
+attribution: "INSEE — Recensement de la population 2023, exploitation principale (dossier complet : EMPLOI_LR, ACTIVITE, EMPLOI_LT) — Licence Ouverte / Etalab 2.0"
+url: "https://www.insee.fr/fr/statistiques/zones/8581444"
+fetched: 2026-09-19
+kind: commune_table
+fetch: auto
+order: 101
+millesime: "2023"
+min_join_rate: 0.98
+
+# Three cubes from INSEE's Melodi file API. Each carries every geographic level
+# and the 2012 and 2017 censuses as well as 2023; only COM rows at `millesime`
+# are kept. Unzipped they are 1.2 GB, 590 MB and 135 MB, so they are streamed
+# out of the zip rather than extracted.
+resources:
+  residents:        # activity status of residents, by age band
+    url: "https://api.insee.fr/melodi/file/DS_RP_EMPLOI_LR_PRINC/DS_RP_EMPLOI_LR_PRINC_2023_CSV_FR"
+    filename: "DS_RP_EMPLOI_LR_PRINC_2023.zip"
+    member: "DS_RP_EMPLOI_LR_PRINC_2023_data.csv"
+  formes:           # employed residents: self-employed / employee, contract, working time
+    url: "https://api.insee.fr/melodi/file/DS_RP_ACTIVITE_PRINC/DS_RP_ACTIVITE_PRINC_2023_CSV_FR"
+    filename: "DS_RP_ACTIVITE_PRINC_2023.zip"
+    member: "DS_RP_ACTIVITE_PRINC_2023_data.csv"
+  lieu_travail:     # jobs located in the commune, whoever holds them
+    url: "https://api.insee.fr/melodi/file/DS_RP_EMPLOI_LT_PRINC/DS_RP_EMPLOI_LT_PRINC_2023_CSV_FR"
+    filename: "DS_RP_EMPLOI_LT_PRINC_2023.zip"
+    member: "DS_RP_EMPLOI_LT_PRINC_2023_data.csv"
+
+# Below this many people in a rate's denominator the rate is published blank.
+# The principal exploitation is a full count, so a village's figure is not a
+# sampling estimate — but a rate over 25 people moves 4 points per person, and
+# that reads as a signal on a map when it is not one.
+min_denominateur: 30
+
+reference_communes:
+  - { code_insee: "74056", name: Chamonix-Mont-Blanc }
+  - { code_insee: "75056", name: Paris }
+  - { code_insee: "92062", name: Puteaux }
+  - { code_insee: "59512", name: Roubaix }
+  - { code_insee: "23096", name: Guéret }
+  - { code_insee: "91692", name: Saclay }
+
+notes: |
+  What the people who live here do for a living, from the 2023 census.
+
+  **Employment rate is the headline, not unemployment.** The employment rate —
+  people in work as a share of all 15–64 year-olds — counts everyone, including
+  those who have stopped looking. Unemployment only counts people who say they
+  are looking, and in the census that is self-declared: it runs several points
+  above the ILO rate INSEE publishes quarterly (about 11% nationally in 2023, against 7–8%), and
+  should be compared commune to commune, never against the national headline.
+
+  **Self-employed** covers everyone INSEE classes as non-salarié: farmers,
+  artisans, shopkeepers, liberal professions, company heads who are not salaried,
+  and micro-entrepreneurs whose main job it is. A second job run on the side is
+  not counted — the census records one main activity per person.
+
+  **Insecure contracts** is the share of employees on anything but a permanent
+  contract or civil-service post: fixed-term, temping, apprenticeship,
+  subsidised contract, internship. Apprentices lift it in communes with a
+  training centre; seasonal work lifts it in resorts.
+
+  **Jobs per 100 working residents** (INSEE's *indicateur de concentration
+  d'emploi*) divides the jobs located in the commune by its residents in work.
+  Above 100 the commune imports workers each morning — a town centre, a business
+  park, a hospital. Far below it the commune is residential and its people work
+  elsewhere. It says nothing about whether the residents hold the local jobs.
+
+  Rates are blank where the denominator is under 30 people.

@@ -1,0 +1,82 @@
+{
+ "network": "network.json",
+ "tracks": "tracks.json",
+ "week": [
+  "2026-09-28",
+  "2026-10-04"
+ ],
+ "feed_version": "2026-09-18",
+ "feed_end": "2027-02-28",
+ "products": [
+  {
+   "id": "Car TER",
+   "categorie": "car",
+   "nom": "TER coach"
+  },
+  {
+   "id": "Car à réservation",
+   "categorie": "car",
+   "nom": "Coach, booking required"
+  },
+  {
+   "id": "ICE",
+   "categorie": "tgv",
+   "nom": "ICE"
+  },
+  {
+   "id": "INTERCITES",
+   "categorie": "intercites",
+   "nom": "Intercités"
+  },
+  {
+   "id": "INTERCITES de nuit",
+   "categorie": "intercites",
+   "nom": "Intercités de nuit"
+  },
+  {
+   "id": "Lyria",
+   "categorie": "tgv",
+   "nom": "TGV Lyria"
+  },
+  {
+   "id": "Navette",
+   "categorie": "ter",
+   "nom": "Shuttle train"
+  },
+  {
+   "id": "OUIGO",
+   "categorie": "tgv",
+   "nom": "OUIGO"
+  },
+  {
+   "id": "TGV INOUI",
+   "categorie": "tgv",
+   "nom": "TGV INOUI"
+  },
+  {
+   "id": "Train",
+   "categorie": "ter",
+   "nom": "Train"
+  },
+  {
+   "id": "Train TER",
+   "categorie": "ter",
+   "nom": "TER"
+  },
+  {
+   "id": "TramTrain",
+   "categorie": "ter",
+   "nom": "Tram-train"
+  }
+ ],
+ "flags": {
+  "no_pickup": 1,
+  "no_drop_off": 2
+ },
+ "notes": [
+  "Direct trains only — every place reachable without changing, from SNCF's national timetable for the week of 2026-09-28. Times are the fastest run that week; a day is the week's total ÷ 7.",
+  "Routes follow the quickest way along the track between consecutive stops — the timetable says where a train stops, not which line it takes. Coaches, and hops the track network cannot join up (mostly abroad), are drawn as straight lines.",
+  "Île-de-France suburban trains (Transilien, RER) are timetabled by IDFM and are not in this feed."
+ ],
+ "attribution": "SNCF Gares & Connexions — Open Data SNCF (gares de voyageurs, fréquentation en gares) · SNCF Voyageurs — horaires GTFS TER, TGV, Intercités — Licence Ouverte 2.0"
+}

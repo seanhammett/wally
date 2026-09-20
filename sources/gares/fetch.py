@@ -1,4 +1,4 @@
-"""Passenger stations and their annual footfall, from Open Data SNCF."""
+"""Passenger stations, their annual footfall and the national timetable, from Open Data SNCF."""
 from pipeline.common import BuildError, Log, download
 
 URL = "{base}/{dataset}/exports/{fmt}?limit=-1"
@@ -13,4 +13,6 @@ def fetch(ctx, force: bool = False) -> None:
         if '"errorcode"' in head or '"error_code"' in head:
             dest.unlink()
             raise BuildError(f"{spec['dataset']} export failed: {head[:200]}")
-    Log.ok(f"{len(ctx.meta['exports'])} SNCF export(s) in data/raw/{ctx.source.id}")
+    gtfs = ctx.meta["gtfs"]
+    download(gtfs["url"], ctx.raw_dir / gtfs["filename"], force=force)
+    Log.ok(f"{len(ctx.meta['exports'])} SNCF export(s) and the GTFS timetable in data/raw/{ctx.source.id}")
