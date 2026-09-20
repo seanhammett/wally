@@ -115,6 +115,17 @@ function mixHex(a, b, t) {
 }
 
 // The legend's key to a strength ramp: one bar from the gray end to full colour.
+// A label under a colour bar, at `pct` along it and never past either end: it
+// slides back by its own width in proportion to how far along it sits, so the
+// one at 0% starts at the bar's left edge and the one at 100% ends at its right.
+function placeOnBar(label, pct, host) {
+  const at = Math.max(0, Math.min(100, pct));
+  label.style.left = `${at}%`;
+  label.style.transform = `translateX(${-at}%)`;
+  host.appendChild(label);
+  return label;
+}
+
 function strengthBar(paint) {
   const s = paint.strength;
   const wrap = el('div', 'act-scale');
@@ -617,9 +628,7 @@ function numericScale(paint, unit) {
   const ticks = el('div', 'act-ticks');
   const decimals = decimalsIn(paint.breaks);
   paint.breaks.forEach((b, i) => {
-    const tick = el('span', 'tick', shortNumber(b, decimals));
-    tick.style.left = `${((i + 1) / paint.colors.length) * 100}%`;
-    ticks.appendChild(tick);
+    placeOnBar(el('span', 'tick', shortNumber(b, decimals)), ((i + 1) / paint.colors.length) * 100, ticks);
   });
   wrap.appendChild(ticks);
   return wrap;
@@ -672,18 +681,14 @@ function continuousScale(paint, unit) {
   const ticks = el('div', 'act-ticks');
   const decimals = decimalsIn(paint.stops.map(([v]) => v));
   for (const [v] of paint.stops) {
-    const tick = el('span', 'tick', shortNumber(v, decimals));
-    tick.style.left = `${at(v)}%`;
-    ticks.appendChild(tick);
+    placeOnBar(el('span', 'tick', shortNumber(v, decimals)), at(v), ticks);
   }
   if (Number.isFinite(paint.max)) {
     const past = el('i', 'act-past');
     past.style.left = `${at(paint.max)}%`;
     bar.appendChild(past);
-    const mark = el('span', 'act-max', `best ${shortNumber(paint.max, 2)}`);
-    mark.style.left = `${at(paint.max)}%`;
     const head = el('div', 'act-maxrow');
-    head.appendChild(mark);
+    placeOnBar(el('span', 'act-max', `best ${shortNumber(paint.max, 2)}`), at(paint.max), head);
     wrap.appendChild(head);
   }
   wrap.append(bar, ticks);
@@ -787,21 +792,27 @@ function buildActive(map) {
     const name = el('span', 'act-name', layer.label);
     name.title = layer.label;
 
-    const up = el('button', 'act-btn', '▲');
-    up.title = 'Move up (draw above)';
-    up.disabled = i === 0;
-    up.addEventListener('click', () => moveLayerBy(map, id, -1));
-
-    const down = el('button', 'act-btn', '▼');
-    down.title = 'Move down (draw below)';
-    down.disabled = i === ids.length - 1;
-    down.addEventListener('click', () => moveLayerBy(map, id, +1));
+    // Dragging the grip restacks; arrow keys on it do the same a step at a
+    // time, which is what the pair of arrow buttons used to be for.
+    const grip = el('button', 'grip');
+    grip.type = 'button';
+    grip.innerHTML = GRIP_SVG;
+    grip.title = 'Drag to restack (↑ ↓ when focused)';
+    grip.setAttribute('aria-label', `Reorder ${layer.label}, ${i + 1} of ${ids.length}`);
+    grip.addEventListener('pointerdown', (e) => startReorder(map, host, row, e));
+    grip.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      e.preventDefault();
+      moveLayerBy(map, id, e.key === 'ArrowUp' ? -1 : +1);
+      const moved = host.querySelector(`.act-row[data-id="${CSS.escape(id)}"] .grip`);
+      if (moved) moved.focus();
+    });
 
     const off = el('button', 'act-btn off', '×');
     off.title = 'Switch this layer off';
     off.addEventListener('click', () => toggleLayer(map, id, false));
 
-    head.append(name, up, down, off);
+    head.append(name, grip, off);
 
     const ctl = el('div', 'act-ctl');
     const slider = el('input');
@@ -820,21 +831,7 @@ function buildActive(map) {
     const fills = layer.type === 'choropleth' || layer.type === 'polygon';
     card.append(head, ...(fills ? [scaleBlock(layer)] : []), ctl);
 
-    const grip = el('button', 'grip');
-    grip.type = 'button';
-    grip.innerHTML = GRIP_SVG;
-    grip.title = 'Drag to restack (↑ ↓ when focused)';
-    grip.setAttribute('aria-label', `Reorder ${layer.label}, ${i + 1} of ${ids.length}`);
-    grip.addEventListener('pointerdown', (e) => startReorder(map, host, row, e));
-    grip.addEventListener('keydown', (e) => {
-      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-      e.preventDefault();
-      moveLayerBy(map, id, e.key === 'ArrowUp' ? -1 : +1);
-      const moved = host.querySelector(`.act-row[data-id="${CSS.escape(id)}"] .grip`);
-      if (moved) moved.focus();
-    });
-
-    row.append(card, grip);
+    row.append(card);
     host.appendChild(row);
   });
 }
@@ -851,6 +848,45 @@ function topItems() {
     // A layer's statistic is the field it draws.
     stats: layers.map((l) => l.paint && l.paint.property).filter((name) => state.stats.byName.has(name)),
   };
+}
+
+// Two switches per row, both reading as tickboxes: the square puts the layer
+// itself on the map, the circle in the optimiser's own colour hands the
+// statistic it draws to the optimiser. Each is its own letter rather than a
+// tick — the square dips at the top into an M, the filled circle carries an O
+// — so a row says at a glance where that statistic is already in play.
+const TICKBOX_MAP_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true">'
+  + '<path class="tb-shape" d="M2.5 2.9V13.1h11V2.9L8 6.2Z"/>'
+  + '<path class="tb-mark" d="M5.3 11.7V7.1L8 9.7l2.7-2.6v4.6"/></svg>';
+const TICKBOX_OPT_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true">'
+  + '<circle class="tb-shape" cx="8" cy="8" r="5.7"/>'
+  + '<circle class="tb-mark" cx="8" cy="8" r="3.2"/></svg>';
+
+function tickbox(cls, svg, label) {
+  const button = el('button', `tickbox ${cls}`);
+  button.type = 'button';
+  button.innerHTML = svg;
+  button.setAttribute('aria-pressed', 'false');
+  button.setAttribute('aria-label', label);
+  button.title = label;
+  return button;
+}
+
+// The statistic a layer draws, when the optimiser can score it.
+function optimisable(layer) {
+  if (!state.byId.has(OPT_ID)) return null;
+  const name = layer.paint && layer.paint.property;
+  return name && state.stats.byName.has(name) ? name : null;
+}
+
+// What the circle does: exactly the add and the remove that the optimiser's own
+// dropdown and card crosses do.
+function toggleCriterion(map, name) {
+  const o = state.opt;
+  if (o.criteria.some((c) => c.name === name)) o.criteria = o.criteria.filter((c) => c.name !== name);
+  else o.criteria.push({ name, dir: 'up', weight: 3, bad: null, ideal: null });
+  renderOptimiser(map);
+  runOptimiser(map);
 }
 
 function buildPanel(map) {
@@ -893,15 +929,27 @@ function buildPanel(map) {
       item.dataset.id = layer.id;
 
       const row = el('div', 'row');
-      const box = el('input');
-      box.type = 'checkbox';
-      box.id = `chk-${layer.id}`;
-      box.checked = state.visible.has(layer.id);
-      box.addEventListener('change', () => toggleLayer(map, layer.id, box.checked));
+      const ticks = el('div', 'tickboxes');
 
-      const label = el('label', null, layer.label);
-      label.htmlFor = box.id;
-      row.append(box, label, el('span', 'badge', layer.type === 'choropleth' ? 'commune' : layer.type));
+      const onMap = tickbox('tickbox-map', TICKBOX_MAP_SVG, `Draw ${layer.label} on the map`);
+      onMap.addEventListener('click', () => toggleLayer(map, layer.id, !state.visible.has(layer.id)));
+      ticks.appendChild(onMap);
+
+      // The circle is offered only where the layer draws a commune statistic:
+      // the optimiser scores columns, not point or line layers.
+      const stat = optimisable(layer);
+      if (stat) {
+        const inOpt = tickbox('tickbox-opt', TICKBOX_OPT_SVG, `Add ${layer.label} to Find a commune`);
+        inOpt.dataset.stat = stat;
+        inOpt.addEventListener('click', () => toggleCriterion(map, stat));
+        ticks.appendChild(inOpt);
+      } else {
+        ticks.appendChild(el('span', 'tickbox tickbox-gap'));  // keeps the names in one column
+      }
+
+      const label = el('span', 'layer-name', layer.label);
+      label.addEventListener('click', () => onMap.click());
+      row.append(ticks, label, el('span', 'badge', layer.type === 'choropleth' ? 'commune' : layer.type));
 
       const about = [layer.legend_note, layer.attribution && `Source: ${layer.attribution}`].filter(Boolean);
       item.appendChild(row);
@@ -930,10 +978,13 @@ function fold(what, paragraphs, cls) {
 }
 
 function syncPanel() {
+  const criteria = new Set(state.opt.criteria.map((c) => c.name));
   for (const item of document.querySelectorAll('.layer')) {
     const on = state.visible.has(item.dataset.id);
     item.classList.toggle('on', on);
-    item.querySelector('input[type=checkbox]').checked = on;
+    item.querySelector('.tickbox-map').setAttribute('aria-pressed', String(on));
+    const inOpt = item.querySelector('.tickbox-opt');
+    if (inOpt) inOpt.setAttribute('aria-pressed', String(criteria.has(inOpt.dataset.stat)));
   }
   for (const group of document.querySelectorAll('#layers .group')) {
     const n = group.querySelectorAll('.layer.on').length;
@@ -2997,6 +3048,7 @@ function renderOptimiser(map) {
   const host = $('#opt-criteria');
   host.innerHTML = '';
   o.criteria.forEach((crit) => host.appendChild(optCard(map, crit)));
+  syncPanel();                    // the layer list's circles track this list
   renderOptimiserResult(map);
 }
 
@@ -3305,7 +3357,10 @@ function buildBasemaps(map) {
   });
   if (!current().tiles) applyBasemap(map, current());
 
+  // The cadastre and contour-line toggles are off the panel. The code below
+  // still builds them if a #overlays row is put back into index.html.
   const overlayHost = $('#overlays');
+  if (!overlayHost) return;
   overlayHost.innerHTML = '';
   for (const o of state.manifest.overlays || []) {
     const chip = el('button', 'chip overlay-chip', `+ ${o.label}`);
@@ -3438,6 +3493,7 @@ async function main() {
     addRouteLayers(map);
     restack(map);                       // honour an order restored from the hash
     buildBasemaps(map);
+    collapsible($('#active-block'), $('#active-toggle'), $('#active-body'), 'active-open');
     buildPanel(map);
     buildCorrelator(map);
     buildOptimiser(map);

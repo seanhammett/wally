@@ -21,15 +21,20 @@
         <label for="basemap-select">Basemap</label>
         <select id="basemap-select"></select>
       </div>
-      <div id="overlays" class="chips"></div>
     </section>
 
-    <section class="block" id="active-block">
-      <h2>Active layers <span id="active-count" class="count">0</span></h2>
-      <div id="active"></div>
+    <section class="block card card-active" id="active-block">
+      <h2>
+        <button id="active-toggle" class="block-toggle" type="button" aria-expanded="true" aria-controls="active-body">
+          <span class="chev" aria-hidden="true"></span>Active layers <span id="active-count" class="count">0</span>
+        </button>
+      </h2>
+      <div id="active-body">
+        <div id="active"></div>
+      </div>
     </section>
 
-    <section class="block" id="corr-block">
+    <section class="block" id="corr-block" hidden>
       <h2>
         <button id="corr-toggle" class="block-toggle" type="button" aria-expanded="true" aria-controls="corr-body">
           <span class="chev" aria-hidden="true"></span>Correlate two stats <span id="corr-badge" class="count" hidden></span>
@@ -64,10 +69,10 @@
       </div>
     </section>
 
-    <section class="block" id="opt-block">
+    <section class="block card card-opt" id="opt-block">
       <h2>
         <button id="opt-toggle" class="block-toggle" type="button" aria-expanded="true" aria-controls="opt-body">
-          <span class="chev" aria-hidden="true"></span>Find matching areas <span id="opt-badge" class="count" hidden></span>
+          <span class="chev" aria-hidden="true"></span>Find a commune <span id="opt-badge" class="count" hidden></span>
         </button>
       </h2>
       <div id="opt-body">

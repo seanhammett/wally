@@ -4,6 +4,7 @@
   --muted: #6b7280;
   --line: #e5e7eb;
   --accent: #1d4ed8;
+  --opt: #7e03a8;
   --panel-w: 330px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
 }
@@ -25,6 +26,12 @@ html, body { margin: 0; height: 100%; color: var(--fg); background: var(--bg); }
 #panel h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
             color: var(--muted); margin: 0 0 8px; font-weight: 600; }
 .block { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 10px 6px 11px; }
+.card-active { background: #eaf0f9; border-color: #cfdcf0; }
+#panel .card-active h2 { color: var(--accent); }
+.card-opt { background: #f8eefd; border-color: #e7cef4; }
+#panel .card-opt h2 { color: var(--opt); }
+.card.collapsed { padding-bottom: 10px; }
 .muted { color: var(--muted); font-size: 11px; line-height: 1.5; }
 
 #panel-toggle {
@@ -53,7 +60,8 @@ html, body { margin: 0; height: 100%; color: var(--fg); background: var(--bg); }
 
 /* ------------------------------------------------- active layer stack */
 /* The stack reads top-down exactly as it draws: first row is the top layer. */
-#active-block h2 { display: flex; align-items: center; gap: 6px; }
+#active-block h2 { margin: 0 0 8px; }
+#active-block.collapsed h2 { margin-bottom: 0; }
 .count {
   font-size: 10px; background: var(--accent); color: #fff; border-radius: 999px;
   min-width: 16px; text-align: center; padding: 1px 5px; letter-spacing: 0;
@@ -61,11 +69,9 @@ html, body { margin: 0; height: 100%; color: var(--fg); background: var(--bg); }
 /* The card is the layer; the grip beside it is the only thing that drags, so
    the opacity slider inside keeps its own pointer. */
 #active { display: flex; flex-direction: column; gap: 5px; }
-.act-row { display: flex; align-items: stretch; gap: 5px; transition: transform .12s ease; }
+.act-row { display: flex; align-items: stretch; transition: transform .12s ease; }
 .act-row.dragging { transition: none; position: relative; z-index: 3; }
-.act-row.dragging .act, .act-row.dragging .grip {
-  border-color: var(--accent); box-shadow: 0 4px 12px rgba(0, 0, 0, .16);
-}
+.act-row.dragging .act { border-color: var(--accent); box-shadow: 0 4px 12px rgba(0, 0, 0, .16); }
 body.reordering { cursor: grabbing; user-select: none; }
 
 .act {
@@ -73,14 +79,14 @@ body.reordering { cursor: grabbing; user-select: none; }
   border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px 5px; background: #fff;
 }
 .grip {
-  flex: none; width: 20px; padding: 0; display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--line); border-radius: 6px; background: #fff; color: #9ca3af;
-  cursor: grab; touch-action: none;
+  flex: none; width: 16px; height: 16px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; background: none; color: #b6bdc9; cursor: grab; touch-action: none;
 }
-.grip:hover { color: var(--accent); border-color: var(--accent); }
-.grip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.grip:hover { color: var(--accent); }
+.grip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 3px; }
 .act-row.dragging .grip { cursor: grabbing; color: var(--accent); }
-.grip svg { width: 11px; height: 16px; display: block; pointer-events: none; }
+.grip svg { width: 9px; height: 13px; display: block; pointer-events: none; }
 
 .act-head { display: flex; align-items: center; gap: 6px; }
 .act-name {
@@ -108,7 +114,7 @@ body.reordering { cursor: grabbing; user-select: none; }
 }
 .act-ticks { position: relative; height: 12px; margin-top: 2px; }
 .act-ticks .tick {
-  position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap;
+  position: absolute; top: 0; white-space: nowrap;
   font-size: 9px; color: var(--muted); font-variant-numeric: tabular-nums;
 }
 /* A continuous scale: one gradient, washed out past the best value reached. */
@@ -120,7 +126,7 @@ body.reordering { cursor: grabbing; user-select: none; }
 }
 .act-maxrow { position: relative; height: 12px; margin-bottom: 1px; }
 .act-max {
-  position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap;
+  position: absolute; top: 0; white-space: nowrap;
   font-size: 9px; font-weight: 600; color: var(--fg); font-variant-numeric: tabular-nums;
 }
 .act-more { font-size: 9.5px; color: var(--muted); margin-top: 3px; }
@@ -197,7 +203,7 @@ body.reordering { cursor: grabbing; user-select: none; }
    unacceptable value to the ideal one. */
 #opt-block h2 { margin: 0 0 8px; }
 #opt-block.collapsed h2 { margin-bottom: 0; }
-#opt-badge { background: #7e03a8; font-variant-numeric: tabular-nums; }
+#opt-badge { background: var(--opt); font-variant-numeric: tabular-nums; }
 
 .opt-add-row { display: flex; gap: 5px; margin-bottom: 6px; }
 #opt-add {
@@ -219,7 +225,7 @@ body.reordering { cursor: grabbing; user-select: none; }
 .opt-card .corr-row { margin-bottom: 4px; }
 .opt-card .corr-lbl { width: 44px; }
 .opt-card .chip { font-size: 10.5px; padding: 2px 8px; }
-.opt-weight { flex: 1; margin: 0; accent-color: #7e03a8; height: 14px; cursor: pointer; }
+.opt-weight { flex: 1; margin: 0; accent-color: var(--opt); height: 14px; cursor: pointer; }
 .opt-ramp { gap: 4px; }
 .opt-num {
   flex: 1; min-width: 0; width: 0; font-size: 11px; padding: 3px 5px;
@@ -258,13 +264,42 @@ body.reordering { cursor: grabbing; user-select: none; }
 .layer { padding: 6px 0 8px; border-bottom: 1px dotted var(--line); }
 .layer:last-child { border-bottom: none; }
 .layer .row { display: flex; align-items: center; gap: 8px; }
-.layer label { font-size: 12.5px; cursor: pointer; flex: 1; line-height: 1.3; }
-.layer input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; }
+.layer-name { font-size: 12.5px; cursor: pointer; flex: 1; min-width: 0; line-height: 1.3; }
+
+/* Square and blue puts the layer on the map; round and purple hands the
+   statistic to the optimiser, whose own block is that colour. The box is the
+   letter: the square's top edge dips into an M, and the circle fills around a
+   white O. Both are drawn as one path apiece, so the empty state is the same
+   outline the full state fills. */
+.tickboxes { display: flex; align-items: center; gap: 4px; flex: none; }
+.tickbox {
+  width: 17px; height: 17px; flex: none; padding: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; background: none;
+}
+.tickbox svg { width: 17px; height: 17px; display: block; }
+.tickbox:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 3px; }
+.tb-shape { fill: none; stroke-width: 1.6; stroke-linejoin: round; }
+.tb-mark { fill: none; stroke: none; stroke-linecap: round; stroke-linejoin: round; }
+
+.tickbox-map .tb-shape { stroke: #b9c2d1; }
+.tickbox-map:hover .tb-shape { stroke: var(--accent); }
+.tickbox-map[aria-pressed="true"] .tb-shape { fill: var(--accent); stroke: var(--accent); }
+.tickbox-map[aria-pressed="true"] .tb-mark { stroke: #fff; stroke-width: 1.5; }
+
+.tickbox-opt .tb-shape { stroke: #cfa9e4; }
+.tickbox-opt:hover .tb-shape { stroke: var(--opt); }
+.tickbox-opt:hover .tb-mark { stroke: #ddbdee; stroke-width: 1.6; }
+.tickbox-opt:focus-visible { outline-color: var(--opt); }
+.tickbox-opt[aria-pressed="true"] .tb-shape { fill: var(--opt); stroke: var(--opt); }
+.tickbox-opt[aria-pressed="true"] .tb-mark { stroke: #fff; stroke-width: 1.5; }
+
+.tickbox-gap { cursor: default; }
 .layer .badge {
-  font-size: 9px; text-transform: uppercase; letter-spacing: .05em;
+  font-size: 9px; text-transform: uppercase; letter-spacing: .05em; flex: none;
   color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 1px 4px;
 }
-.layer .note { font-size: 10.5px; color: var(--muted); margin: 3px 0 0 21px; line-height: 1.45; display: none; }
+.layer .note { font-size: 10.5px; color: var(--muted); margin: 3px 0 0 46px; line-height: 1.45; display: none; }
 .layer .note p { margin: 3px 0 0; }
 .layer.on .note { display: block; }
 
@@ -276,7 +311,7 @@ body.reordering { cursor: grabbing; user-select: none; }
 .fold > summary::-webkit-details-marker { display: none; }
 .fold > summary:hover, .fold > summary:focus-visible { text-decoration: underline; outline: none; }
 #attribution-fold #attribution { margin-top: 3px; }
-.layer.on label { font-weight: 600; }
+.layer.on .layer-name { font-weight: 600; }
 
 /* -------------------------------------------------------------- legend */
 .legend-block { margin-bottom: 12px; }
